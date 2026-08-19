@@ -190,16 +190,27 @@ def test_provenance_log_and_summary():
 
 # ── 5. Full evaluate with TradingView OFF still works ────────────────────────
 
+def _now_iso():
+    """A real, current source timestamp. Provider payloads carry `as_of` (the last
+    bar's own time) and freshness is measured from it — a fixture without one is
+    correctly rated `unknown`, so stubs must supply it like the real thing does."""
+    from datetime import datetime, timezone as _tz
+    return datetime.now(_tz.utc).isoformat()
+
+
 _FAKE_A = {"price_data": {"current_price": 100.0}, "trend_state": "uptrend",
            "atr": {"value": 2.5, "percent_of_price": 2.5},
            "market_sentiment": {"momentum": "Bullish", "buy_sell_signal": "BUY"},
-           "rsi": {"value": 60}}
+           "rsi": {"value": 60}, "as_of": _now_iso()}
 
 
 def test_evaluate_works_with_tv_disabled(monkeypatch):
     import decision_engine as de
     monkeypatch.setenv("TRADINGVIEW_ENABLED", "false")
-    monkeypatch.setattr(de, "_load_analysis", lambda s, e: (_FAKE_A, "yahoo", "fresh"))
+    # as_of is stamped at CALL time — a module-level constant would age during the run
+    # and flip this assertion, which is the freshness system behaving correctly.
+    monkeypatch.setattr(de, "_load_analysis",
+                        lambda s, e: ({**_FAKE_A, "as_of": _now_iso()}, "yahoo", "fresh"))
     monkeypatch.setattr(de, "_safe_regime", lambda: {"risk_appetite_score": 62})
     for fn in ("_fam_catalyst", "_fam_short", "_fam_filings", "_fam_options_flow",
                "_fam_social", "_fam_analyst", "_fam_macro"):
@@ -234,8 +245,8 @@ def test_load_analysis_tv_secondary_when_yahoo_down(monkeypatch):
     monkeypatch.setattr(de.ss, "_analyze_cached", lambda s, e, i: dict(_FAKE_A))
     a, src, st = de._load_analysis("TEST", "NASDAQ")
     assert st == "secondary-provider" and src.startswith("tradingview")
-    assert de._engine_freshness(st)["state"] == "ageing"   # mild penalty, not blocking
-    assert not FR.blocks_tradeable(de._engine_freshness(st)["state"])
+    assert de._engine_freshness(st, a)["state"] == "ageing"   # mild penalty, not blocking
+    assert not FR.blocks_tradeable(de._engine_freshness(st, a)["state"])
 
 
 def test_load_analysis_unavailable_when_all_down(monkeypatch):
@@ -287,9 +298,11 @@ def test_sector_map_shape(monkeypatch):
         "symbol": sym, "state": "ok", "price": 100.0, "perf_1d": 1.0, "perf_5d": 2.0,
         "perf_1m": 3.0, "rel_volume": 1.1, "momentum_pct": 2.0, "volatility_pct": 15.0,
         "above_sma20": True, "above_sma50": True, "as_of": "2026-07-29T20:00:00+00:00"})
-    monkeypatch.setattr(S, "_constituent_quotes", lambda tk: [
-        {"symbol": t, "price": 10.0, "change_pct": (1.0 if i % 2 == 0 else -0.5)}
-        for i, t in enumerate(tk)])
+    monkeypatch.setattr(S, "_constituent_quotes", lambda tk: {
+        "quotes": [{"symbol": t, "price": 10.0, "change_pct": (1.0 if i % 2 == 0 else -0.5)}
+                   for i, t in enumerate(tk)],
+        "requested": len(tk), "missing": [], "coverage": 1.0})
+    monkeypatch.setattr(S._R, "quotes", lambda syms, **kw: {})   # prewarm is a no-op here
     # bypass SWR so we get the computed map synchronously
     monkeypatch.setattr(S._R, "swr_async", lambda k, ttl, fn, loading=None: (fn(), "miss"))
     m = S.sector_map("cap")
@@ -304,7 +317,80 @@ def test_sector_map_shape(monkeypatch):
 def test_sector_tile_degrades_when_etf_down(monkeypatch):
     import sector_map as S
     monkeypatch.setattr(S, "_perf_from_history", lambda sym: {"symbol": sym, "state": "throttled"})
-    monkeypatch.setattr(S, "_constituent_quotes", lambda tk: [])
+    monkeypatch.setattr(S, "_constituent_quotes", lambda tk: {
+        "quotes": [], "requested": len(tk),
+        "missing": [{"symbol": t, "reason": "timeout"} for t in tk], "coverage": 0.0})
     t = S.sector_tile("technology")
     assert t["state"] == "throttled"             # typed state, never a fake number
     assert t["perf_1d"] is None
+    # a breadth of 0/0 built from a FAILED fetch must not masquerade as real breadth
+    assert t["breadth"]["complete"] is False
+    assert t["breadth"]["coverage"] == 0.0
+    assert len(t["breadth"]["missing"]) == t["breadth"]["requested"]
+
+
+def test_partial_constituent_fetch_is_flagged_incomplete(monkeypatch):
+    """A tile whose constituent quotes only partly arrive reports the shortfall.
+
+    Regression: a nested-pool starvation used to time out the inner quote fan-out;
+    the caller dropped the missing rows and rendered "0 advancers / 0 decliners" on
+    a sector that was actually up — fabricated-looking data from a starved pool."""
+    import sector_map as S
+    monkeypatch.setattr(S, "_perf_from_history", lambda sym: {
+        "symbol": sym, "state": "ok", "price": 100.0, "perf_1d": 1.0, "perf_5d": 2.0,
+        "perf_1m": 3.0, "rel_volume": 1.0, "momentum_pct": 1.0, "volatility_pct": 15.0,
+        "above_sma20": True, "above_sma50": True, "as_of": "2026-07-29T20:00:00+00:00"})
+    monkeypatch.setattr(S, "_constituent_quotes", lambda tk: {
+        "quotes": [{"symbol": tk[0], "price": 10.0, "change_pct": 1.0}],
+        "requested": len(tk),
+        "missing": [{"symbol": t, "reason": "timeout"} for t in tk[1:]],
+        "coverage": round(1 / len(tk), 3)})
+    t = S.sector_tile("technology")
+    assert t["breadth"]["complete"] is False
+    assert t["breadth"]["counted"] == 1
+    assert t["breadth"]["counted"] < t["breadth"]["requested"]
+    assert t["opportunity_count_complete"] is False
+
+
+def test_quotes_batch_keys_by_requested_symbol(monkeypatch):
+    """Share-class tickers must come back under the symbol the CALLER asked for.
+
+    Regression: keying results by the canonical form returned 'BRK.B' to a caller
+    asking for 'BRK-B', which read as a miss and silently dropped the name from
+    sector breadth."""
+    import research as R
+    monkeypatch.setattr(R, "quote", lambda s, ttl=30.0: {
+        "symbol": s, "state": "ok", "price": 518.85, "change_pct": 0.4})
+    out = R.quotes(["BRK-B", "BRK.B", "JPM"])
+    assert set(out) == {"BRK-B", "BRK.B", "JPM"}
+    assert out["BRK-B"]["state"] == "ok" and out["BRK-B"]["price"] == 518.85
+    assert out["BRK-B"]["requested_symbol"] == "BRK-B"
+
+
+def test_quotes_batch_reports_failures_not_omissions(monkeypatch):
+    """A symbol whose fetch fails still appears, with a typed error record."""
+    import research as R
+    monkeypatch.setattr(R, "gather", lambda tasks, timeout=12.0: {"AAPL": {"__err": "boom"}})
+    out = R.quotes(["AAPL"])
+    assert out["AAPL"]["state"] == "error" and out["AAPL"]["price"] is None
+    assert "boom" in out["AAPL"]["reason"]
+
+
+def test_daily_bar_age_measured_from_session_close():
+    """A daily bar stamped at midnight is aged from its CLOSE, not from midnight.
+
+    Regression: yesterday's close — the freshest datum that can exist pre-market —
+    reported as ~30h old and badged 'ageing' on a perfectly current sector map."""
+    import freshness as F
+    from datetime import datetime, timedelta, timezone
+    close = datetime.now(timezone.utc).replace(hour=20, minute=0, second=0, microsecond=0) - timedelta(days=1)
+    bar_date = (close.date()).isoformat() + "T00:00:00+00:00"
+    naive_age = (datetime.now(timezone.utc) - datetime.fromisoformat(bar_date)).total_seconds()
+    age = F.bar_age_seconds(bar_date)
+    assert age is not None
+    assert abs(age - (naive_age - 16 * 3600)) < 1   # shifted by the 16h to the 16:00 close
+    # an intraday timestamp is aged as-is, not shifted
+    intr = datetime.now(timezone.utc) - timedelta(minutes=5)
+    assert abs(F.bar_age_seconds(intr.isoformat()) - 300) < 5
+    assert F.bar_age_seconds(None) is None
+    assert F.bar_age_seconds("not-a-date") is None

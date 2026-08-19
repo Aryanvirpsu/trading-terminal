@@ -626,12 +626,19 @@ def api_scan_presets():
     """List the available scanner presets + the size of each master-derived pool."""
     names = ["liquid", "momentum", "mean_reversion", "options_eligible", "etf",
              "small_cap_speculative"]
+    # Report the size at the SCANNER'S configured limit. Reporting build_scan_universe's
+    # 120 default made the picker say "liquid (120)" for a scan that actually walks 250.
+    try:
+        import scanner as _SC
+        limit = _SC.config()["universe_limit"]
+    except Exception:  # noqa: BLE001
+        limit = 120
     out = []
     for p in names:
         try:
-            u = _R.build_scan_universe(p)
+            u = _R.build_scan_universe(p, limit=limit)
             out.append({"preset": p, "size": u["size"], "speculative": u["speculative"],
-                        "note": u["note"]})
+                        "limit": limit, "note": u["note"]})
         except Exception as e:  # noqa: BLE001
             out.append({"preset": p, "error": str(e)[:60]})
     return jsonify({"presets": out})
@@ -689,6 +696,11 @@ from zoneinfo import ZoneInfo as _ZI
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "automation"))
 
+# The ONE market calendar, imported once at module level. It was previously imported
+# locally inside two route handlers, which made it easy to add a second, private clock
+# elsewhere in this file without noticing the first one existed.
+import market_regime as _MR      # noqa: E402
+
 _DATA_DIR = os.path.expanduser("~/.tradingview_mcp_data")
 _ET = _ZI("America/New_York")
 
@@ -731,17 +743,25 @@ def _data_state(*names):
     the freshest actual data artifact's age — NOT the scheduler task's own idle age.
     This is what the header 'Data' badge must reflect, so it can never contradict the
     decision engine / panels (the 'header stale 18h while engine fresh' bug). The
-    per-symbol engine/panel freshness is separate and LIVE (seconds old)."""
+    per-symbol engine/panel freshness is separate and LIVE (seconds old).
+
+    Market-aware: overnight and weekend artifacts are EXPECTED to be hours old. Labelling
+    Friday's scan "stale (28h)" all weekend describes a working system as a broken one
+    and trains the eye to ignore the badge that matters intraday.
+    """
     try:
         sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "lab"))
         import freshness as _fr
     except Exception:
         return None
+    try:
+        market_state = _MR.session_state()["state"]
+    except Exception:
+        market_state = None
     ages = [f["age_seconds"] for f in (_fresh(n) for n in names) if f]
-    if not ages:
-        return _fr.classify(None, thresholds=_SCAN_THRESHOLDS)   # unknown — no artifact yet
-    st = _fr.classify(min(ages), thresholds=_SCAN_THRESHOLDS)    # freshest wins
-    st["scope"] = "batch-scan"                                    # NOT the live engine read
+    st = _fr.classify_typed("scanner", min(ages) if ages else None,
+                            market_state=market_state)          # freshest wins
+    st["scope"] = "batch-scan"                                   # NOT the live engine read
     return st
 
 
@@ -824,27 +844,41 @@ def api_rh_position():
                         "reason": str(e)[:120], "holdings": [], "held": False})
 
 
-def _seconds_to_open(now_et):
-    try:
-        from scheduler_run import is_trading_day
-    except Exception:
-        is_trading_day = lambda d: (d.weekday() < 5, "")
-    d = now_et.date()
-    for i in range(8):
-        dd = d + _td(days=i)
-        ok, _why = is_trading_day(dd)
-        if ok:
-            cand = _dt(dd.year, dd.month, dd.day, 9, 30, tzinfo=_ET)
-            if cand > now_et:
-                return int((cand - now_et).total_seconds()), cand.isoformat()
-    return None, None
+def _market_clock():
+    """Market state from the ONE authoritative implementation.
+
+    This used to be a second, private `_seconds_to_open()` that only ever answered
+    "when is the next 9:30 in the future?". During a live session today's open is in
+    the past, so it walked to the NEXT trading day and the header read
+    "opens 67h 50m" at 14:07 ET on a Friday with the market open. It had no concept of
+    an open session, and duplicated — badly — the calendar in market_regime, which
+    already handles weekends, holidays, early closes and DST.
+    """
+    s = _MR.session_state()
+    nxt = s.get("next_session") or {}
+    return {
+        "state": s["state"],                    # open|premarket|afterhours|closed|holiday
+        "reason": s["reason"],
+        "is_open": s["state"] == "open",
+        "is_trading_day": s["is_trading_day"],
+        "holiday": s.get("holiday"),
+        "early_close": s.get("early_close"),
+        "now_et": s["now_et"],
+        "weekday_et": s["weekday_et"],
+        "regular_open_et": s["regular_open_et"],
+        "regular_close_et": s["regular_close_et"],
+        "seconds_until_close": s.get("seconds_until_close"),
+        "seconds_to_open": nxt.get("seconds_until_open"),
+        "market_open_et": nxt.get("opens_et"),
+    }
 
 
 @app.route("/api/scheduler")
 def api_scheduler():
     st = _read_json("scheduler_status.json")
     now_et = _dt.now(_ET)
-    secs, open_iso = _seconds_to_open(now_et)
+    clock = _market_clock()
+    secs, open_iso = clock["seconds_to_open"], clock["market_open_et"]
 
     # How old is the status file itself? A frozen file means the scheduler task
     # hasn't run — so its stored fields (skip_reason, errors, next_run,
@@ -869,6 +903,9 @@ def api_scheduler():
     return jsonify({
         "now_et": now_et.isoformat(),
         "seconds_to_open": secs, "market_open_et": open_iso,
+        # The authoritative session, so the header can say what the market is ACTUALLY
+        # doing instead of inferring it from a countdown that only points forward.
+        "market": clock,
         "last_success_at": st.get("last_success_at"),
         "last_run_at": st.get("last_run_at"), "last_run_ok": st.get("last_run_ok"),
         "current_status": ("stale" if stale else st.get("current_status", "idle")),
@@ -1049,6 +1086,508 @@ def api_sector_detail(key):
     with _R.timed("api.sector_detail"):
         out = _SEC.sector_detail(key)
     return jsonify(_clean(out))
+
+
+# ── Research terminal: regime, scan funnel, options desk, tracker ────────────
+# Every one of these is READ-ONLY. None of them can place, preview or queue an
+# order; the options desk reaches Robinhood exclusively through the read allowlist.
+
+@app.route("/api/regime")
+def api_regime():
+    """Session state (ET/IST, pre/open/after/closed/holiday) + the tape + the regime
+    classification with the evidence behind it."""
+    from flask import request
+    import market_regime as _MR
+    blocking = request.args.get("blocking") in ("1", "true", "yes")
+    refresh = request.args.get("refresh") in ("1", "true", "yes")
+    with _R.timed("api.regime"):
+        out = _MR.overview(refresh=refresh, blocking=blocking)
+    return jsonify(_clean(out))
+
+
+@app.route("/api/session")
+def api_session():
+    """Pure-calendar session state. No provider, so it can never be stale or fail."""
+    import market_regime as _MR
+    return jsonify(_clean(_MR.session_state()))
+
+
+@app.route("/api/scan")
+def api_scan():
+    """The staged scan funnel: universe → eligible → sector-aligned → deep → top25 →
+    top10 → finalists, plus the rejection ledger. Non-blocking by default.
+
+    `peek=1` reads the cache WITHOUT starting a run. This is a UNIVERSE operation
+    (~800 names, 45-76s), so the terminal loads with a peek and only starts one when
+    the user explicitly asks — a widget appearing on screen must not cost a scan.
+    """
+    from flask import request
+    import scanner as _SC
+    preset = request.args.get("preset", "liquid")
+    blocking = request.args.get("blocking") in ("1", "true", "yes")
+    if request.args.get("peek") in ("1", "true", "yes"):
+        cached_scan = _R.peek(f"scan:{preset}")
+        if not cached_scan:
+            return jsonify({"state": "never_run", "preset": preset, "scope": "universe",
+                            "reason": "no scan in cache — start one explicitly",
+                            "candidates": [], "finalists": [], "stages": [],
+                            "rejected": []})
+        return jsonify(_clean({**cached_scan, "preset": preset, "scope": "universe",
+                               "cache_state": _R.cache_state(f"scan:{preset}"),
+                               "cache_age_s": _R.cache_age(f"scan:{preset}")}))
+    with _R.timed("api.scan"):
+        out = _SC.scan_cached(preset, blocking=blocking)
+    return jsonify(_clean({**out, "scope": "universe"}))
+
+
+@app.route("/api/scan/rejected")
+def api_scan_rejected():
+    """Rejected candidates with the stage and reason for each drop."""
+    from flask import request
+    import scanner as _SC
+    preset = request.args.get("preset", "liquid")
+    stage = request.args.get("stage")
+    out = _SC.scan_cached(preset, blocking=False)
+    rej = out.get("rejected") or []
+    if stage:
+        rej = [r for r in rej if r.get("stage") == stage]
+    by_stage = {}
+    for r in (out.get("rejected") or []):
+        by_stage[r.get("stage", "?")] = by_stage.get(r.get("stage", "?"), 0) + 1
+    return jsonify(_clean({"state": out.get("state"), "preset": preset,
+                           "rejected": rej[:400], "count": len(rej),
+                           "by_stage": by_stage, "generated_at": out.get("generated_at")}))
+
+
+@app.route("/api/options/desk")
+def api_options_desk():
+    """Chain analysis + shares-vs-option verdict for ONE symbol. READ-ONLY.
+
+    Any symbol works. If the name happens to be in the current scan its funnel-scored
+    candidate is reused; otherwise the SAME per-name pipeline is run for that one
+    symbol (`scanner.analyse_symbol`) — selecting a ticker must never cost a universe
+    scan. A name analysed on demand carries `funnel.failed_gates`, so a stock the
+    scanner would have rejected is visibly different from one it surfaced.
+    """
+    from flask import request
+    import scanner as _SC
+    import options_desk as _OD
+    sym = (request.args.get("symbol") or "").upper().strip()
+    if not sym:
+        return jsonify({"state": "error", "reason": "symbol is required"}), 400
+    force = request.args.get("refresh") in ("1", "true", "yes")
+    scan = _SC.scan_cached(request.args.get("preset", "liquid"), blocking=False)
+    cand = next((c for c in (scan.get("candidates") or []) if c["symbol"] == sym), None)
+    origin = "scan"
+    if cand is None:
+        origin = "on_demand"
+        cand = _SC.analyse_symbol_cached(sym, force=force)
+        if cand.get("state") != "ok":
+            return jsonify(_clean({**cand, "state": cand.get("state", "error"),
+                                   "symbol": sym, "origin": origin})), 200
+    with _R.timed("api.options_desk"):
+        if force:
+            _R.invalidate(f"desk:{sym}")
+        out = _R.cached(f"desk:{sym}", 180, lambda: _OD.evaluate_candidate(cand))
+    return jsonify(_clean({**out, "candidate_origin": origin,
+                           "funnel": cand.get("funnel"), "setups": cand.get("setups"),
+                           "levels": cand.get("levels"), "score": cand.get("score"),
+                           "indicators": cand.get("indicators")}))
+
+
+@app.route("/api/options/account")
+def api_options_account():
+    """Robinhood buying power / positions — READ ONLY, never an order path."""
+    import options_desk as _OD
+    with _R.timed("api.options_account"):
+        out = _R.cached("desk:account", 60, _OD.account)
+    return jsonify(_clean(out))
+
+
+@app.route("/api/options/watchlists")
+def api_options_watchlists():
+    """Robinhood watchlists — READ ONLY. Every mutating watchlist tool is off the
+    allowlist and refused before the network."""
+    from flask import request
+    import options_desk as _OD
+    force = request.args.get("refresh") in ("1", "true", "yes")
+    with _R.timed("api.watchlists"):
+        out = _OD.watchlists(force=force)
+    return jsonify(_clean(out))
+
+
+@app.route("/api/tracker")
+def api_tracker():
+    from flask import request
+    import tracker as _TR
+    inc = request.args.get("include_closed") in ("1", "true", "yes")
+    with _R.timed("api.tracker"):
+        out = _TR.list_setups(include_closed=inc)
+    return jsonify(_clean(out))
+
+
+@app.route("/api/tracker/update", methods=["POST", "GET"])
+def api_tracker_update():
+    """Re-check tracked setups against fresh quotes. Cannot place an order."""
+    import tracker as _TR
+    with _R.timed("api.tracker_update"):
+        out = _TR.update_all()
+    return jsonify(_clean(out))
+
+
+@app.route("/api/tracker/track", methods=["POST"])
+def api_tracker_track():
+    """Add the current scan's finalists to the tracker. Tracking only — no order."""
+    from flask import request
+    import scanner as _SC
+    import options_desk as _OD
+    import tracker as _TR
+    body = request.get_json(silent=True) or {}
+    preset = body.get("preset", "liquid")
+    scan = _SC.scan_cached(preset, blocking=False)
+    if scan.get("state") == "loading":
+        return jsonify({"state": "loading", "reason": "scan still running — try again shortly"}), 202
+    wanted = set(body.get("symbols") or [])
+    pool = scan.get("finalists") or []
+    if wanted:
+        pool = [c for c in (scan.get("candidates") or []) if c["symbol"] in wanted]
+    acct = _OD.account()
+    added = []
+    for cand in pool:
+        try:
+            ev = _OD.evaluate_candidate(cand, account_info=acct)
+            added.append(_TR.add_setup(cand, verdict=ev.get("decision"),
+                                       contract=ev.get("best_contract")))
+        except Exception as e:  # noqa: BLE001
+            added.append({"state": "error", "symbol": cand.get("symbol"), "reason": str(e)[:120]})
+    return jsonify(_clean({"state": "ok", "results": added,
+                           "order_placement": "disabled"}))
+
+
+@app.route("/api/tracker/close", methods=["POST"])
+def api_tracker_close():
+    from flask import request
+    import tracker as _TR
+    body = request.get_json(silent=True) or {}
+    sid = body.get("setup_id")
+    if not sid:
+        return jsonify({"state": "error", "reason": "setup_id required"}), 400
+    return jsonify(_clean(_TR.close_setup(sid, body.get("reason") or "closed from the dashboard")))
+
+
+@app.route("/api/tracker/alerts")
+def api_tracker_alerts():
+    from flask import request
+    import tracker as _TR
+    only = request.args.get("unacknowledged") in ("1", "true", "yes")
+    return jsonify(_clean(_TR.recent_alerts(unacknowledged_only=only)))
+
+
+@app.route("/api/tracker/schedule")
+def api_tracker_schedule():
+    """Cadence + the next scheduled runs, market-calendar aware."""
+    import tracker as _TR
+    out = _TR.next_runs()
+    out["stats"] = _TR.stats()
+    return jsonify(_clean(out))
+
+
+# ── Scan cohort — the Top-5 MEMORY layer (separate from the entry-trigger alert
+# tracker above). See dashboard/scan_cohort.py for the RAW → OUTCOME → AGGREGATE →
+# DERIVED architecture. Read-only except /update, which only re-checks status. ──
+
+@app.route("/api/cohort/today")
+def api_cohort_today():
+    """The most recent scan's Top-5, live-enriched with current price + return
+    since scan. `scan_id` picks a specific historical cohort instead of latest."""
+    from flask import request
+    import scan_cohort as _SCO
+    sid = request.args.get("scan_id")
+    preset = request.args.get("preset")
+    with _R.timed("api.cohort_today"):
+        out = _SCO.cohort(sid, preset=preset, live=True)
+    return jsonify(_clean(out))
+
+
+@app.route("/api/cohort/history")
+def api_cohort_history():
+    import scan_cohort as _SCO
+    from flask import request
+    limit = int(request.args.get("limit", 30))
+    with _R.timed("api.cohort_history"):
+        out = _SCO.list_scan_runs(limit=limit)
+    return jsonify(_clean(out))
+
+
+@app.route("/api/cohort/update", methods=["POST", "GET"])
+def api_cohort_update():
+    """Re-check tracked observations against fresh quotes. Status changes only —
+    never removes an observation, never places an order."""
+    import scan_cohort as _SCO
+    from flask import request
+    sid = request.args.get("scan_id") or (request.get_json(silent=True) or {}).get("scan_id")
+    with _R.timed("api.cohort_update"):
+        out = _SCO.update_observations(sid)
+    return jsonify(_clean(out))
+
+
+@app.route("/api/cohort/intelligence")
+def api_cohort_intelligence():
+    """Accumulated scanner performance: rank/score/setup-type breakdowns and the
+    repetition diagnostic, each computed fresh from persisted observations."""
+    from flask import request
+    import scan_cohort as _SCO
+    horizon = request.args.get("horizon", "d5")
+    with _R.timed("api.cohort_intelligence"):
+        out = {
+            "state": "ok", "horizon": horizon,
+            "rank": _SCO.rank_performance(horizon),
+            "score_bucket": _SCO.score_bucket_performance(horizon),
+            "setup_type": _SCO.setup_type_performance(horizon),
+            "repetition": _SCO.repetition_stats(),
+        }
+    return jsonify(_clean(out))
+
+
+@app.route("/api/cohort/review")
+def api_cohort_review():
+    from flask import request
+    import scan_cohort as _SCO
+    date_ = request.args.get("date")
+    with _R.timed("api.cohort_review"):
+        out = _SCO.daily_review(date_)
+    return jsonify(_clean(out))
+
+
+@app.route("/api/paper/account")
+def api_paper_account():
+    """PAPER account only. Deliberately a separate endpoint from the Robinhood cash and
+    Robinhood agentic views so simulated and real money can never be conflated."""
+    from paper import broker as _pb, config as _pc, db as _pdb
+    acct = _pb.account()
+    return jsonify(_clean({
+        "account_type": "paper", "is_simulated": True, "is_real_money": False,
+        "label": "Paper (simulated ledger)",
+        **acct,
+        "config": _pc.snapshot(),
+        "reconciliation": _pb.reconcile(),
+        "schema_version": _pdb.schema_version(),
+        "config_version": _pdb.config_version(),
+    }))
+
+
+@app.route("/api/paper/report")
+def api_paper_report():
+    from flask import request
+    from paper import report as _pr
+    d = request.args.get("date")
+    return jsonify(_clean(_pr.daily(d) if d else _pr.daily()))
+
+
+@app.route("/api/paper/performance")
+def api_paper_performance():
+    from paper import report as _pr
+    return jsonify(_clean(_pr.performance()))
+
+
+@app.route("/api/paper/signals")
+def api_paper_signals():
+    """Every signal — including the REJECT and MONITOR ones we did not trade."""
+    from flask import request
+    from paper import journal as _pj
+    return jsonify(_clean({
+        "signals": _pj.signals(session_date=request.args.get("date"),
+                               action=request.args.get("action"),
+                               limit=int(request.args.get("limit", 100))),
+        "gate_outcomes": _pj.gate_outcomes(),
+        "blocked_winners": _pj.blocked_winners(),
+    }))
+
+
+@app.route("/api/paper/options_shadow")
+def api_paper_options_shadow():
+    from paper import options_shadow as _os
+    return jsonify(_clean({"summary": _os.summary(),
+                           "graduation": _os.graduation_readiness()}))
+
+
+# ── TERMINAL: the selected-symbol workspace ──────────────────────────────────
+# One symbol, one snapshot, one coherent refresh model. These three routes are what
+# the terminal actually runs on; the per-family /api/symbol/* routes remain for
+# targeted use but the workspace no longer stitches its own view out of them.
+
+@app.route("/api/terminal/symbol")
+def api_terminal_symbol():
+    """Canonical snapshot of the SELECTED symbol.
+
+    Every section carries its own data, its own typed freshness and its own cache
+    state. Sections still computing return state='loading' (the shell paints first);
+    a section whose provider failed returns state='error' without taking its siblings
+    down. Cheap and expensive work are separated: this NEVER runs a universe scan.
+    """
+    from flask import request
+    import symbol_snapshot as _SS
+    sym = (request.args.get("symbol") or "").upper().strip()
+    if not sym:
+        return jsonify({"state": "error", "reason": "symbol is required"}), 400
+    secs = request.args.get("sections")
+    sections = [s.strip() for s in secs.split(",") if s.strip()] if secs else None
+    blocking = request.args.get("blocking") in ("1", "true", "yes")
+    with _R.timed("api.terminal_symbol", sym):
+        out = _SS.snapshot(sym, sections=sections,
+                           rng=request.args.get("range", "3M"),
+                           blocking=blocking)
+    return jsonify(_clean(out))
+
+
+@app.route("/api/terminal/refresh", methods=["POST", "GET"])
+def api_terminal_refresh():
+    """Explicit refresh of ONE symbol. Drops only that symbol's caches.
+
+    This is the cheap operation. The universe scan is the expensive one and lives
+    behind /api/scan — changing the selected ticker must never trigger it, which is
+    why the two have separate routes and separate cache namespaces.
+    """
+    from flask import request
+    import symbol_snapshot as _SS
+    body = request.get_json(silent=True) or {}
+    sym = ((request.args.get("symbol") or body.get("symbol") or "")).upper().strip()
+    if not sym:
+        return jsonify({"state": "error", "reason": "symbol is required"}), 400
+    secs = request.args.get("sections") or body.get("sections")
+    if isinstance(secs, str):
+        secs = [s.strip() for s in secs.split(",") if s.strip()]
+    with _R.timed("api.terminal_refresh", sym):
+        out = _SS.refresh(sym, sections=secs or None,
+                          rng=request.args.get("range", "3M"))
+    return jsonify(_clean(out))
+
+
+@app.route("/api/terminal/history")
+def api_terminal_history():
+    """Historical validation for one symbol's live strategy, or an explicit one."""
+    from flask import request
+    import history as _H
+    import scanner as _SC
+    sym = (request.args.get("symbol") or "").upper().strip()
+    if not sym:
+        return jsonify({"state": "error", "reason": "symbol is required"}), 400
+    strategy = request.args.get("strategy")
+    cand = _SC.analyse_symbol_cached(sym)
+    if strategy is None and isinstance(cand, dict):
+        strategy = cand.get("primary_setup")
+    import symbol_snapshot as _SS
+    regime = _SS._market_regime_now()
+    feats = _H.current_features(cand if isinstance(cand, dict) else {}, regime)
+    with _R.timed("api.terminal_history", sym):
+        out = _H.evaluate(sym, strategy=strategy, current_features=feats,
+                          sector=(cand or {}).get("sector"))
+    return jsonify(_clean(out))
+
+
+@app.route("/api/terminal/snapshots")
+def api_terminal_snapshots():
+    """The terminal's own recorded strategy dataset — and how much of it has resolved."""
+    from flask import request
+    import strategy_store as _ST
+    if request.args.get("resolve") in ("1", "true", "yes"):
+        _ST.attach_outcomes()
+    return jsonify(_clean(_ST.stats()))
+
+
+@app.route("/api/terminal/status")
+def api_terminal_status():
+    """ONE coherent answer to 'what is the state of this terminal'.
+
+    The header used to render three independently-derived facts side by side —
+    `DATA stale`, `scheduler idle`, `scanner refreshing` — which read as a
+    contradiction because they answered three different questions with one vocabulary.
+    They are separated here by NAME and by SCOPE:
+
+        market    the authoritative exchange session (calendar, never inferred)
+        datasets  per-dataset freshness, each against its own window
+        jobs      background work: is it running, when did it last succeed
+
+    A job being idle is not a data fault; a shut exchange is not a stale feed.
+    """
+    st = _read_json("scheduler_status.json")
+    status_path = os.path.join(_DATA_DIR, "scheduler_status.json")
+    status_age = round(_time.time() - os.path.getmtime(status_path)) if os.path.exists(status_path) else None
+    scheduler_idle = status_age is None or status_age > 18 * 3600
+    clock = _market_clock()
+    mstate = clock.get("state")
+
+    # `label` on a freshness record is the AGE phrase ("market closed — last close
+    # (1h ago)"), not a name for the dataset. Spreading the record last overwrote the
+    # human label and the strip rendered the age where the dataset name belongs — so
+    # the record is nested under `freshness` and the display name is set explicitly.
+    def _dataset(did, label, scope, rec, **extra):
+        rec = dict(rec or {})
+        return {"id": did, "label": label, "scope": scope,
+                "freshness_label": rec.pop("label", None), **rec, **extra}
+
+    datasets = [_dataset("batch_scan", "Batch scan artifacts", "batch-scan",
+                         _data_state("last_scan_both.json", "last_daily_run.json"))]
+    try:
+        # PEEK, never scan_cached: a status readout that starts an 800-name scan is
+        # how "scanner refreshing" ended up permanently on screen next to stale data.
+        sc = _R.peek("scan:liquid") or {}
+        age = _R.cache_age("scan:liquid")
+        import freshness as _fr
+        datasets.append(_dataset(
+            "scanner", "Live scanner", "universe",
+            _fr.classify_typed("scanner", age, market_state=mstate),
+            has_run=bool(sc),
+            candidates=len(sc.get("candidates") or []),
+            finalists=len(sc.get("finalists") or []),
+            running=_R.cache_state("scan:liquid") == "refreshing"))
+    except Exception as e:  # noqa: BLE001
+        datasets.append({"id": "scanner", "label": "Live scanner", "scope": "universe",
+                         "state": "unknown", "error": str(e)[:100]})
+
+    # `running_stage` is a field the scheduler WRITES when it starts and does not
+    # always clear — so on its own it reports a run that died days ago as "running".
+    # A run is only live if it also wrote its status within the last few minutes;
+    # a stale claim is a STALLED run, which is a different thing to say than "running"
+    # and a different thing again from "idle".
+    stage = st.get("running_stage")
+    claims_running = bool(stage)
+    recently_written = status_age is not None and status_age < 300
+    running = claims_running and recently_written
+    stalled = claims_running and not recently_written
+    jobs = [{"id": "scheduler", "label": "Background scheduler",
+             "running": running, "stalled": stalled,
+             "idle": scheduler_idle or (not claims_running),
+             "running_stage": stage,
+             "last_run_at": st.get("last_run_at"),
+             "last_success_at": st.get("last_success_at"),
+             "last_run_ok": st.get("last_run_ok"),
+             "age_seconds": status_age,
+             "note": ("hasn't written a status in over 18h — this is the JOB, not the "
+                      "market data" if scheduler_idle else
+                      f"claims stage '{stage}' but hasn't written a status in "
+                      f"{status_age}s — the run is stalled, not live" if stalled else None)}]
+    try:
+        jobs.append({"id": "scan", "label": "Universe scan",
+                     "running": _R.cache_state("scan:liquid") == "refreshing",
+                     "age_seconds": _R.cache_age("scan:liquid"),
+                     "note": "expensive — 800 names; never triggered by selecting a symbol"})
+    except Exception:
+        pass
+
+    return jsonify(_clean({
+        "market": clock,
+        "datasets": datasets,
+        "jobs": jobs,
+        "any_job_running": any(j.get("running") for j in jobs),
+        "worst_dataset_state": _fresh_worst(datasets),
+        "generated_at": _dt.now(_ET).isoformat(),
+    }))
+
+
+def _fresh_worst(datasets):
+    import freshness as _fr
+    return _fr.worst(*[d.get("state") for d in datasets if d.get("state")])
 
 
 @app.route("/api/providers")

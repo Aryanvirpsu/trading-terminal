@@ -182,27 +182,54 @@ def _conviction_min() -> float:
         return 60.0
 
 
-def _engine_freshness(data_state: str) -> dict:
+def _engine_freshness(data_state: str, analysis: Optional[dict] = None) -> dict:
     """Freshness of the base analysis, via the SHARED classifier — so the engine,
     scanner, panels and header can never disagree.
 
-      fresh              ⇒ live primary (Yahoo) or an equally-live source → `fresh`
-      secondary-provider ⇒ Yahoo down, on the optional TV secondary → `ageing`
-                           (mild penalty, still usable — NOT blocking)
-      fallback-provider  ⇒ genuinely degraded/fallback source → `fallback` (blocks)
+    Freshness is the age of the DATA, not the identity of the provider that served it.
+    This used to return `classify(0)` — a hardcoded zero — whenever the primary
+    answered, so a Friday close read on Sunday reported "fresh, 0s old, tradeable".
+    A working provider serving old data is exactly the case a freshness check exists
+    to catch. When the analysis carries `as_of`, that bar's real age decides; the
+    provider only decides the FLOOR (a degraded source still blocks).
+
+      fallback-provider  ⇒ genuinely degraded source → `fallback` (blocks)
+      secondary-provider ⇒ Yahoo down, on the optional TV secondary → `ageing` floor
+      unavailable        ⇒ no data at all → `unknown`, never `fresh`
     """
     import freshness as _fr
     if data_state == "fallback-provider":
         return _fr.classify(None, is_fallback=True)
-    if data_state == "secondary-provider":
-        # a real live read from the optional secondary — treat as ageing, not fallback
-        rec = _fr.classify(300)                       # ~5 min-equivalent mild penalty
-        rec["label"] = "secondary provider"
-        return rec
     if data_state in ("unavailable", None, ""):
         # No provider produced data — that is UNKNOWN freshness, never "fresh".
         return _fr.classify(None)
-    return _fr.classify(0)
+
+    market_state = None
+    try:
+        import market_regime as _mr
+        market_state = _mr.session_state()["state"]
+    except Exception:
+        pass
+
+    age = _fr.bar_age_seconds((analysis or {}).get("as_of"))
+    if age is None:
+        # No timestamp on the payload — that is UNKNOWN, not fresh. Saying "we cannot
+        # tell how old this is" is the honest answer and it does not block on its own.
+        rec = _fr.classify_typed("quote", None, market_state=market_state)
+        rec["label"] = "age unknown — provider supplied no timestamp"
+        return rec
+
+    rec = _fr.classify_typed("quote", age, market_state=market_state)
+    if data_state == "secondary-provider":
+        # A real live read from the optional secondary is never rated better than
+        # `ageing` — a mild, non-blocking penalty. Downgrade the STATE directly rather
+        # than inflating the age: a fabricated age would then be reported as if measured.
+        if rec["state"] == "fresh":
+            rec["state"] = "ageing"
+            rec["penalty"] = _fr.PENALTY["ageing"]
+            rec["blocks_tradeable"] = _fr.blocks_tradeable("ageing")
+        rec["label"] = f"secondary provider — {rec['label']}"
+    return rec
 
 
 def _disagreement(active: list, sign: int) -> dict:
@@ -389,7 +416,7 @@ def _early_reject(symbol: str, gate: str, source: str, reason: str, requirement:
 
 def evaluate(symbol: str, exchange: str = "NASDAQ", direction: str = "LONG",
              balance: float = 368.0, evaluate_option: bool = True,
-             profile: str = "momentum") -> dict:
+             profile: str = "momentum", portfolio_check: bool = True) -> dict:
     import concurrent.futures as _cf
     import time as _t
     _t0 = _t.perf_counter()
@@ -481,7 +508,18 @@ def evaluate(symbol: str, exchange: str = "NASDAQ", direction: str = "LONG",
         option_block = {"contract": opt["label"], "premium": prem, "pct_otm": opt.get("pct_otm"),
                         "spread_pct": liq_opt.get("spread_pct"), "theta_drag": round(theta_drag, 2),
                         "ev_per_contract": round(ev_opt * 100, 2),
-                        "verdict": "structure OK" if ev_opt > 0 else "AVOID option — take the stock"}
+                        "verdict": "structure OK" if ev_opt > 0 else "AVOID option — take the stock",
+                        # Raw contract data, passed through so downstream evidence
+                        # (options_shadow.record) can store real bid/ask/greeks
+                        # instead of nulls — this is the SAME contract already
+                        # picked and graded above, not a second provider call.
+                        "bid": opt.get("bid"), "ask": opt.get("ask"),
+                        "strike": opt.get("strike"), "expiry": opt.get("expiry"),
+                        "option_type": opt.get("option_type"),
+                        "days_to_expiry": opt.get("days_to_expiry"),
+                        "volume": opt.get("volume"), "open_interest": opt.get("open_interest"),
+                        "breakeven": opt.get("breakeven"),
+                        "greeks": {"delta": opt.get("delta"), "iv": opt.get("implied_volatility")}}
 
     # Overall quality (0-100): reward strength+agreement, gated by data+execution.
     quality = round(100 * (.5 * agreement + .5 * min(1, abs(aligned) * 2))
@@ -497,7 +535,7 @@ def evaluate(symbol: str, exchange: str = "NASDAQ", direction: str = "LONG",
 
     # Freshness (shared classifier) + quantified cross-family disagreement.
     import freshness as _fr
-    fresh = _engine_freshness(data_state)
+    fresh = _engine_freshness(data_state, a)
     disagree = _disagreement(active, sign)
 
     # Position sizing: a risk budget scaled by uncertainty + speculation.
@@ -506,18 +544,25 @@ def evaluate(symbol: str, exchange: str = "NASDAQ", direction: str = "LONG",
     dollar_risk = round(risk_budget * uncertainty_scale, 2)
 
     # Portfolio-level gate (#13-15): daily/weekly loss, drawdown, cash, sector caps.
+    # Checks the `strategy-500` legacy account by default. Callers with their OWN
+    # portfolio context (e.g. lab/paper/, which checks the real $500 account's risk
+    # state itself, downstream, via broker.check_entry) must pass
+    # portfolio_check=False — otherwise this gate would silently reject every trade
+    # based on a DIFFERENT account's cash/drawdown, which is a correctness bug, not
+    # caution (a candidate would fail here regardless of the caller's real capacity).
     portfolio_gate = None
-    try:
-        import risk_engine
-        pg = risk_engine.check_new_trade(symbol, dollar_risk, bool(spec))
-        portfolio_gate = {"allow": pg["allow"], "reasons": pg["reasons"],
-                          "size_cap_usd": pg["size_cap_usd"],
-                          "suspended": pg["portfolio"]["suspended"],
-                          "drawdown_pct": pg["portfolio"]["drawdown_pct"]}
-        if pg["allow"]:
-            dollar_risk = min(dollar_risk, pg["size_cap_usd"])
-    except Exception:
-        pass
+    if portfolio_check:
+        try:
+            import risk_engine
+            pg = risk_engine.check_new_trade(symbol, dollar_risk, bool(spec))
+            portfolio_gate = {"allow": pg["allow"], "reasons": pg["reasons"],
+                              "size_cap_usd": pg["size_cap_usd"],
+                              "suspended": pg["portfolio"]["suspended"],
+                              "drawdown_pct": pg["portfolio"]["drawdown_pct"]}
+            if pg["allow"]:
+                dollar_risk = min(dollar_risk, pg["size_cap_usd"])
+        except Exception:
+            pass
     shares = round(dollar_risk / max(risk_ps, .01), 4)
 
     # ── EV breakdown (explained, net of spread+slippage) ─────────────────────

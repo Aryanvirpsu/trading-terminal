@@ -123,40 +123,43 @@ def _perf_from_history(sym: str) -> Dict[str, Any]:
             "above_sma50": bool(last > sma50), "as_of": h.get("as_of")}
 
 
-def _constituent_quotes(tickers: List[str]) -> List[Dict[str, Any]]:
-    """Concurrent 1D quotes for a sector's constituents (breadth + movers)."""
-    def _q(sym):
-        def _call():
-            from tradingview_mcp.core.services.yahoo_finance_service import get_price
-            p = get_price(_R.to_yahoo(sym))
-            if isinstance(p, dict) and p.get("price") and "error" not in p:
-                return {"symbol": sym, "price": p["price"], "change_pct": p.get("change_pct")}
-            return {"symbol": sym, "state": "no_price"}
-        return _R.cached(f"secq:{sym}", 120, _call)
+def _constituent_quotes(tickers: List[str]) -> Dict[str, Any]:
+    """Concurrent 1D quotes for a sector's constituents (breadth + movers).
 
-    tasks = {s: (lambda s=s: _q(s)) for s in tickers}
-    res = _R.gather(tasks, timeout=10.0)
-    out = []
+    Returns {quotes, requested, missing, coverage} — NOT a bare list. Breadth
+    computed from a partial fetch is not the same fact as breadth computed from a
+    full one, and the caller has to be able to tell them apart: dropping the
+    failures on the floor is how a starved pool used to render as "0 advancers,
+    0 decliners" on a sector that was actually up on the day.
+    """
+    res = _R.quotes(tickers, ttl=120, timeout=20.0)
+    out, missing = [], []
     for s in tickers:
-        r = res.get(s)
-        if isinstance(r, dict) and r.get("change_pct") is not None:
-            out.append(r)
-    return out
+        r = res.get(s) or {}
+        if r.get("state") == "ok" and r.get("change_pct") is not None:
+            out.append({"symbol": s, "price": r["price"], "change_pct": r["change_pct"],
+                        "source_timestamp": r.get("source_timestamp")})
+        else:
+            missing.append({"symbol": s,
+                            "reason": str(r.get("reason") or r.get("state") or "no quote")[:60]})
+    n = len(tickers)
+    return {"quotes": out, "requested": n, "missing": missing,
+            "coverage": round(len(out) / n, 3) if n else None}
 
 
 def _freshness_for(as_of: Optional[str]):
+    """Freshness of a DAILY bar. Aged from the bar's session CLOSE (see
+    `freshness.bar_age_seconds`) — aging it from the midnight stamp Yahoo puts on a
+    daily bar made yesterday's close, the freshest datum that can exist pre-market,
+    read as 30h old and show an "ageing" badge on perfectly current data."""
     import freshness as _fr
-    if not as_of:
+    age = _fr.bar_age_seconds(as_of)
+    if age is None:
         return _fr.classify(None)
-    try:
-        dt = datetime.fromisoformat(as_of.replace("Z", "+00:00"))
-        age = (datetime.now(timezone.utc) - dt.astimezone(timezone.utc)).total_seconds()
-        # daily-bar cadence: last close within ~a day is fresh; a long weekend is
-        # ageing; only multi-day-old data (a stalled feed) is stale.
-        return _fr.classify(age, thresholds={"fresh": 30 * 3600, "ageing": 4 * 86400,
-                                             "stale": 8 * 86400})
-    except Exception:
-        return _fr.classify(None)
+    # daily-bar cadence: the previous close is fresh through the next session; a
+    # long weekend/holiday is ageing; only a multi-day gap is a stalled feed.
+    return _fr.classify(age, thresholds={"fresh": 26 * 3600, "ageing": 4 * 86400,
+                                         "stale": 8 * 86400})
 
 
 # ── Tiles + full map ─────────────────────────────────────────────────────────
@@ -167,7 +170,8 @@ def sector_tile(key: str, *, benchmark_1m: Optional[float] = None) -> Dict[str, 
         return {"key": key, "state": "unsupported", "reason": "unknown sector"}
     etf_perf = _perf_from_history(meta["etf"])
     consts = list({t for grp in meta["industries"].values() for t in grp})
-    quotes = _constituent_quotes(consts)
+    cq = _constituent_quotes(consts)
+    quotes = cq["quotes"]
     adv = sum(1 for q in quotes if (q["change_pct"] or 0) > 0)
     decl = sum(1 for q in quotes if (q["change_pct"] or 0) < 0)
     ranked = sorted(quotes, key=lambda q: (q["change_pct"] or 0), reverse=True)
@@ -187,8 +191,13 @@ def sector_tile(key: str, *, benchmark_1m: Optional[float] = None) -> Dict[str, 
         "rel_volume": etf_perf.get("rel_volume"), "momentum_pct": etf_perf.get("momentum_pct"),
         "volatility_pct": etf_perf.get("volatility_pct"),
         "rs_vs_spy_1m": rs,
-        "breadth": {"advancers": adv, "decliners": decl, "counted": len(quotes)},
+        "breadth": {"advancers": adv, "decliners": decl, "counted": len(quotes),
+                    "requested": cq["requested"], "coverage": cq["coverage"],
+                    "missing": cq["missing"],
+                    # breadth from a partial fetch is a weaker fact — say so.
+                    "complete": not cq["missing"]},
         "opportunity_count": opp,
+        "opportunity_count_complete": not cq["missing"],
         "top": top, "bottom": bottom,
         "cap_weight": meta.get("cap_weight"),
         "industry_count": len(meta["industries"]),
@@ -198,11 +207,28 @@ def sector_tile(key: str, *, benchmark_1m: Optional[float] = None) -> Dict[str, 
     return tile
 
 
-def sector_map(weighting: str = "cap") -> Dict[str, Any]:
-    """The whole map — all 11 tiles computed CONCURRENTLY + the SPY benchmark. SWR-
-    cached so the first (cold) call returns a loading placeholder and warm calls are
-    instant; the frontend polls, so the map loads progressively."""
+def sector_map(weighting: str = "cap", blocking: bool = False) -> Dict[str, Any]:
+    """The whole map — all 11 tiles computed CONCURRENTLY + the SPY benchmark.
+
+    `blocking=False` (default, used by the web UI): SWR-async, so a cold call returns
+    a `loading` placeholder immediately and the frontend polls — the map appears
+    progressively instead of hanging the request.
+
+    `blocking=True` (used by batch callers like the paper scheduler): compute
+    synchronously and return the real map. A scheduler has no one to poll for it, and
+    silently receiving a `loading` placeholder would make the pre-market scan abort
+    on every cold start.
+    """
     def _compute():
+        # Warm EVERY constituent quote in one pooled batch before fanning out to the
+        # tiles: the tiles then hit a warm per-symbol cache instead of 11 separate
+        # bursts contending for connections.
+        try:
+            _R.quotes(sorted({t for s in SECTORS.values()
+                              for g in s["industries"].values() for t in g}),
+                      ttl=120, timeout=25.0)
+        except Exception:  # noqa: BLE001 — a failed prewarm just means tiles fetch their own
+            pass
         bench = _perf_from_history(_BENCHMARK)
         bench_1m = bench.get("perf_1m") if bench.get("state") == "ok" else None
         tasks = {k: (lambda k=k: sector_tile(k, benchmark_1m=bench_1m)) for k in SECTORS}
@@ -230,9 +256,12 @@ def sector_map(weighting: str = "cap") -> Dict[str, Any]:
             "generated_at": datetime.now(timezone.utc).isoformat(),
         }
 
-    val, cst = _R.swr_async(f"sectormap:{weighting}", 300, _compute,
-                            loading={"state": "loading", "reason": "building sector map…",
-                                     "weighting": weighting})
+    if blocking:
+        val, cst = _R.swr(f"sectormap:{weighting}", 300, _compute)
+    else:
+        val, cst = _R.swr_async(f"sectormap:{weighting}", 300, _compute,
+                                loading={"state": "loading", "reason": "building sector map…",
+                                         "weighting": weighting})
     if isinstance(val, dict):
         val = {**val, "cache_state": cst}
     return val
@@ -251,14 +280,25 @@ def sector_detail(key: str) -> Dict[str, Any]:
         bench = _perf_from_history(_BENCHMARK)
         bench_1m = bench.get("perf_1m") if bench.get("state") == "ok" else None
         # industry groups with their constituent quotes + group performance
+        # industry groups fetched CONCURRENTLY — this loop used to be sequential,
+        # paying one full round-trip per group before starting the next.
+        gtasks = {g: (lambda t=tk: _constituent_quotes(t)) for g, tk in meta["industries"].items()}
+        gres = _R.gather(gtasks, timeout=20.0)
         groups = []
         all_quotes: List[Dict[str, Any]] = []
-        for gname, tickers in meta["industries"].items():
-            q = _constituent_quotes(tickers)
+        for gname in meta["industries"]:
+            cq = gres.get(gname)
+            if not isinstance(cq, dict) or "quotes" not in cq:
+                groups.append({"name": gname, "perf_1d": None, "members": [],
+                               "state": "unavailable", "coverage": 0.0})
+                continue
+            q = cq["quotes"]
             all_quotes.extend(q)
             gperf = round(mean([x["change_pct"] for x in q]), 2) if q else None
             groups.append({"name": gname, "perf_1d": gperf,
-                           "members": sorted(q, key=lambda x: (x["change_pct"] or 0), reverse=True)})
+                           "members": sorted(q, key=lambda x: (x["change_pct"] or 0), reverse=True),
+                           "coverage": cq["coverage"], "missing": cq["missing"],
+                           "state": "ok" if q else "unavailable"})
         ranked = sorted(all_quotes, key=lambda x: (x["change_pct"] or 0), reverse=True)
         rs = (round(etf_perf["perf_1m"] - bench_1m, 2)
               if (etf_perf.get("perf_1m") is not None and bench_1m is not None) else None)

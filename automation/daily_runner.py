@@ -126,15 +126,18 @@ def run_scans(stamp: str) -> int:
         lab_summary = f"lab=ERROR:{type(le).__name__}"
         _log_line(f"{stamp} | lab error | {le}")
 
-    # Auto-execute the engine's TRADEABLE picks on PAPER at open, then calibrate.
-    auto_summary = "auto=skipped"
-    try:
-        import auto_paper
-        ap = auto_paper.run()
-        auto_summary = f"auto_taken={len(ap['taken'])}/{ap['tradeable_found']} calib={ap['calibration_samples']}"
-    except Exception as ae:
-        auto_summary = f"auto=ERROR:{type(ae).__name__}"
-        _log_line(f"{stamp} | auto_paper error | {ae}")
+    # DISABLED 2026-08-12: auto_paper.run() opened new positions in the legacy
+    # `strategy-500` account (ACCOUNT = "strategy-500" in lab/auto_paper.py). That
+    # account was supposed to be retired 2026-08-01 in favor of lab/paper's
+    # robinhood_500_baseline ledger (see PAPER_500_ACCOUNT.md / build freeze in
+    # CLAUDE.md), but this scheduled call kept opening fresh trades in it
+    # unnoticed (last: SOFI/PLTR/BAC on 2026-08-06) because it lives in
+    # automation/daily_runner.py + lab/auto_paper.py, outside the freeze's scope
+    # (lab/paper/, lab/decision_engine.py, automation/paper_scheduler.py) so
+    # nothing flagged it. The protect stage above still manages/closes strategy-500's
+    # existing open positions (SOFI, PLTR, BAC) to a clean exit — it just won't open
+    # new ones. Re-enable only if the legacy account is intentionally revived.
+    auto_summary = "auto=disabled (legacy strategy-500 retired 2026-08-01, see daily_runner.py comment)"
 
     summary = f"{stamp} | OK scans | {both_summary} | {lab_summary} | {auto_summary}"
     _log_line(summary)

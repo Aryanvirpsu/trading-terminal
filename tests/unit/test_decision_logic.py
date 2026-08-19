@@ -170,11 +170,28 @@ def test_fallback_is_not_fresh(monkeypatch):
 
 def test_freshness_is_one_shared_system():
     # The engine's freshness must come from the SAME classifier the header/panels use.
-    assert de._engine_freshness("fresh")["state"] == fr.classify(0)["state"] == "fresh"
+    from datetime import datetime, timezone as _tz
+    live = {"as_of": datetime.now(_tz.utc).isoformat()}
+    assert de._engine_freshness("fresh", live)["state"] == fr.classify(0)["state"] == "fresh"
     assert de._engine_freshness("fallback-provider")["state"] == \
         fr.classify(None, is_fallback=True)["state"] == "fallback"
     assert fr.blocks_tradeable("stale") and fr.blocks_tradeable("fallback")
     assert not fr.blocks_tradeable("fresh") and not fr.blocks_tradeable("ageing")
+
+
+def test_freshness_measures_the_data_not_the_provider():
+    """REGRESSION. `_engine_freshness` used to return a hardcoded age of 0 whenever the
+    primary provider answered, so a working feed serving last week's bar reported
+    'fresh, 0s old, tradeable'. A provider that answers is not evidence the data is
+    current — the bar's own timestamp is."""
+    from datetime import datetime, timedelta, timezone as _tz
+    old = {"as_of": (datetime.now(_tz.utc) - timedelta(days=6)).isoformat()}
+    rec = de._engine_freshness("fresh", old)
+    assert rec["state"] != "fresh"
+    assert rec["age_seconds"] > 5 * 86400
+    # and a payload with NO timestamp is 'unknown' — never silently 'fresh'
+    assert de._engine_freshness("fresh", {})["state"] == "unknown"
+    assert de._engine_freshness("fresh", None)["state"] == "unknown"
 
 
 def test_header_uses_shared_classifier_not_scheduler_age(monkeypatch):

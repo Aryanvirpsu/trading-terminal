@@ -38,6 +38,10 @@ def analysis(symbol: str) -> dict:
         h = yf.Ticker(symbol).history(period="6mo")
         closes = h["Close"].tolist()
         highs, lows = h["High"].tolist(), h["Low"].tolist()
+        # Timestamp of the LAST BAR. Without it nothing downstream can tell a quote
+        # taken seconds ago from one taken last Friday, and freshness collapses into
+        # "which provider answered" — which is not freshness at all.
+        as_of = h.index[-1].isoformat() if len(h.index) else None
     except Exception as e:
         return {"error": f"yf history: {e}"}
     if len(closes) < 55:
@@ -70,6 +74,7 @@ def analysis(symbol: str) -> dict:
         "market_sentiment": {"momentum": mom, "buy_sell_signal": sig},
         "stock_score": score, "grade": "fallback",
         "_source": "yfinance-fallback",
+        "as_of": as_of,                     # last bar's own timestamp, not fetch time
     }
 
 

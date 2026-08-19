@@ -59,6 +59,23 @@ def to_yahoo(sym: str) -> str:
     return _SM.to_yahoo(sym)
 
 
+# Yahoo tickers that are NOT equities: indices (^VIX, ^TNX), futures (CL=F, GC=F),
+# FX (EURUSD=X) and a few dotted index codes. `to_yahoo` is an EQUITY mapper — its
+# share-class rule turns the dollar index DX-Y.NYB into the nonexistent DX-Y-NYB.
+_YAHOO_PASSTHROUGH = {"DX-Y.NYB"}
+
+
+def to_yahoo_any(sym: str) -> str:
+    """Yahoo symbol for ANY instrument: equities go through the security master's
+    share-class mapping, indices/futures/FX pass through untouched."""
+    s = (sym or "").strip().upper()
+    if not s:
+        return s
+    if s[0] == "^" or "=" in s or s in _YAHOO_PASSTHROUGH:
+        return s
+    return to_yahoo(sym)
+
+
 def to_finnhub(sym: str) -> str:
     """Finnhub uses a dot for US share classes: BRK-B -> BRK.B (foreign suffixes
     kept as-is)."""
@@ -91,6 +108,20 @@ _PROVIDERS: Dict[str, Dict[str, Any]] = {}
 _STATS = collections.Counter()                  # hit/stale/miss/refresh/refresh_err
 _DIAG = collections.deque(maxlen=300)           # recent {stage, ms, at, extra}
 _POOL = _cf.ThreadPoolExecutor(max_workers=16, thread_name_prefix="research")
+# Overflow pool for NESTED fan-out. A task already running on `_POOL` that itself
+# calls gather()/_box() must not compete for the same 16 workers: the sector map
+# submitted 11 tiles (11 workers busy) and each tile then submitted ~8 constituent
+# quotes, leaving 5 workers for ~90 inner tasks. The inner gather hit its timeout
+# and its caller silently dropped the missing rows, so whole sectors rendered as
+# "breadth 0/0, no movers" — fabricated-looking zeros from a starved pool, not
+# from the market. Inner work therefore runs on its own pool.
+_POOL_NESTED = _cf.ThreadPoolExecutor(max_workers=32, thread_name_prefix="research-nested")
+
+
+def _pool_here() -> _cf.ThreadPoolExecutor:
+    """The pool to submit to from the CURRENT thread: the main pool from a request
+    thread, the overflow pool from inside a pool worker (see `_POOL_NESTED`)."""
+    return _POOL_NESTED if threading.current_thread().name.startswith("research") else _POOL
 
 
 def _now() -> float:
@@ -191,6 +222,16 @@ def cached(key: str, ttl: float, fn: Callable[[], Any]) -> Any:
     return swr(key, ttl, fn)[0]
 
 
+def peek(key: str) -> Optional[Any]:
+    """Read a cache entry WITHOUT computing or scheduling anything.
+
+    `swr`/`swr_async` both start work on a miss, which makes them the wrong tool for
+    a status readout: asking "has the universe scan run?" must not start one. Returns
+    None when the key is absent."""
+    ent = _CACHE.get(key)
+    return ent["val"] if ent else None
+
+
 def cache_age(key: str) -> Optional[float]:
     ent = _CACHE.get(key)
     return round(_now() - ent["ts"], 1) if ent else None
@@ -229,8 +270,12 @@ class timed:
 
 def gather(tasks: Dict[str, Callable[[], Any]], timeout: float = 12.0) -> Dict[str, Any]:
     """Run independent callables CONCURRENTLY on the shared pool; per-task timeout so
-    one slow provider can't hold up the rest. Returns name -> result (or {'__err':...})."""
-    futs = {n: _POOL.submit(fn) for n, fn in tasks.items()}
+    one slow provider can't hold up the rest. Returns name -> result (or {'__err':...}).
+
+    Nested calls (a gather task that itself gathers) go to `_POOL_NESTED` so the
+    inner fan-out cannot be starved by its own parents holding the main pool."""
+    pool = _pool_here()
+    futs = {n: pool.submit(fn) for n, fn in tasks.items()}
     out: Dict[str, Any] = {}
     deadline = time.time() + timeout
     for n, f in futs.items():
@@ -300,11 +345,186 @@ def _box(fn: Callable[[], Any], timeout: float, default=None):
     the SHARED pool and does NOT wait on the abandoned worker — using a `with`
     ThreadPoolExecutor here was the bug that defeated the timeout, because its
     __exit__ shutdown(wait=True) blocked until the slow call finished anyway."""
-    fut = _POOL.submit(fn)
+    fut = _pool_here().submit(fn)
     try:
         return fut.result(timeout=timeout)
     except Exception:  # noqa: BLE001 (timeout or worker error) — leave it running, move on
         return default
+
+
+# ── Pooled Yahoo quote layer ────────────────────────────────────────────────
+# `yahoo_finance_service.get_price` opens a NEW urllib opener per symbol, so every
+# quote pays a fresh TCP+TLS handshake and 90 concurrent quotes collapsed to an
+# effective concurrency of ~3 (measured: 90 symbols = 14.8s; 8 serial = 3.9s).
+# It also stamps each quote with `datetime.now()` — the FETCH time — and discards
+# Yahoo's `regularMarketTime`, so a 14-hour-old pre-market quote reported itself as
+# zero seconds old. This layer keeps one pooled keep-alive session and carries the
+# REAL source timestamp.
+
+_QUOTE_BASE = "https://query1.finance.yahoo.com/v8/finance/chart"
+_QUOTE_UA = "tradingview-mcp/0.5.0"
+_HTTP: Dict[str, Any] = {}
+
+
+def _http() -> Any:
+    """One pooled keep-alive session (connection reuse is the whole point)."""
+    s = _HTTP.get("s")
+    if s is None:
+        import requests
+        from requests.adapters import HTTPAdapter
+        s = requests.Session()
+        s.headers.update({"User-Agent": _QUOTE_UA})
+        ad = HTTPAdapter(pool_connections=16, pool_maxsize=48, max_retries=0)
+        s.mount("https://", ad)
+        s.mount("http://", ad)
+        _HTTP["s"] = s
+    return s
+
+
+def _quote_compute(sym: str) -> Dict[str, Any]:
+    """One symbol's quote with its TRUE source timestamp and explicit missing fields."""
+    y = to_yahoo_any(sym)
+    url = f"{_QUOTE_BASE}/{y}?interval=1d&range=5d&includePrePost=true"
+    try:
+        from tradingview_mcp.core.services.proxy_manager import get_proxy
+        proxies = get_proxy()
+    except Exception:
+        proxies = None
+    try:
+        r = _http().get(url, timeout=10, proxies=proxies)
+        r.raise_for_status()
+        res = r.json()["chart"]["result"][0]
+    except Exception as e:  # noqa: BLE001
+        return {"symbol": sym, "state": "error", "reason": str(e)[:100], "price": None}
+    meta = res.get("meta") or {}
+    price = meta.get("regularMarketPrice")
+    closes = []
+    try:
+        closes = [c for c in (res["indicators"]["quote"][0].get("close") or []) if c is not None]
+    except Exception:
+        pass
+    prev = closes[-2] if len(closes) >= 2 else (meta.get("previousClose") or meta.get("chartPreviousClose"))
+    mt = meta.get("regularMarketTime")
+    src_ts = None
+    if mt:
+        try:
+            src_ts = datetime.fromtimestamp(float(mt), tz=timezone.utc).isoformat()
+        except Exception:
+            src_ts = None
+    missing = [k for k, v in (("price", price), ("previous_close", prev),
+                              ("source_timestamp", src_ts), ("volume", meta.get("regularMarketVolume")))
+               if v is None]
+    chg_pct = None
+    if price is not None and prev:
+        chg_pct = round((price - prev) / prev * 100, 2)
+    return {
+        "symbol": sym, "yahoo_symbol": y,
+        "state": "ok" if price is not None else "empty",
+        "price": price, "previous_close": prev,
+        "change": round(price - prev, 4) if (price is not None and prev) else None,
+        "change_pct": chg_pct,
+        "day_high": meta.get("regularMarketDayHigh"), "day_low": meta.get("regularMarketDayLow"),
+        "volume": meta.get("regularMarketVolume"),
+        "week52_high": meta.get("fiftyTwoWeekHigh"), "week52_low": meta.get("fiftyTwoWeekLow"),
+        "currency": meta.get("currency"), "exchange": meta.get("fullExchangeName") or meta.get("exchangeName"),
+        "name": meta.get("longName") or meta.get("shortName"),
+        "instrument_type": meta.get("instrumentType"),
+        # `source_timestamp` is Yahoo's own regularMarketTime — the moment the quote
+        # is FOR. `fetched_at` is when we asked. They are different facts and both
+        # are reported; nothing downstream should age a quote by `fetched_at`.
+        "source_timestamp": src_ts,
+        "fetched_at": datetime.now(timezone.utc).isoformat(),
+        "missing_fields": missing,
+        "source": "Yahoo chart v8",
+    }
+
+
+def quote(sym: str, ttl: float = 30.0) -> Dict[str, Any]:
+    return cached(f"q1:{canonical(sym)}", ttl, lambda: _quote_compute(canonical(sym)))
+
+
+def quotes(symbols: List[str], ttl: float = 30.0, timeout: float = 20.0) -> Dict[str, Dict[str, Any]]:
+    """Concurrent pooled quotes for many symbols. Always returns one entry per input
+    symbol — a failed fetch yields a typed error record, never a silent omission."""
+    # Keyed by the CALLER'S symbol strings, deduped on the canonical form. Keying
+    # the result by the canonical symbol instead silently loses every share-class
+    # ticker: a caller asking for "BRK-B" gets back "BRK.B" and reads a miss, which
+    # is how BRK-B disappeared from the Financials breadth count.
+    canon = {s: canonical(s) for s in symbols}
+    tasks = {c: (lambda c=c: quote(c, ttl)) for c in dict.fromkeys(canon.values())}
+    res = gather(tasks, timeout=timeout)
+    out: Dict[str, Dict[str, Any]] = {}
+    for orig, c in canon.items():
+        r = res.get(c)
+        if isinstance(r, dict) and "state" in r:
+            out[orig] = {**r, "requested_symbol": orig}
+        else:
+            reason = (r or {}).get("__err") if isinstance(r, dict) else None
+            out[orig] = {"symbol": c, "requested_symbol": orig, "state": "error",
+                         "price": None, "reason": str(reason or "timeout")[:80],
+                         "missing_fields": ["price"]}
+    return out
+
+
+def _bars_compute(sym: str, rng: str, interval: str) -> Dict[str, Any]:
+    """Daily OHLCV for one symbol off the SAME pooled session as `quote`.
+
+    `price_history` goes through yfinance, which is fine for a handful of symbols
+    but pays a per-Ticker object + its own session for each name. A broad scan needs
+    hundreds of series, so the scanner uses this instead."""
+    y = to_yahoo_any(sym)
+    url = f"{_QUOTE_BASE}/{y}?interval={interval}&range={rng}"
+    try:
+        from tradingview_mcp.core.services.proxy_manager import get_proxy
+        proxies = get_proxy()
+    except Exception:
+        proxies = None
+    try:
+        r = _http().get(url, timeout=15, proxies=proxies)
+        r.raise_for_status()
+        res = r.json()["chart"]["result"][0]
+    except Exception as e:  # noqa: BLE001
+        return {"symbol": sym, "state": "error", "reason": str(e)[:100], "bars": []}
+    ts = res.get("timestamp") or []
+    q = ((res.get("indicators") or {}).get("quote") or [{}])[0]
+    o, h, l, c, v = (q.get(k) or [] for k in ("open", "high", "low", "close", "volume"))
+    bars = []
+    for i, t in enumerate(ts):
+        try:
+            if c[i] is None:
+                continue
+            bars.append({"t": datetime.fromtimestamp(float(t), tz=timezone.utc).isoformat(),
+                         "o": o[i], "h": h[i], "l": l[i], "c": c[i], "v": v[i] or 0})
+        except (IndexError, TypeError, ValueError):
+            continue
+    meta = res.get("meta") or {}
+    mt = meta.get("regularMarketTime")
+    return {"symbol": sym, "state": "ok" if bars else "empty", "bars": bars,
+            "interval": interval, "range": rng,
+            "source_timestamp": (datetime.fromtimestamp(float(mt), tz=timezone.utc).isoformat()
+                                 if mt else (bars[-1]["t"] if bars else None)),
+            "fetched_at": datetime.now(timezone.utc).isoformat(),
+            "source": "Yahoo chart v8"}
+
+
+def bars(sym: str, rng: str = "6mo", interval: str = "1d", ttl: float = 900.0) -> Dict[str, Any]:
+    s = canonical(sym)
+    return cached(f"bars:{s}:{rng}:{interval}", ttl, lambda: _bars_compute(s, rng, interval))
+
+
+def bars_batch(symbols: List[str], rng: str = "6mo", interval: str = "1d",
+               ttl: float = 900.0, timeout: float = 45.0) -> Dict[str, Dict[str, Any]]:
+    """Concurrent pooled OHLCV for many symbols, keyed by the caller's symbols."""
+    canon = {s: canonical(s) for s in symbols}
+    tasks = {c: (lambda c=c: bars(c, rng, interval, ttl)) for c in dict.fromkeys(canon.values())}
+    res = gather(tasks, timeout=timeout)
+    out: Dict[str, Dict[str, Any]] = {}
+    for orig, c in canon.items():
+        r = res.get(c)
+        out[orig] = r if (isinstance(r, dict) and "state" in r) else {
+            "symbol": c, "state": "error", "bars": [],
+            "reason": str((r or {}).get("__err") if isinstance(r, dict) else "timeout")[:80]}
+    return out
 
 
 def _stamp(source: str, key: Optional[str] = None, state: str = "ok") -> Dict[str, Any]:
@@ -786,56 +1006,10 @@ def _technicals_compute(sym: str) -> Dict[str, Any]:
 
 # ── Options finder + ranking ─────────────────────────────────────────────────
 
-def _rank_contract(c: dict, underlying: float, side: str, dte: int) -> Dict[str, Any]:
-    """Score a contract 0-100 on liquidity, spread, moneyness, IV; list pass/fail
-    reasons. Higher = more tradeable, not a directional call."""
-    strike = c.get("strike") or 0
-    bid, ask = c.get("bid") or 0, c.get("ask") or 0
-    last = c.get("last_price") or 0
-    mid = round((bid + ask) / 2, 2) if (bid and ask) else last
-    oi = c.get("open_interest") or 0
-    vol = c.get("volume") or 0
-    iv = c.get("implied_volatility")
-    spread_pct = round((ask - bid) / mid * 100, 1) if (bid and ask and mid) else None
-    otm_pct = round((strike - underlying) / underlying * 100, 1) if underlying else None
-    if side == "PUT" and otm_pct is not None:
-        otm_pct = -otm_pct  # express as OTM magnitude for puts too
-    breakeven = round(strike + mid, 2) if side == "CALL" else round(strike - mid, 2)
-
-    passes, fails = [], []
-    score = 0.0
-    # Liquidity: OI
-    if oi >= 1000: score += 30; passes.append(f"deep OI {oi:,}")
-    elif oi >= 250: score += 18; passes.append(f"OK OI {oi:,}")
-    else: fails.append(f"thin OI {oi:,}")
-    # Volume today
-    if vol >= 200: score += 15; passes.append(f"active vol {vol:,}")
-    elif vol >= 25: score += 8
-    else: fails.append(f"low vol {vol}")
-    # Spread
-    if spread_pct is None: fails.append("no two-sided quote")
-    elif spread_pct <= 8: score += 30; passes.append(f"tight spread {spread_pct}%")
-    elif spread_pct <= 20: score += 15; passes.append(f"fair spread {spread_pct}%")
-    else: fails.append(f"wide spread {spread_pct}%")
-    # Moneyness (near-money preferred for delta)
-    if otm_pct is not None:
-        if abs(otm_pct) <= 3: score += 20; passes.append("near the money")
-        elif abs(otm_pct) <= 7: score += 12; passes.append(f"{abs(otm_pct)}% OTM")
-        else: fails.append(f"far {abs(otm_pct)}% OTM (lottery)")
-    # IV sanity (very high IV = expensive/pinned)
-    if iv is not None:
-        ivp = round(iv * 100, 1)
-        if ivp > 120: fails.append(f"very high IV {ivp}%")
-        else: score += 5
-    grade = ("A" if score >= 80 else "B" if score >= 60 else
-             "C" if score >= 40 else "D")
-    return {
-        **c, "mid": mid, "spread_pct": spread_pct, "otm_pct": otm_pct,
-        "breakeven": breakeven, "dte": dte, "liquidity_score": round(score),
-        "grade": grade, "passes": passes, "fails": fails,
-        "tradeable": score >= 60 and not any("wide spread" in f or "no two-sided" in f for f in fails),
-    }
-
+# NOTE: a second, divergent contract-grading implementation (`_rank_contract`)
+# used to live here. Nothing called it — `options()` below already uses the shared
+# `options_grading.grade_contract`, the single source of truth. It was deleted
+# rather than left as a trap where a fix could be applied to the unused copy.
 
 def options(sym: str, expiry: Optional[str] = None, side: str = "CALL",
             max_contracts: int = 12) -> Dict[str, Any]:
@@ -1053,11 +1227,18 @@ def _market_regime():
                       fromlist=["market_regime"]).market_regime()
 
 
-def news_sentiment(sym: str) -> Dict[str, Any]:
+def news_sentiment(sym: str, blocking: bool = False) -> Dict[str, Any]:
     # Cache the WHOLE aggregated result (not just sub-calls) so the endpoint returns
     # instantly when warm — otherwise the sector-ETF technicals (throttle-prone
     # TradingView) is re-attempted and time-boxed on every request.
+    #
+    # `blocking=True` is for the small, already-narrowed set of names a caller must
+    # actually score (scan finalists): the async path always hands a cold caller a
+    # `loading` placeholder, which a scorer can only read as "no sentiment".
     sym = canonical(sym)
+    if blocking:
+        val, _cs = swr(f"sentiment:{sym}", TTL["sentiment"], lambda: _sentiment_compute(sym))
+        return val
     val, _cs = swr_async(f"sentiment:{sym}", TTL["sentiment"], lambda: _sentiment_compute(sym),
                          loading={"symbol": sym, "state": "loading", "reason": "aggregating sentiment…"})
     return val
@@ -1201,7 +1382,7 @@ def price_history(sym: str, rng: str = "3M") -> Dict[str, Any]:
 
     def _hist():
         import yfinance as yf
-        df = yf.Ticker(to_yahoo(sym)).history(period=period, interval=interval)
+        df = yf.Ticker(to_yahoo_any(sym)).history(period=period, interval=interval)
         pts = [{"t": i.isoformat(), "c": round(float(r["Close"]), 2),
                 "o": round(float(r["Open"]), 2), "h": round(float(r["High"]), 2),
                 "l": round(float(r["Low"]), 2), "v": int(r["Volume"])}

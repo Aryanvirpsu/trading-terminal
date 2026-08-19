@@ -7,6 +7,10 @@ __pycache__/
 __pycache__/
 *.py[codz]
 *$py.class
+*.bak
+
+# vendored third-party reference material (not app code, not pushed)
+/reference/
 
 # C extensions
 *.so
