@@ -728,13 +728,23 @@ def _strong_but_unaffordable_contract():
     """A contract that wins on EVERY quality axis the verdict counts — tight spread,
     deep OI, low theta, break-even inside the expected move, IV not inflated — but
     whose premium the account cannot cover. Modelled on the real PLTR 2026-08-28 $170
-    call ($870.06/contract against $447.94 buying power and a $4.48 risk budget)."""
-    return {"tradeable": True, "spread_pct": 2.3, "open_interest": 1549,
-            "theta_pct_of_premium_per_day": 0.9,
+    call ($870.06/contract against $447.94 buying power and a $4.48 risk budget), with
+    the strike moved near _candidate()'s own $63.25 price (Canonical Option
+    Architecture v1.1, Step 8): decide() now runs this contract through canonical
+    Layer A (contract_quality) using `spot = candidate.indicators.price`, so a
+    strike as far from that spot as the original PLTR fixture would fail canonical's
+    OTM gate for a reason unrelated to what these tests are isolating — affordability,
+    not quality. bid/ask and a fresh quote_timestamp are added for the same reason:
+    canonical A hard-fails on a missing quote/timestamp, and these tests need quality
+    to genuinely PASS so affordability is the only thing left to disagree on."""
+    return {"tradeable": True, "bid": 8.60, "ask": 8.80, "spread_pct": 2.3,
+            "open_interest": 1549, "theta_pct_of_premium_per_day": 0.9,
             "break_even_within_expected_move": True, "pct_move_to_break_even": 5.7,
             "underlying_expected_move_pct": 12.3, "implied_volatility": 0.51,
-            "dte": 21, "strike": 170.0, "side": "call", "limit_price": 8.70,
-            "multiplier": 100.0, "expiry": "2026-08-28", "greeks_provenance": "provider"}
+            "dte": 21, "strike": 65.0, "side": "CALL", "limit_price": 8.70,
+            "multiplier": 100.0, "expiry": (date.today() + timedelta(days=21)).isoformat(),
+            "quote_timestamp": datetime.now(timezone.utc).isoformat(),
+            "greeks_provenance": "provider"}
 
 
 def test_unaffordable_contract_never_wins_prefer_option():
@@ -768,7 +778,7 @@ def test_unaffordable_contract_is_still_reported_not_hidden():
     d = OD.decide(candidate=_candidate(), best_contract=best, account_info=ACCT,
                   cfg=OCFG, sizing=sizing, contracts_analysed=83)
     assert d["evaluated_option"] is not None
-    assert d["evaluated_option"]["strike"] == 170.0
+    assert d["evaluated_option"]["strike"] == 65.0
 
 
 def test_premium_no_longer_measured_against_the_stock_risk_budget():

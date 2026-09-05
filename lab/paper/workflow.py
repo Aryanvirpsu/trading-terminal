@@ -15,7 +15,8 @@ _HERE = os.path.dirname(os.path.abspath(__file__))
 for _p in ("..", os.path.join("..", "..", "dashboard"), os.path.join("..", "..", "src")):
     sys.path.insert(0, os.path.join(_HERE, _p))
 
-from . import broker, config as cfg, db, journal, options_shadow, risk as risk_mod, strategies
+from . import (broker, canonical_bridge, config as cfg, db, journal, options_shadow,
+              risk as risk_mod, strategies)
 from .fills import Quote
 
 
@@ -109,59 +110,114 @@ def premarket(session_date: Optional[str] = None, dry_run: bool = False) -> Dict
 
     for f in scan["finalists"]:
         sym = f["symbol"]
+        direction = f.get("direction", "LONG")
+        sector = f.get("sector")
         try:
             # portfolio_check=False: the engine's own risk_limit gate checks the
             # UNRELATED legacy strategy-500 account. This pipeline's real, $500-
             # correct risk check (per-trade loss, position cap, sector exposure,
-            # daily loss, drawdown, cash reserve, cooldown) runs downstream in
-            # broker.submit_entry -> risk.check_entry, against the actual account.
+            # daily loss, drawdown, cash reserve, cooldown) runs downstream via
+            # canonical B(stock)/B(option) (real account state) and, as
+            # defense-in-depth, broker.submit_entry -> risk.check_entry.
             #
-            # evaluate_option=True: the funnel already limits the expensive full
-            # evaluate() call to <=5 finalists/day specifically so this is affordable
-            # (see PAPER_TRADING_PLAN.md's funnel). With it False, options_shadow
-            # NEVER sees a real chain — every record was a "no option idea" stub
-            # regardless of whether a good contract existed. Options stay
-            # shadow-mode-only either way; this only changes whether we actually LOOK.
-            result = de.evaluate(sym, "NASDAQ", f.get("direction", "LONG"),
+            # Canonical Option Architecture v1.1, Step 10: evaluate_option=False
+            # — the legacy option overlay (_grade_option_chain(), fed by
+            # ss._pick_option_idea() internally) is bypassed for this route.
+            # Layer C (price/stop/target, the 8 hard + 4 soft gates, quality/
+            # EV/disagreement/freshness) is IDENTICAL either way — none of
+            # that computation reads the option candidate. The SAME
+            # ss._pick_option_idea() candidate generator is still called,
+            # once, by canonical_bridge.evaluate_canonical() below, so
+            # options_shadow still sees a real chain exactly as before.
+            result = de.evaluate(sym, "NASDAQ", direction,
                                  balance=risk_mod.account_state(session_date)["equity"],
-                                 evaluate_option=True, profile="momentum",
+                                 evaluate_option=False, profile="momentum",
                                  portfolio_check=False)
         except Exception as e:
             db.audit("system", sym, "evaluate_failed", {"error": str(e)[:160]})
             continue
 
         q = quote_for(sym)
-        # Options are recorded in SHADOW MODE only — never placed into the ledger.
+
+        # ---- canonical A/B(stock)/B(option)/D/E/executable (Step 10) ------
         try:
-            options_shadow.record(result, symbol=sym, session_date=session_date)
+            canon = canonical_bridge.evaluate_canonical(
+                result, symbol=sym, direction=direction, sector=sector,
+                session_date=session_date)
+        except Exception as e:
+            db.audit("system", sym, "canonical_evaluate_failed", {"error": str(e)[:160]})
+            continue
+
+        # Options are recorded in SHADOW MODE only — never placed into the ledger.
+        # The augmented result carries the SAME option/option_quality shape
+        # options_shadow.record() has always read, now canonically sourced.
+        shadow_result = canonical_bridge.augmented_result_for_shadow(result, canon)
+        shadow_id = None
+        try:
+            shadow_id = options_shadow.record(shadow_result, symbol=sym, session_date=session_date)
         except Exception:
             pass
+        # Canonical metadata (quality_pass, eligibility, binding constraint,
+        # instrument choice, canonical quantity, executables, shadow_only,
+        # quote provenance) — additive, via the existing audit trail, no
+        # options_shadow schema change (Phase 15).
+        db.audit("options_shadow_canonical", shadow_id or sym, "canonical_evaluated",
+                 canonical_bridge.canonical_audit_metadata(canon))
+
+        stock_ready = (canon["instrument_choice"].choice.value == "STOCK"
+                       and canon["stock_executable"].executable)
+        canon_qty = canon["sizing"].quantity
+        canon_planned_risk = canon["stock_planned_risk"]
 
         if dry_run or len(planned) >= max_orders:
             sid = journal.record_signal(
-                result, strategy=f["strategy"], sector=f.get("sector"),
+                result, strategy=f["strategy"], sector=sector,
                 market_regime=regime, scanner_rank=f.get("scanner_rank"),
+                quantity=canon_qty, planned_risk=canon_planned_risk,
                 session_date=session_date)
             evaluated.append({"symbol": sym, "action": result.get("decision"),
-                              "signal_id": sid,
+                              "signal_id": sid, "instrument": canon["instrument_label"],
                               "note": "dry-run" if dry_run else "daily order cap reached"})
             continue
 
         if q is None:
-            sid = journal.record_signal(result, strategy=f["strategy"],
-                                        sector=f.get("sector"), market_regime=regime,
-                                        scanner_rank=f.get("scanner_rank"),
-                                        session_date=session_date)
+            sid = journal.record_signal(
+                result, strategy=f["strategy"], sector=sector, market_regime=regime,
+                scanner_rank=f.get("scanner_rank"), quantity=canon_qty,
+                planned_risk=canon_planned_risk, session_date=session_date)
             evaluated.append({"symbol": sym, "action": result.get("decision"),
-                              "signal_id": sid, "note": "no executable quote"})
+                              "signal_id": sid, "instrument": canon["instrument_label"],
+                              "note": "no executable quote"})
+            continue
+
+        if not stock_ready:
+            # D did not choose STOCK (NO_TRADE, or OPTION — which, under
+            # shadow_only=True, is NEVER executable — see Phase 10/14) or
+            # canonical B/executable found the stock leg itself unsound.
+            # No broker call: falling back to STOCK here would be a SECOND,
+            # undocumented instrument-choice policy living outside D.
+            sid = journal.record_signal(
+                result, strategy=f["strategy"], sector=sector, market_regime=regime,
+                scanner_rank=f.get("scanner_rank"), quantity=canon_qty,
+                planned_risk=canon_planned_risk, session_date=session_date)
+            evaluated.append({
+                "symbol": sym, "action": result.get("decision"),
+                "signal_id": sid, "instrument": canon["instrument_label"],
+                "note": ("option preferred but shadow-only — no execution"
+                        if canon["instrument_choice"].choice.value == "OPTION"
+                        else "stock leg not canonically executable")})
             continue
 
         out = broker.submit_entry(result, q, strategy=f["strategy"],
-                                  sector=f.get("sector"), market_regime=regime,
+                                  sector=sector, market_regime=regime,
                                   scanner_rank=f.get("scanner_rank"),
-                                  session_date=session_date)
+                                  session_date=session_date,
+                                  canonical_quantity=canon_qty,
+                                  canonical_planned_risk=canon_planned_risk,
+                                  stock_executable=canon["stock_executable"].executable)
         evaluated.append({"symbol": sym, "action": result.get("decision"),
                           "executed": out["executed"], "signal_id": out["signal_id"],
+                          "instrument": canon["instrument_label"],
                           "reasons": out.get("reasons", [])})
         if out["executed"]:
             planned.append({"symbol": sym, "order_id": out["order"]["order_id"],

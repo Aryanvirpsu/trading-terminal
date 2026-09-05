@@ -713,7 +713,17 @@ def _read_json(name):
 
 
 def _clean(o):
+    import dataclasses
     import math
+    # Canonical Option Architecture dataclasses (ContractQualityResult,
+    # AccountFitResult, etc.) can now appear anywhere in a response tree
+    # (dashboard/options_desk.py:decide(), Step 8) — generic, forward-
+    # compatible handling here rather than converting each one at its call
+    # site. `not isinstance(o, type)` excludes the dataclass CLASS itself
+    # (dataclasses.is_dataclass is also true for the class, not just
+    # instances).
+    if dataclasses.is_dataclass(o) and not isinstance(o, type):
+        return _clean(dataclasses.asdict(o))
     if isinstance(o, float):
         return None if (math.isinf(o) or math.isnan(o)) else o
     if isinstance(o, dict):
