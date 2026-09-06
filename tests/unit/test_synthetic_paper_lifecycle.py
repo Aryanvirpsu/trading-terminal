@@ -239,6 +239,29 @@ def test_synthetic_full_lifecycle_resolves_a_paper_trade(monkeypatch):
         assert cpos.get(field) is not None, f"resolved position missing auditable field: {field}"
 
 
+def test_premarket_rerun_same_day_does_not_duplicate_evidence(monkeypatch):
+    """Evidence-integrity guard: premarket() evaluates each day's finalists
+    exactly once by design (no intraday rescan). A second call for the SAME
+    session_date — an accidental re-run, not a second genuine decision —
+    must not double-journal the candidate, double-count it in report
+    tallies, or open a second position for a symbol already entered today."""
+    _patch_decision_engine(monkeypatch)
+    _arm_workflow(monkeypatch, _quote(_ENTRY))
+
+    pre1 = wf.premarket(SESSION)
+    assert len(pre1["orders_placed"]) == 1
+
+    pre2 = wf.premarket(SESSION)
+    assert pre2["orders_placed"] == [], "a same-day re-run must not place a second order"
+    assert len(pre2["evaluated"]) == 1
+    assert "already evaluated today" in pre2["evaluated"][0]["note"]
+
+    assert db.query("SELECT COUNT(*) n FROM signals")[0]["n"] == 1, (
+        "a same-day re-run must not create a second signal row for the same candidate")
+    assert db.query("SELECT COUNT(*) n FROM orders")[0]["n"] == 1
+    assert db.query("SELECT COUNT(*) n FROM positions WHERE status='open'")[0]["n"] == 1
+
+
 def test_synthetic_lifecycle_is_not_counted_as_a_real_graduation_trade():
     """Guard against ever conflating this synthetic proof with real
     evidence: nothing in this file writes to a NON-throwaway ledger path,

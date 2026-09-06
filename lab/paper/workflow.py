@@ -108,10 +108,32 @@ def premarket(session_date: Optional[str] = None, dry_run: bool = False) -> Dict
     evaluated: List[Dict[str, Any]] = []
     max_orders = cfg.risk().max_entries_per_day
 
+    # Idempotency guard (evidence integrity): premarket() evaluates each
+    # day's finalists exactly once by design (this function does not rescan
+    # intraday — see module docstring); a second call for the SAME
+    # session_date can only be an accidental re-run (a retried scheduler
+    # invocation, a crash-recovery re-run, a manual re-invocation), not a
+    # second genuine decision. Without this guard a re-run would re-evaluate
+    # every finalist, double-journalling each one under a fresh signal_id
+    # (journal.record_signal()'s id is minted from the call timestamp, not
+    # the decision content) — silently double-counting every TRADEABLE/
+    # MONITOR/REJECT tally report.daily() produces, and, had the day's
+    # capital/position caps not happened to block it, capable of opening a
+    # SECOND real position for a symbol already entered today. Symbols
+    # already journalled today are skipped and reported as such, exactly
+    # like any other "not evaluated" case below.
+    already_today = {s["symbol"] for s in db.query(
+        "SELECT DISTINCT symbol FROM signals WHERE session_date=?", (session_date,))}
+
     for f in scan["finalists"]:
         sym = f["symbol"]
         direction = f.get("direction", "LONG")
         sector = f.get("sector")
+        if sym in already_today:
+            evaluated.append({"symbol": sym, "action": None, "signal_id": None,
+                              "instrument": None,
+                              "note": f"already evaluated today ({session_date}) — skipping re-run"})
+            continue
         try:
             # portfolio_check=False: the engine's own risk_limit gate checks the
             # UNRELATED legacy strategy-500 account. This pipeline's real, $500-
