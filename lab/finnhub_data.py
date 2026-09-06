@@ -114,6 +114,39 @@ def basic_financials(symbol: str) -> Dict[str, Any]:
     return _cached(f"fin:{symbol}", lambda: _get(f"stock/metric?symbol={symbol.upper()}&metric=all"))
 
 
+def candles(symbol: str, *, days: int = 130, resolution: str = "D") -> Dict[str, Any]:
+    """Daily OHLCV history — the documented `candles` category secondary
+    (lab/providers.py: CATEGORIES["candles"], primary=yahoo,
+    secondary=finnhub), never wired up until now.
+
+    NOTE (documented honestly, not discovered by trial and error): Finnhub's
+    `/stock/candle` endpoint has been restricted to paid plans since 2023 for
+    most free API keys, commonly returning `{"s": "no_data"}` or a 403 even
+    with a valid key. This function still implements the real, documented
+    contract exactly as Finnhub specifies it, so it activates automatically
+    the moment a plan/key that supports it is configured — no further code
+    change needed. It is never the only path: research.price_history()
+    treats a "no data"/error result here exactly like "provider
+    unavailable", the same as a missing key.
+    """
+    if not FINNHUB_KEY:
+        return {"error": "no key"}
+    import time as _t
+    to_ts = int(_t.time())
+    from_ts = to_ts - days * 86400
+    r = _cached(f"cand:{symbol}:{resolution}:{days}",
+               lambda: _get(f"stock/candle?symbol={symbol.upper()}&resolution={resolution}"
+                            f"&from={from_ts}&to={to_ts}"))
+    if not isinstance(r, dict) or r.get("s") != "ok":
+        detail = r.get("error") if isinstance(r, dict) else None
+        return {"error": detail or (r.get("s") if isinstance(r, dict) else "no data") or "no data"}
+    closes, opens, highs, lows, vols, times = (r.get(k) for k in ("c", "o", "h", "l", "v", "t"))
+    if not (closes and opens and highs and lows and times):
+        return {"error": "incomplete candle payload"}
+    return {"c": closes, "o": opens, "h": highs, "l": lows,
+            "v": vols or [0] * len(closes), "t": times}
+
+
 def earnings_calendar(symbol: str) -> list:
     """Upcoming/recent earnings dates for a symbol (next ~90d + last 90d)."""
     if not FINNHUB_KEY:

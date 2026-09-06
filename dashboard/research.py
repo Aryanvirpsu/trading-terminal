@@ -1637,35 +1637,109 @@ def fundamentals(sym: str) -> Dict[str, Any]:
     }
 
 
-# ── Price history (for charts) ───────────────────────────────────────────────
+# ── Price history (for charts + the paper scanner's candidate funnel) ───────
+# lab/providers.py's CATEGORIES["candles"] has always declared this category
+# as primary=yahoo, secondary=finnhub — this function is the one place that
+# category is actually served from, and until now it only ever implemented
+# the primary. Yahoo (via yfinance) is a single, occasionally-throttled
+# public endpoint with no SLA; a scan that depends on it exclusively goes
+# fully dark on every finalist the moment it's unavailable. The Finnhub
+# fallback only applies to DAILY resolution (interval == "1d") — the only
+# resolution the paper scanner/sector map/report actually consume; the
+# intraday chart ranges (1D/5D) stay Yahoo-only, matching how far the
+# existing "candles" category has ever been exercised.
 
 _RANGE = {"1D": ("5d", "5m"), "5D": ("5d", "30m"), "1M": ("1mo", "1d"),
           "3M": ("3mo", "1d"), "6M": ("6mo", "1d"), "YTD": ("ytd", "1d"),
           "1Y": ("1y", "1d")}
 
+# Finnhub candles take an explicit from/to window, not a yfinance-style
+# period string — approximate calendar-day lookbacks generous enough to
+# cover each period's trading days (weekends/holidays included).
+_FINNHUB_LOOKBACK_DAYS = {"1mo": 35, "3mo": 100, "6mo": 200, "ytd": 380, "1y": 380}
+
+
+def _validate_points(pts: Any) -> List[Dict[str, Any]]:
+    """Reject malformed points rather than let them reach strategy math:
+    every point must carry a real timestamp and four positive OHLC values.
+    Never raises — an unusable point is just dropped. Accepts any iterable
+    (a list or a lazy generator — both callers pass a generator)."""
+    try:
+        pts = list(pts)
+    except TypeError:
+        return []
+    out = []
+    for p in pts:
+        if not isinstance(p, dict):
+            continue
+        try:
+            t, o, h, l, c = p["t"], float(p["o"]), float(p["h"]), float(p["l"]), float(p["c"])
+        except (KeyError, TypeError, ValueError):
+            continue
+        if not t or o <= 0 or h <= 0 or l <= 0 or c <= 0 or h < l:
+            continue
+        out.append({"t": t, "o": round(o, 2), "h": round(h, 2), "l": round(l, 2),
+                    "c": round(c, 2), "v": int(p.get("v") or 0)})
+    return out
+
+
+def _yahoo_hist(sym: str, period: str, interval: str) -> List[Dict[str, Any]]:
+    import yfinance as yf
+    df = yf.Ticker(to_yahoo_any(sym)).history(period=period, interval=interval)
+    return _validate_points(
+        {"t": i.isoformat(), "c": r["Close"], "o": r["Open"], "h": r["High"],
+         "l": r["Low"], "v": r["Volume"]}
+        for i, r in df.iterrows() if r["Close"] == r["Close"])  # drop NaN rows
+
+
+def _finnhub_hist(sym: str, period: str) -> List[Dict[str, Any]]:
+    days = _FINNHUB_LOOKBACK_DAYS.get(period, 100)
+    import finnhub_data
+    r = finnhub_data.candles(to_finnhub(sym), days=days, resolution="D")
+    if not isinstance(r, dict) or r.get("error") or not r.get("t"):
+        raise RuntimeError(r.get("error") if isinstance(r, dict) else "no candles")
+    raw = ({"t": datetime.fromtimestamp(t, tz=timezone.utc).isoformat(),
+            "o": o, "h": h, "l": lo, "c": c, "v": v}
+           for t, o, h, lo, c, v in zip(r["t"], r["o"], r["h"], r["l"], r["c"], r["v"]))
+    return _validate_points(raw)
+
 
 def price_history(sym: str, rng: str = "3M") -> Dict[str, Any]:
+    """Yahoo primary, Finnhub secondary for daily bars (lab/providers.py's
+    documented "candles" category, primary=yahoo/secondary=finnhub — this is
+    the one place that category is actually served from). `_box()` runs the
+    fetch on a timeout and swallows its own exceptions into `None` rather
+    than re-raising (see its docstring), so `_guard()`'s status here can't
+    distinguish "throttled" from "erroed" from "no data" — only whether
+    real points came back can. `tried` reports that honestly instead of
+    claiming a specific failure reason `_guard` was never able to observe.
+    """
     sym = canonical(sym)
     period, interval = _RANGE.get(rng.upper(), ("3mo", "1d"))
+    hist_key = f"hist:{sym}:{rng}"
 
-    def _hist():
-        import yfinance as yf
-        df = yf.Ticker(to_yahoo_any(sym)).history(period=period, interval=interval)
-        pts = [{"t": i.isoformat(), "c": round(float(r["Close"]), 2),
-                "o": round(float(r["Open"]), 2), "h": round(float(r["High"]), 2),
-                "l": round(float(r["Low"]), 2), "v": int(r["Volume"])}
-               for i, r in df.iterrows() if r["Close"] == r["Close"]]  # drop NaN
-        return pts
+    pts, _ = _guard("yahoo", lambda: _box(
+        lambda: cached(hist_key, 300, lambda: _yahoo_hist(sym, period, interval)), 15))
+    source = "Yahoo daily history"
+    tried = [f"yahoo:{'ok' if pts else 'unavailable'}"]
 
-    pts, st = _guard("yahoo", lambda: _box(lambda: cached(f"hist:{sym}:{rng}", 300, _hist), 15))
-    if st != "ok" or not pts:
-        return {"symbol": sym, "range": rng, "state": st if st != "ok" else "empty",
-                "reason": "no price history from Yahoo"}
+    if not pts and interval == "1d":
+        fb_key = f"histfb:{sym}:{rng}"
+        fb_pts, _ = _guard("finnhub", lambda: _box(
+            lambda: cached(fb_key, 300, lambda: _finnhub_hist(sym, period)), 15))
+        tried.append(f"finnhub:{'ok' if fb_pts else 'unavailable'}")
+        if fb_pts:
+            pts, hist_key = fb_pts, fb_key
+            source = "Finnhub daily history (Yahoo fallback)"
+
+    if not pts:
+        return {"symbol": sym, "range": rng, "state": "empty",
+                "reason": "no price history from any provider", "tried": tried}
     first, last = pts[0]["c"], pts[-1]["c"]
     return {"symbol": sym, "range": rng, "state": "ok", "points": pts,
             "change_pct": round((last - first) / first * 100, 2) if first else None,
-            "as_of": pts[-1]["t"], "interval": interval,
-            "provenance": _stamp("Yahoo daily history", f"hist:{sym}:{rng}")}
+            "as_of": pts[-1]["t"], "interval": interval, "tried": tried,
+            "provenance": _stamp(source, hist_key)}
 
 
 # ── Comparison workspace (2-8 securities, one normalized schema) ─────────────
