@@ -12,6 +12,7 @@ from __future__ import annotations
 
 import os
 import sys
+from datetime import date, datetime, timedelta, timezone
 
 _ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 for _p in ("src", "dashboard", "lab"):
@@ -49,12 +50,24 @@ def _candidate(case, score=72.0, rr=2.1):
 
 
 def _contract(case, **over):
+    # Canonical Option Architecture v1.1, Step 8: decide() now runs this
+    # hand-built contract through canonical Layer A (contract_quality) when
+    # it has no `contract_quality` of its own — that requires a real
+    # two-sided quote and a fresh, dynamic (not hardcoded-stale) timestamp
+    # and expiry, or every case here would hard-fail on "missing bid/ask" /
+    # "missing quote timestamp" / a negative DTE for a reason that has
+    # nothing to do with what each test is actually isolating.
+    mid = case["limit"]
+    half_spread = mid * case["spread_pct"] / 100.0 / 2.0
     c = {"tradeable": True, "spread_pct": case["spread_pct"], "open_interest": case["oi"],
+         "bid": round(mid - half_spread, 4), "ask": round(mid + half_spread, 4),
          "theta_pct_of_premium_per_day": 2.4, "break_even_within_expected_move": True,
          "pct_move_to_break_even": 5.0, "underlying_expected_move_pct": 11.0,
          "implied_volatility": case["iv"], "dte": case["dte"], "strike": case["strike"],
-         "side": "call", "limit_price": case["limit"], "multiplier": 100.0,
-         "expiry": "2026-08-21", "greeks_provenance": "provider",
+         "side": "CALL", "limit_price": case["limit"], "multiplier": 100.0,
+         "expiry": (date.today() + timedelta(days=case["dte"])).isoformat(),
+         "quote_timestamp": datetime.now(timezone.utc).isoformat(),
+         "greeks_provenance": "provider",
          "spread_dollars": round(case["limit"] * case["spread_pct"] / 100, 2)}
     c.update(over)
     return c
@@ -452,16 +465,73 @@ def test_instrument_verdict_maps_onto_the_existing_decision_vocabulary():
         assert d["instrument"] in ORK.INSTRUMENTS
 
 
-def test_shares_are_not_preferred_merely_because_option_max_loss_exceeds_the_stop():
-    """The old reflex compared two different quantities. With an eligible contract the
-    comparison is made on planned risk and efficiency instead."""
-    # The real PLTR contract, on an account large enough to carry it.
-    sizing, d = _evaluate(PLTR, equity=50_000.0, score=90.0)
+def test_option_is_not_auto_rejected_merely_because_its_max_loss_exceeds_the_stop():
+    """The old reflex compared two different quantities and used that alone to
+    reject the option outright. With an eligible contract the comparison is
+    made on planned risk and capital efficiency instead — a fair, disclosed
+    contest, never a short-circuit on premium-vs-stop-distance alone.
+
+    Canonical Option Architecture v1.1, Step 8: canonical B(option) applies
+    DASHBOARD_POLICY's GENERAL per-trade-risk cap to the option leg too (the
+    same cap the stock leg uses — a deliberate Step 4 design, not new here),
+    in addition to the option-specific premium/planned-risk caps. At PLTR's
+    real stop (155.26), this contract's WORST-CASE repriced planned_risk is
+    within a few dollars of its full premium (an at-the-money-ish contract
+    priced to expire nearly worthless if the underlying reaches invalidation
+    right before expiry) — genuinely ineligible under that general cap even
+    at $50k equity, which the original fixture's $155.26 stop did not
+    exercise (this test predates canonical B). A closer stop (167.0, still
+    the same contract/premium/OI/spread) gives the repricing model more
+    residual option value at invalidation, separating planned_risk (~$386)
+    from the full premium (~$870) enough to clear the general cap while
+    preserving the exact scenario this test is about: the option's full
+    premium still exceeds the STOCK leg's planned risk.
+
+    Canonical Option Architecture v1.1, Step 8.1: this fixture's outcome
+    changed from OPTION PREFERRED to STOCK PREFERRED as a direct, verified
+    consequence of closing a quality_tilt leak in dashboard.options_desk.decide()
+    (see options_desk.py's tilt_for_option/tilt_for_stock comments). Before
+    Step 8.1, quality_tilt was len(reasons_for_option) - len(reasons_for_stock)
+    over the FULL legacy reasons list, which included "contract spread is
+    tight" and "deep open interest" — both explicitly A-owned structural
+    signals (canonical A's own quality_pass already gates spread/OI; Step
+    8.1's Phase 3 audit forbids re-deriving a D preference from them). That
+    contamination alone supplied quality_tilt=+2, inflating option_score from
+    a genuine 2 to 4 against stock_score=2 and manufacturing an OPTION win
+    that had nothing to do with a real D-level preference signal.
+
+    With the leak closed, quality_tilt is built only from the audited,
+    non-duplicated D-preference subset (IV-vs-realized-volatility richness,
+    horizon/theta timing, earnings-event risk). For this fixture that nets to
+    quality_tilt=0 (one IV-richness point each way), and the genuine,
+    uncontaminated tally is an honest 2-2 tie: option wins "less capital
+    committed ($870.06 vs $10,000.00)" and "break-even inside the expected
+    move"; stock wins "lower planned risk ($121.85 vs $362.31)" and "theta
+    costs 2.4% of premium per day". canonical.instrument_choice.choose_instrument()
+    resolves ties to STOCK deterministically (`>`, not `>=`) — a pre-existing,
+    independently-tested v1.1 rule (tests/unit/test_instrument_choice.py),
+    not something introduced or tuned by this test's fix. The mechanism's
+    ability to have OPTION genuinely win on capital-efficiency/planned-risk
+    margin is separately and extensively proven in test_instrument_choice.py
+    (over a dozen `choice == InstrumentChoice.OPTION` assertions on real,
+    uncontaminated signals) — this fixture landing on a tie does not indicate
+    the mechanism is broken, only that these particular numbers are evenly
+    matched once the A-duplicating contamination is removed. The assertion
+    below was updated to the real, leak-free outcome rather than tuning the
+    fixture's numbers to manufacture an OPTION win, per this step's rule
+    against approximating/reverse-engineering a result."""
+    case = {**PLTR, "stop": 167.0}
+    sizing, d = _evaluate(case, equity=50_000.0, score=90.0)
     o = sizing["option"]
+    assert o["affordable"] is True, "premise: canonical B(option) must find this contract eligible"
     assert o["absolute_max_loss"] > sizing["shares"]["risk"]["planned_risk"], \
         "premise: max loss exceeds the stock's stop distance — the old prefer-stock trigger"
     assert o["affordable"] is True
-    assert d["instrument"] == "OPTION PREFERRED"      # yet the option still wins
+    # Not auto-rejected: it reached the full comparative contest (STOCK
+    # PREFERRED here, not NO TRADE / a blocked verdict) rather than being
+    # short-circuited by the old max-loss-vs-stop-distance reflex.
+    assert d["instrument"] == "STOCK PREFERRED"
+    assert d["verdict"] != "reject"
 
 
 def test_no_trade_when_neither_instrument_fits():

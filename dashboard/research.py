@@ -29,6 +29,50 @@ for _p in ("src", "lab", "automation"):
     sys.path.insert(0, os.path.join(_HERE, "..", _p))
 sys.path.insert(0, _HERE)  # so `security_master` imports whether run as dashboard/ cwd or not
 
+# ── Canonical Option Architecture v1.1, Step 9 ───────────────────────────────
+# Pipeline 1 (Terminal Decision: /api/symbol/overview -> overview() ->
+# _overview_compute() -> decision_engine.evaluate()) migration. These are the
+# SOLE authority for option structural quality, account-fit eligibility,
+# instrument choice, final sizing and executable status for the Terminal
+# route — see _attach_canonical() below. decision_engine's own directional
+# verdict (Layer C: 8 hard + 4 soft gates) is UNCHANGED and untouched; only
+# its legacy option overlay (`_grade_option_chain()`, called only when
+# `evaluate_option=True`) is bypassed for THIS caller by passing
+# `evaluate_option=False` — evaluate()'s own default stays True, so every
+# other caller (Pipeline 3 / lab/paper, tests that call evaluate() directly)
+# is completely unaffected. Aliased with a `_canon_` prefix throughout this
+# module because `canonical()` (symbol normalization, above) already owns
+# the bare name. Nothing in canonical/ imports anything from dashboard/ —
+# the dependency direction stays dashboard -> canonical, never the reverse.
+_ROOT = os.path.dirname(_HERE)
+if _ROOT not in sys.path:
+    sys.path.insert(0, _ROOT)
+import dataclasses as _dc
+from canonical.contract_quality import (
+    ContractQualityResult, evaluate_contract_quality as _canon_evaluate_contract_quality,
+)
+from canonical.risk_policy import DASHBOARD_POLICY as _CANON_DASHBOARD_POLICY
+from canonical.account_fit import (
+    AccountFitResult,
+    stock_account_fit as _canon_stock_account_fit,
+    option_account_fit as _canon_option_account_fit,
+)
+from canonical.instrument_choice import (
+    InstrumentChoice as _CanonInstrumentChoice, OptionEdge as _CanonOptionEdge,
+    choose_instrument as _canon_choose_instrument,
+)
+from canonical.sizing import size_instrument as _canon_size_instrument
+from canonical.executable import (
+    evaluate_stock_executable as _canon_stock_executable,
+    evaluate_option_executable as _canon_option_executable,
+)
+
+_PIPELINE1_INSTRUMENT_LABEL = {
+    _CanonInstrumentChoice.OPTION: "OPTION PREFERRED",
+    _CanonInstrumentChoice.STOCK: "STOCK PREFERRED",
+    _CanonInstrumentChoice.NO_TRADE: "NO TRADE",
+}
+
 import security_master as _SM  # local security-master service (universal search)
 try:
     import model_registry as _MR  # provider-independent sentiment/model registry
@@ -832,7 +876,16 @@ def _overview_compute(sym: str, direction: str, balance: float) -> Dict[str, Any
     # Pass the RIGHT exchange from the security master so the engine hits the
     # correct TradingView venue once, instead of a blind NASDAQ->NYSE double-hit.
     exch = (_SM.lookup(sym) or {}).get("exchange") or "NASDAQ"
-    r = decision_engine.evaluate(sym, exch, direction, balance, evaluate_option=True)
+    # Canonical Option Architecture v1.1, Step 9: the legacy option overlay
+    # (_grade_option_chain(), fed by ss._pick_option_idea()) is disabled for
+    # THIS caller only — evaluate()'s own default (evaluate_option=True)
+    # stays untouched for every other caller (Pipeline 3, tests). Layer C's
+    # directional verdict (price/stop/target, the 8 hard + 4 soft gates,
+    # quality/EV/disagreement/freshness) is IDENTICAL either way — none of
+    # that computation reads `opt`/`option_block`. A/B/D/E/executable are
+    # built independently below, from the SAME option candidate
+    # (ss._pick_option_idea(), unchanged) fetched here instead.
+    r = decision_engine.evaluate(sym, exch, direction, balance, evaluate_option=False)
     if r.get("decision") == "REJECT" and "reason" in r and "price" not in r:
         return {"symbol": sym, "state": "error", "reason": r.get("reason")}
     r["state"] = "ok"
@@ -840,7 +893,222 @@ def _overview_compute(sym: str, direction: str, balance: float) -> Dict[str, Any
     r["what_changed"] = _what_changed(sym, direction, r)
     r["provenance"] = _stamp("decision_engine (Yahoo/TV/Finnhub/EDGAR/FRED/StockTwits)",
                              f"ov:{sym}:{direction}")
+    _attach_canonical_pipeline1(r, decision_engine=decision_engine, direction=direction, balance=balance)
     return r
+
+
+# ── Canonical A/B/D/E/executable for the Terminal route (Step 9) ────────────
+
+def _attach_canonical_pipeline1(r: Dict[str, Any], *, decision_engine, direction: str,
+                                balance: float) -> None:
+    """Mutates `r` (decision_engine.evaluate()'s own result dict, already
+    stamped with scenarios/provenance) in place, adding the canonical A/B/D/E/
+    executable block. Pure addition/relabeling — never removes an existing
+    key, so a front-end that only reads the pre-Step-9 shape keeps working.
+
+    Guards on `price`/`stop` being present (they are absent from
+    decision_engine._early_reject()'s minimal dict — a halted ticker or a
+    dead provider) since every canonical call below needs real levels; in
+    that case the canonical block is simply omitted, matching Phase 3's
+    "genuinely missing state -> fail closed for the affected leg, preserve
+    C's directional result" rule (there IS no directional result to preserve
+    differently here — `r["decision"]` is already REJECT).
+    """
+    price, stop = r.get("price"), r.get("stop")
+    if price is None or stop is None:
+        return
+    setup_tradeable = r.get("decision") == "TRADEABLE"
+    sym = r.get("symbol")
+
+    # ---- B(stock): DASHBOARD_POLICY, Terminal's OWN real account inputs ----
+    # Terminal has no live broker connection (unlike Pipeline 2's Robinhood
+    # read) — its only account-state input is the caller-supplied `balance`
+    # parameter (a real, explicit value the caller controls; NOT a fabricated
+    # fallback introduced by this migration — /api/symbol/overview's $500
+    # default predates Step 9 and is unchanged here). Terminal tracks no
+    # positions/sectors, so open_positions=0 is the function's own documented
+    # neutral default, not a guess.
+    canon_stock_fit: Optional[AccountFitResult] = _canon_stock_account_fit(
+        policy=_CANON_DASHBOARD_POLICY, equity=balance, entry=price, stop=stop,
+        buying_power=balance, open_positions=0)
+
+    # ---- candidate generation (desk-owned) vs structural authority (A) -----
+    # ss._pick_option_idea() is UNCHANGED — it still walks strikes/expiries
+    # and picks the closest-to-money, capital-fitting, liquid candidate.
+    # decision_engine no longer calls it internally for this route
+    # (evaluate_option=False above); it is called here instead, once, and
+    # its own `tradeable`/`grade` verdict (from options_grading.grade_contract(),
+    # shared with /api/symbol/options) is READ ONLY for the diagnostic block
+    # below — never for quality_pass.
+    opt = decision_engine.ss._pick_option_idea(sym, round(price, 2), balance, direction)
+
+    canon_quality: Optional[ContractQualityResult] = None
+    canon_option_fit: Optional[AccountFitResult] = None
+    option_block: Optional[Dict[str, Any]] = None
+    if opt:
+        try:
+            session_open = __import__("market_regime").session_state()["state"] == "open"
+        except Exception:
+            session_open = True
+        # Terminal's option-chain source (tradingview_mcp...options_service.
+        # get_options_chain(), and options_grading.grade_contract() which
+        # wraps it) carries NO per-quote timestamp today — verified by
+        # inspection, not assumed. `opt.get("quote_timestamp")` therefore
+        # resolves to None in production right now, and canonical A hard-
+        # fails a missing timestamp by design (freshness it cannot verify is
+        # not asserted as fresh) — the honest, fail-closed choice, not a
+        # bug; a genuine Terminal data-source gap, reported in the Step 9
+        # migration report, not fabricated to pass. Reading the key (rather
+        # than hardcoding None) costs nothing today and means this starts
+        # working automatically the moment the data source adds one.
+        canon_quality = _canon_evaluate_contract_quality(
+            strike=opt.get("strike"), underlying=price, side=opt.get("option_type") or "CALL",
+            bid=opt.get("bid"), ask=opt.get("ask"), volume=opt.get("volume"),
+            open_interest=opt.get("open_interest"), implied_volatility=opt.get("implied_volatility"),
+            delta=opt.get("delta"), dte=opt.get("days_to_expiry"),
+            quote_timestamp=opt.get("quote_timestamp"), session_open=session_open)
+
+        atr_pct = ((r.get("gates") or {}).get("volatility") or {}).get("atr_pct")
+        if canon_quality is not None:
+            canon_option_fit = _canon_option_account_fit(
+                policy=_CANON_DASHBOARD_POLICY, equity=balance, contract_quality=canon_quality,
+                side=opt.get("option_type") or "CALL", limit_price=opt.get("premium") or 0.0,
+                spot=price, stop=stop, strike=opt.get("strike") or 0.0,
+                iv=opt.get("implied_volatility"), dte=opt.get("days_to_expiry"),
+                atr_pct=atr_pct, spread_dollars=opt.get("spread_dollars"),
+                buying_power=balance)
+
+        # ---- genuine preference signals only (OptionEdge / Phase 10) -------
+        # Reuses decision_engine's OWN pure EV/liquidity helpers (not a new
+        # formula) on the real candidate, since evaluate_option=False means
+        # evaluate() never built this itself for this call.
+        dte = opt.get("days_to_expiry") or 7
+        liq_opt = decision_engine._gate_liquidity(price, opt)
+        spr = (liq_opt.get("spread_pct") or 0) / 100
+        theta_drag = min(.25, (7.0 / max(dte, 1)) * .10)
+        p_direction = r.get("p_direction") or 0.5
+        risk_ps = abs(price - stop)
+        reward_ps = abs((r.get("target") or price) - price)
+        p_trade = round(max(.1, p_direction - spr * .5 - theta_drag), 3)
+        prem = opt.get("premium") or 0.0
+        opt_profit = prem * (reward_ps / max(risk_ps, .01)) * .5
+        ev_opt = decision_engine._expected_value(p_trade, opt_profit, prem, prem * spr)
+
+        expected_move_pct = (atr_pct * (dte ** 0.5)) if atr_pct else None
+        breakeven = opt.get("breakeven")
+        move_to_breakeven_pct = (abs(breakeven - price) / price * 100) if (breakeven and price) else None
+        break_even_within_move = (
+            (move_to_breakeven_pct <= expected_move_pct)
+            if (move_to_breakeven_pct is not None and expected_move_pct is not None) else None)
+
+        # theta_pct_per_day intentionally NOT mapped: decision_engine's own
+        # `theta_drag` is a probability-discount fraction over the WHOLE
+        # trade life (0-0.25), not a "% of premium per day" figure — a
+        # differently-scaled quantity than canonical D's OptionEdge field of
+        # the same conceptual name. Mapping it directly would be a silent
+        # unit mismatch, not a genuine signal; left None rather than forced.
+        edge = _CanonOptionEdge(
+            theta_pct_per_day=None,
+            break_even_within_expected_move=break_even_within_move,
+            ev_positive=(ev_opt > 0))
+        option_block = {
+            "premium": prem, "ev_per_contract": round(ev_opt * 100, 2),
+            "verdict": "structure OK" if ev_opt > 0 else "AVOID option — take the stock",
+            "bid": opt.get("bid"), "ask": opt.get("ask"), "spread_pct": opt.get("spread_pct"),
+            "strike": opt.get("strike"), "expiry": opt.get("expiry"),
+            "option_type": opt.get("option_type"), "days_to_expiry": opt.get("days_to_expiry"),
+            "volume": opt.get("volume"), "open_interest": opt.get("open_interest"),
+            "breakeven": breakeven, "expected_move_pct": expected_move_pct,
+            "greeks": {"delta": opt.get("delta"), "iv": opt.get("implied_volatility")},
+            # Timestamp provenance (Step 9.1) — moves WITH the candidate from
+            # options_service.py/strategy_service.py, never computed here.
+            # `last_trade_timestamp` is exposed for context but is NOT what
+            # canonical A used for freshness (see the module-level note in
+            # options_service.py for why last-trade != quote-observation).
+            "quote_timestamp": opt.get("quote_timestamp"),
+            "quote_timestamp_source": opt.get("quote_timestamp_source"),
+            "last_trade_timestamp": opt.get("last_trade_timestamp"),
+        }
+    else:
+        # No candidate at all (e.g. no usable chain) — a genuine, non-fabricated
+        # "unknown" state. quality_tilt=0 below is the Phase 10-preferred
+        # fallback: Terminal has no clean, non-duplicated D-preference tally
+        # (unlike Pipeline 2's reasons_for_option/reasons_for_stock text),
+        # so this is honest rather than reconstructing legacy mixed scoring.
+        edge = _CanonOptionEdge()
+
+    canon_choice = _canon_choose_instrument(
+        setup_tradeable=setup_tradeable, stock_account_fit=canon_stock_fit,
+        option_account_fit=canon_option_fit, contract_quality=canon_quality,
+        option_edge=edge, quality_tilt=0)
+
+    # ---- E: legacy conviction-scaled shares as a clamped TARGET only -------
+    # r["suggested_shares"] is decision_engine's genuine uncertainty-scaled
+    # conviction size (risk_budget * max(0.3, agreement*data_conf)) — a real
+    # strategy signal, not duplicated risk math (canonical/sizing.py's own
+    # docstring anticipates exactly this migration). It is never itself the
+    # final quantity: canonical E clamps it to B's ceiling. It is meaningless
+    # for an OPTION selection (a share count, not a contract count), so it is
+    # only passed when D actually chose STOCK.
+    target_quantity = (r.get("suggested_shares")
+                       if canon_choice.choice == _CanonInstrumentChoice.STOCK else None)
+    canon_sizing = _canon_size_instrument(
+        choice=canon_choice, stock_account_fit=canon_stock_fit, option_account_fit=canon_option_fit,
+        target_quantity=target_quantity)
+
+    canon_stock_exec = _canon_stock_executable(
+        setup_tradeable=setup_tradeable, account_fit=canon_stock_fit, choice=canon_choice,
+        sizing=canon_sizing, execution_policy_allows=True)
+    # Terminal has no broker connection and no shadow-mode concept at all —
+    # shadow_only=False (Phase 13); execution_policy_allows=True means only
+    # "nothing here explicitly vetoes it", never an invented broker permission.
+    canon_option_exec = _canon_option_executable(
+        setup_tradeable=setup_tradeable, contract_quality=canon_quality, account_fit=canon_option_fit,
+        choice=canon_choice, sizing=canon_sizing, execution_policy_allows=True, shadow_only=False)
+
+    # ---- output compatibility (Phase 14) -----------------------------------
+    # Legacy fields kept, relabeled where they could be mistaken for the
+    # canonical answer; nothing is deleted.
+    r["legacy_instrument_label"] = r.get("instrument")
+    r["instrument"] = _PIPELINE1_INSTRUMENT_LABEL[canon_choice.choice]
+    r["legacy_option_quality"] = r.get("option_quality")
+    r["option_quality"] = {
+        "quality_pass": bool(canon_quality and canon_quality.quality_pass),
+        "quality_score": canon_quality.score if canon_quality else None,
+        "quality_grade": canon_quality.grade if canon_quality else None,
+        "hard_failures": list(canon_quality.hard_failures) if canon_quality else [],
+        "warnings": list(canon_quality.warnings) if canon_quality else [],
+        "gradeable": canon_quality is not None,
+        # Freshness provenance (Step 9.1), so a reader can see WHY
+        # quality_pass is False without cross-referencing `canonical` —
+        # canon_quality's OWN freshness_status/quote_age_hours remain the
+        # authoritative source (this just surfaces them at the same level
+        # as the other structural fields above); quote_timestamp_source
+        # comes straight from the candidate, never fabricated here.
+        "quote_timestamp": opt.get("quote_timestamp") if opt else None,
+        "quote_timestamp_source": opt.get("quote_timestamp_source") if opt else None,
+        "quote_age_hours": canon_quality.quote_age_hours if canon_quality else None,
+        "freshness_status": canon_quality.freshness_status.value if canon_quality else None,
+    }
+    r["option"] = option_block
+    r["legacy_decision_sizing"] = {
+        "suggested_shares": r.get("suggested_shares"), "max_loss_usd": r.get("max_loss_usd"),
+        "role": "legacy_display_diagnostic_not_authoritative",
+    }
+    r["final_instrument"] = r["instrument"]
+    r["final_quantity"] = canon_sizing.quantity
+    r["stock_executable"] = canon_stock_exec.executable
+    r["option_executable"] = canon_option_exec.executable
+    r["canonical"] = {
+        "contract_quality": _dc.asdict(canon_quality) if canon_quality else None,
+        "stock_account_fit": _dc.asdict(canon_stock_fit) if canon_stock_fit else None,
+        "option_account_fit": _dc.asdict(canon_option_fit) if canon_option_fit else None,
+        "instrument_choice": _dc.asdict(canon_choice),
+        "sizing": _dc.asdict(canon_sizing),
+        "stock_executable": _dc.asdict(canon_stock_exec),
+        "option_executable": _dc.asdict(canon_option_exec),
+        "shadow": False,
+    }
 
 
 def _scenarios(r: Dict[str, Any]) -> Dict[str, Any]:
@@ -1369,35 +1637,109 @@ def fundamentals(sym: str) -> Dict[str, Any]:
     }
 
 
-# ── Price history (for charts) ───────────────────────────────────────────────
+# ── Price history (for charts + the paper scanner's candidate funnel) ───────
+# lab/providers.py's CATEGORIES["candles"] has always declared this category
+# as primary=yahoo, secondary=finnhub — this function is the one place that
+# category is actually served from, and until now it only ever implemented
+# the primary. Yahoo (via yfinance) is a single, occasionally-throttled
+# public endpoint with no SLA; a scan that depends on it exclusively goes
+# fully dark on every finalist the moment it's unavailable. The Finnhub
+# fallback only applies to DAILY resolution (interval == "1d") — the only
+# resolution the paper scanner/sector map/report actually consume; the
+# intraday chart ranges (1D/5D) stay Yahoo-only, matching how far the
+# existing "candles" category has ever been exercised.
 
 _RANGE = {"1D": ("5d", "5m"), "5D": ("5d", "30m"), "1M": ("1mo", "1d"),
           "3M": ("3mo", "1d"), "6M": ("6mo", "1d"), "YTD": ("ytd", "1d"),
           "1Y": ("1y", "1d")}
 
+# Finnhub candles take an explicit from/to window, not a yfinance-style
+# period string — approximate calendar-day lookbacks generous enough to
+# cover each period's trading days (weekends/holidays included).
+_FINNHUB_LOOKBACK_DAYS = {"1mo": 35, "3mo": 100, "6mo": 200, "ytd": 380, "1y": 380}
+
+
+def _validate_points(pts: Any) -> List[Dict[str, Any]]:
+    """Reject malformed points rather than let them reach strategy math:
+    every point must carry a real timestamp and four positive OHLC values.
+    Never raises — an unusable point is just dropped. Accepts any iterable
+    (a list or a lazy generator — both callers pass a generator)."""
+    try:
+        pts = list(pts)
+    except TypeError:
+        return []
+    out = []
+    for p in pts:
+        if not isinstance(p, dict):
+            continue
+        try:
+            t, o, h, l, c = p["t"], float(p["o"]), float(p["h"]), float(p["l"]), float(p["c"])
+        except (KeyError, TypeError, ValueError):
+            continue
+        if not t or o <= 0 or h <= 0 or l <= 0 or c <= 0 or h < l:
+            continue
+        out.append({"t": t, "o": round(o, 2), "h": round(h, 2), "l": round(l, 2),
+                    "c": round(c, 2), "v": int(p.get("v") or 0)})
+    return out
+
+
+def _yahoo_hist(sym: str, period: str, interval: str) -> List[Dict[str, Any]]:
+    import yfinance as yf
+    df = yf.Ticker(to_yahoo_any(sym)).history(period=period, interval=interval)
+    return _validate_points(
+        {"t": i.isoformat(), "c": r["Close"], "o": r["Open"], "h": r["High"],
+         "l": r["Low"], "v": r["Volume"]}
+        for i, r in df.iterrows() if r["Close"] == r["Close"])  # drop NaN rows
+
+
+def _finnhub_hist(sym: str, period: str) -> List[Dict[str, Any]]:
+    days = _FINNHUB_LOOKBACK_DAYS.get(period, 100)
+    import finnhub_data
+    r = finnhub_data.candles(to_finnhub(sym), days=days, resolution="D")
+    if not isinstance(r, dict) or r.get("error") or not r.get("t"):
+        raise RuntimeError(r.get("error") if isinstance(r, dict) else "no candles")
+    raw = ({"t": datetime.fromtimestamp(t, tz=timezone.utc).isoformat(),
+            "o": o, "h": h, "l": lo, "c": c, "v": v}
+           for t, o, h, lo, c, v in zip(r["t"], r["o"], r["h"], r["l"], r["c"], r["v"]))
+    return _validate_points(raw)
+
 
 def price_history(sym: str, rng: str = "3M") -> Dict[str, Any]:
+    """Yahoo primary, Finnhub secondary for daily bars (lab/providers.py's
+    documented "candles" category, primary=yahoo/secondary=finnhub — this is
+    the one place that category is actually served from). `_box()` runs the
+    fetch on a timeout and swallows its own exceptions into `None` rather
+    than re-raising (see its docstring), so `_guard()`'s status here can't
+    distinguish "throttled" from "erroed" from "no data" — only whether
+    real points came back can. `tried` reports that honestly instead of
+    claiming a specific failure reason `_guard` was never able to observe.
+    """
     sym = canonical(sym)
     period, interval = _RANGE.get(rng.upper(), ("3mo", "1d"))
+    hist_key = f"hist:{sym}:{rng}"
 
-    def _hist():
-        import yfinance as yf
-        df = yf.Ticker(to_yahoo_any(sym)).history(period=period, interval=interval)
-        pts = [{"t": i.isoformat(), "c": round(float(r["Close"]), 2),
-                "o": round(float(r["Open"]), 2), "h": round(float(r["High"]), 2),
-                "l": round(float(r["Low"]), 2), "v": int(r["Volume"])}
-               for i, r in df.iterrows() if r["Close"] == r["Close"]]  # drop NaN
-        return pts
+    pts, _ = _guard("yahoo", lambda: _box(
+        lambda: cached(hist_key, 300, lambda: _yahoo_hist(sym, period, interval)), 15))
+    source = "Yahoo daily history"
+    tried = [f"yahoo:{'ok' if pts else 'unavailable'}"]
 
-    pts, st = _guard("yahoo", lambda: _box(lambda: cached(f"hist:{sym}:{rng}", 300, _hist), 15))
-    if st != "ok" or not pts:
-        return {"symbol": sym, "range": rng, "state": st if st != "ok" else "empty",
-                "reason": "no price history from Yahoo"}
+    if not pts and interval == "1d":
+        fb_key = f"histfb:{sym}:{rng}"
+        fb_pts, _ = _guard("finnhub", lambda: _box(
+            lambda: cached(fb_key, 300, lambda: _finnhub_hist(sym, period)), 15))
+        tried.append(f"finnhub:{'ok' if fb_pts else 'unavailable'}")
+        if fb_pts:
+            pts, hist_key = fb_pts, fb_key
+            source = "Finnhub daily history (Yahoo fallback)"
+
+    if not pts:
+        return {"symbol": sym, "range": rng, "state": "empty",
+                "reason": "no price history from any provider", "tried": tried}
     first, last = pts[0]["c"], pts[-1]["c"]
     return {"symbol": sym, "range": rng, "state": "ok", "points": pts,
             "change_pct": round((last - first) / first * 100, 2) if first else None,
-            "as_of": pts[-1]["t"], "interval": interval,
-            "provenance": _stamp("Yahoo daily history", f"hist:{sym}:{rng}")}
+            "as_of": pts[-1]["t"], "interval": interval, "tried": tried,
+            "provenance": _stamp(source, hist_key)}
 
 
 # ── Comparison workspace (2-8 securities, one normalized schema) ─────────────

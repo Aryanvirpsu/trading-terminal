@@ -1,0 +1,261 @@
+name: Paper Trading — Daily Automated Run
+
+# Runs the existing paper-trading pipeline (automation/paper_scheduler.py) on a
+# schedule, entirely on GitHub's infrastructure — no dependency on any local
+# machine being on. This is IN SCOPE under the active build freeze (see
+# CLAUDE.md): it only *runs* the existing, frozen pipeline, it never edits it.
+#
+# The ledger lives in a GitHub Actions cache (never committed to git — see
+# PAPER_BASELINE.md's "no account DBs are ever tracked" rule), keyed so each
+# run picks up where the previous one left off, with a same-day artifact
+# fallback if the cache was ever evicted (GitHub drops caches unused 7+ days).
+# It is a SEPARATE ledger from the one on the developer's local machine at
+# ~/.tradingview_mcp_data — the two are not synced (see the "dual paper-ledger
+# strategy" — Case 1 cloud / Case 2 local).
+#
+# Two cron lines cover both halves of the year; a guard step skips the one
+# that doesn't currently land on 9:30am America/New_York (and skips US market
+# holidays, computed at runtime — no yearly date list to maintain), so this
+# keeps firing at the right time with no manual edits.
+on:
+  schedule:
+    - cron: "30 13 * * 1-5"   # 9:30am ET while EDT (UTC-4) is in effect
+    - cron: "30 14 * * 1-5"   # 9:30am ET while EST (UTC-5) is in effect
+  workflow_dispatch: {}         # manual "run now" button in the Actions tab
+
+permissions:
+  contents: write
+  issues: write
+  actions: read
+
+concurrency:
+  group: paper-trading-ledger
+  cancel-in-progress: false
+
+jobs:
+  run-paper-day:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Only proceed at ~9:30am ET on a trading day (DST + holiday guard)
+        id: gate
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "run=true" >> "$GITHUB_OUTPUT"
+            echo "Manual run — skipping the time/holiday guard."
+            exit 0
+          fi
+          python3 - <<'PYEOF'
+          import datetime as dt
+          import os
+          from zoneinfo import ZoneInfo
+
+          MON = 0
+
+          def nth_weekday(year, month, weekday, n):
+              d = dt.date(year, month, 1)
+              count = 0
+              while True:
+                  if d.weekday() == weekday:
+                      count += 1
+                      if count == n:
+                          return d
+                  d += dt.timedelta(days=1)
+
+          def last_weekday(year, month, weekday):
+              d = (dt.date(year, month, 28) + dt.timedelta(days=7))
+              d -= dt.timedelta(days=d.day)  # last day of `month`
+              while d.weekday() != weekday:
+                  d -= dt.timedelta(days=1)
+              return d
+
+          def observed(d):
+              if d.weekday() == 5:
+                  return d - dt.timedelta(days=1)
+              if d.weekday() == 6:
+                  return d + dt.timedelta(days=1)
+              return d
+
+          def easter_sunday(year):
+              a = year % 19
+              b, c = divmod(year, 100)
+              d, e = divmod(b, 4)
+              f = (b + 8) // 25
+              g = (b - f + 1) // 3
+              h = (19 * a + b - d - g + 15) % 30
+              i, k = divmod(c, 4)
+              l = (32 + 2 * e + 2 * i - h - k) % 7
+              m = (a + 11 * h + 22 * l) // 451
+              month, day = divmod(h + l - 7 * m + 114, 31)
+              return dt.date(year, month, day + 1)
+
+          def nyse_holidays(year):
+              return {
+                  observed(dt.date(year, 1, 1)),           # New Year's Day
+                  nth_weekday(year, 1, MON, 3),             # MLK Day
+                  nth_weekday(year, 2, MON, 3),             # Presidents' Day
+                  easter_sunday(year) - dt.timedelta(days=2),  # Good Friday
+                  last_weekday(year, 5, MON),               # Memorial Day
+                  observed(dt.date(year, 6, 19)),           # Juneteenth
+                  observed(dt.date(year, 7, 4)),            # Independence Day
+                  nth_weekday(year, 9, MON, 1),             # Labor Day
+                  nth_weekday(year, 11, 3, 4),              # Thanksgiving (Thu=3)
+                  observed(dt.date(year, 12, 25)),          # Christmas
+              }
+
+          now = dt.datetime.now(ZoneInfo("America/New_York"))
+          today = now.date()
+          hm = now.hour * 100 + now.minute
+          in_window = 920 <= hm <= 940
+          # Span adjacent years too: an observed holiday can land on Dec 31
+          # (e.g. Jan 1 falling on a Saturday shifts observance to the prior
+          # Friday, which is Dec 31 of the previous year).
+          holidays = (nyse_holidays(today.year - 1)
+                      | nyse_holidays(today.year)
+                      | nyse_holidays(today.year + 1))
+          is_holiday = today in holidays
+
+          print(f"America/New_York now: {now.isoformat()} (hm={hm})")
+          print(f"in 9:20-9:40 window: {in_window}; NYSE holiday: {is_holiday}")
+
+          run = in_window and not is_holiday
+          if is_holiday:
+              reason = f"market holiday ({today.isoformat()})"
+          elif not in_window:
+              reason = "not this cron's DST offset"
+          else:
+              reason = "ok"
+          print(f"run={'true' if run else 'false'} reason={reason}")
+
+          # Only key=value lines belong in $GITHUB_OUTPUT — diagnostics above
+          # go to the regular job log instead.
+          with open(os.environ["GITHUB_OUTPUT"], "a") as fh:
+              fh.write(f"run={'true' if run else 'false'}\n")
+              fh.write(f"reason={reason}\n")
+          PYEOF
+          cat "$GITHUB_OUTPUT"
+
+      - uses: actions/checkout@v4
+        if: steps.gate.outputs.run == 'true'
+
+      - uses: actions/setup-python@v5
+        if: steps.gate.outputs.run == 'true'
+        with:
+          python-version: "3.11"
+
+      - name: Compute today's ledger cache key
+        if: steps.gate.outputs.run == 'true'
+        id: cachekey
+        run: echo "key=paper-ledger-$(date -u +%Y%m%d-%H%M%S)" >> "$GITHUB_OUTPUT"
+
+      - name: Restore paper ledger from the most recent run
+        if: steps.gate.outputs.run == 'true'
+        id: cacherestore
+        uses: actions/cache/restore@v4
+        with:
+          path: ${{ runner.temp }}/tradingview_mcp_data
+          key: ${{ steps.cachekey.outputs.key }}
+          restore-keys: |
+            paper-ledger-
+
+      - name: Fall back to the artifact backup if the cache was evicted
+        if: steps.gate.outputs.run == 'true' && steps.cacherestore.outputs.cache-hit != 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          mkdir -p "${{ runner.temp }}/tradingview_mcp_data/paper"
+          if ls "${{ runner.temp }}/tradingview_mcp_data/paper"/*.db >/dev/null 2>&1; then
+            echo "Ledger already present — no fallback needed."
+            exit 0
+          fi
+          echo "No cache hit — looking for the most recent artifact backup..."
+          run_id=$(gh run list --workflow paper-trading-schedule.yml --status success \
+            --json databaseId --jq '.[0].databaseId' 2>/dev/null || true)
+          if [ -z "$run_id" ]; then
+            echo "No prior successful run found — starting fresh (expected on the very first run)."
+            exit 0
+          fi
+          art_name=$(gh api "repos/${{ github.repository }}/actions/runs/$run_id/artifacts" \
+            --jq '.artifacts[] | select(.name | startswith("paper-ledger-db-")) | .name' | head -1 || true)
+          if [ -z "$art_name" ]; then
+            echo "Most recent prior run ($run_id) has no ledger artifact — starting fresh."
+            exit 0
+          fi
+          echo "Restoring ledger from artifact '$art_name' (run $run_id)"
+          gh run download "$run_id" -n "$art_name" -D "${{ runner.temp }}/tradingview_mcp_data/paper"
+
+      - name: Install project
+        if: steps.gate.outputs.run == 'true'
+        run: python -m pip install -e .
+
+      - name: Run today's paper-trading session (premarket + hours + postmarket)
+        if: steps.gate.outputs.run == 'true'
+        env:
+          PAPER_DATA_DIR: ${{ runner.temp }}/tradingview_mcp_data/paper
+          # Optional data-provider keys — no-op if the secret isn't set. Add these
+          # under Settings > Secrets and variables > Actions if you have keys, to
+          # reduce rate-limiting on GitHub's shared runner IPs.
+          FINNHUB_API_KEY: ${{ secrets.FINNHUB_API_KEY }}
+          FRED_API_KEY: ${{ secrets.FRED_API_KEY }}
+          ALPHAVANTAGE_API_KEY: ${{ secrets.ALPHAVANTAGE_API_KEY }}
+        run: python automation/paper_scheduler.py all
+
+      - name: Save paper ledger for tomorrow
+        if: steps.gate.outputs.run == 'true' && always()
+        uses: actions/cache/save@v4
+        with:
+          path: ${{ runner.temp }}/tradingview_mcp_data
+          key: ${{ steps.cachekey.outputs.key }}
+
+      - name: Back up the raw ledger DB (in case the cache is ever evicted)
+        if: steps.gate.outputs.run == 'true' && always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: paper-ledger-db-${{ github.run_number }}
+          path: ${{ runner.temp }}/tradingview_mcp_data/paper/*.db
+          retention-days: 90
+          if-no-files-found: ignore
+
+      - name: Archive today's report and commit it
+        if: steps.gate.outputs.run == 'true'
+        run: |
+          mkdir -p reports/paper
+          cp PAPER_DAILY_REPORT.md "reports/paper/$(date -u +%Y-%m-%d).md"
+          git config user.name "paper-trading-bot"
+          git config user.email "actions@github.com"
+          git add PAPER_DAILY_REPORT.md reports/paper/
+          if git diff --cached --quiet; then
+            echo "No report changes to commit."
+          else
+            git commit -m "Paper trading report: $(date -u +%Y-%m-%d) [skip ci]"
+            git push
+          fi
+
+      - name: Post today's report to the run summary
+        if: steps.gate.outputs.run == 'true' && always()
+        run: cat PAPER_DAILY_REPORT.md >> "$GITHUB_STEP_SUMMARY" || true
+
+      - name: File or update a failure issue
+        if: steps.gate.outputs.run == 'true' && failure()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          title="Cloud paper-trading run failed"
+          existing=$(gh issue list --search "in:title \"$title\"" --state open --json number --jq '.[0].number' || true)
+          body="Run failed: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          if [ -n "$existing" ]; then
+            gh issue comment "$existing" --body "$body"
+          else
+            gh issue create --title "$title" --body "$body"
+          fi
+
+      - name: Close any open failure issue after a clean run
+        if: steps.gate.outputs.run == 'true' && success()
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          title="Cloud paper-trading run failed"
+          existing=$(gh issue list --search "in:title \"$title\"" --state open --json number --jq '.[0].number' || true)
+          if [ -n "$existing" ]; then
+            gh issue comment "$existing" --body "Recovered — run succeeded: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+            gh issue close "$existing"
+          fi

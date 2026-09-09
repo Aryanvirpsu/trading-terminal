@@ -263,9 +263,38 @@ def _apply_fill_to_position(order: Dict[str, Any], res: fills.FillResult,
 def submit_entry(result: Dict[str, Any], quote: Quote, *, strategy: str,
                  sector: Optional[str] = None, industry: Optional[str] = None,
                  market_regime: Optional[str] = None, scanner_rank: Optional[int] = None,
-                 session_date: Optional[str] = None) -> Dict[str, Any]:
+                 session_date: Optional[str] = None,
+                 canonical_quantity: Optional[float] = None,
+                 canonical_planned_risk: Optional[float] = None,
+                 stock_executable: Optional[bool] = None) -> Dict[str, Any]:
     """Journal the signal, then execute ONLY if every precondition and risk check
-    passes. Returns what happened and why — a refusal is a first-class outcome."""
+    passes. Returns what happened and why — a refusal is a first-class outcome.
+
+    Canonical Option Architecture v1.1, Step 10: `canonical_quantity` (and
+    optionally `canonical_planned_risk`) let a caller that has already run
+    the canonical A/B/D/E/executable stack (lab/paper/canonical_bridge.py)
+    hand this function the AUTHORITATIVE final quantity directly — this
+    function then uses it EXACTLY as given, never recomputing or resizing it
+    via risk_mod.position_size(). `risk_mod.check_entry()` still runs
+    unconditionally below as pure defense-in-depth: it may BLOCK the
+    canonical quantity (a real, useful catch on state canonical B's snapshot
+    couldn't see — e.g. a position opened by another process between B's
+    read and this call) but it can never increase or rescale it — every
+    check_entry() call in this module receives numbers already fixed by
+    this point, and check_entry() itself only ever returns allow/block, it
+    has no resize path of its own (see lab/paper/risk.py — its signature
+    takes planned_risk/notional as INPUT, never computes them).
+
+    `stock_executable`, when `canonical_quantity` is given, must be True —
+    this is the hard "only stock_executable=True may reach the broker" gate
+    (Phase 13), enforced here even if a future caller forgets to check it
+    upstream.
+
+    Backward compatible: when `canonical_quantity` is None (every EXISTING
+    caller/test), behavior is 100% unchanged — this function still computes
+    its own quantity via risk_mod.position_size() below, exactly as before
+    Step 10.
+    """
     session_date = session_date or dt.date.today().isoformat()
     entry_range = result.get("entry_range") or []
     entry = entry_range[0] if entry_range else None
@@ -276,12 +305,34 @@ def submit_entry(result: Dict[str, Any], quote: Quote, *, strategy: str,
     # print. On a $500 cash account this is the difference between a trade being
     # affordable and being rejected, so it must not be approximated.
     fill_px = _expected_fill_price(result, quote)
-    sizing = (risk_mod.position_size(st["equity"], entry, stop, fill_price=fill_px,
-                                     buying_power=st["buying_power"])
-              if (entry and stop) else {"quantity": 0.0, "planned_risk": 0.0,
-                                        "notional": 0.0, "affordable": False,
-                                        "binding_constraint": "invalid levels"})
-    qty = sizing.get("quantity", 0.0)
+
+    if canonical_quantity is not None:
+        if not stock_executable:
+            sid = journal.record_signal(
+                result, strategy=strategy, sector=sector, industry=industry,
+                market_regime=market_regime, scanner_rank=scanner_rank,
+                quantity=canonical_quantity, planned_risk=canonical_planned_risk,
+                session_date=session_date)
+            db.audit("signal", sid, "not_executable",
+                     {"reason": "canonical stock_executable is not True",
+                      "canonical_quantity": canonical_quantity})
+            return {"executed": False, "signal_id": sid, "stage": "not_executable",
+                    "reasons": ["canonical stock_executable is not True — no broker call"],
+                    "sizing": {"quantity": canonical_quantity, "affordable": False,
+                              "binding_constraint": "not_executable"}}
+        qty = canonical_quantity
+        sizing = {"quantity": qty, "planned_risk": canonical_planned_risk or 0.0,
+                 "notional": round(qty * (fill_px or 0.0), 2), "affordable": qty > 0,
+                 "binding_constraint": "canonical_e", "share_price": fill_px,
+                 "capital_required": round(qty * (fill_px or 0.0), 2),
+                 "role": "canonical_authoritative"}
+    else:
+        sizing = (risk_mod.position_size(st["equity"], entry, stop, fill_price=fill_px,
+                                         buying_power=st["buying_power"])
+                  if (entry and stop) else {"quantity": 0.0, "planned_risk": 0.0,
+                                            "notional": 0.0, "affordable": False,
+                                            "binding_constraint": "invalid levels"})
+        qty = sizing.get("quantity", 0.0)
 
     sid = journal.record_signal(
         result, strategy=strategy, sector=sector, industry=industry,

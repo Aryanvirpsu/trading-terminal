@@ -36,6 +36,7 @@ import time
 import urllib.parse
 import urllib.request
 import urllib.error
+from datetime import datetime, timezone
 from typing import Optional, List, Dict, Any
 
 _TIMEOUT = 12
@@ -141,8 +142,75 @@ def _safe_round(value, ndigits: int = 4):
         return None
 
 
-def _normalize_contract(c: Dict[str, Any], side: str) -> Dict[str, Any]:
-    """Flatten a Yahoo option contract into the shape we return."""
+# ── Timestamp provenance (Canonical Option Architecture v1.1, Step 9.1) ─────
+# Yahoo's public options endpoint (verified by reading _normalize_contract's
+# raw `c` input and the chain payload's own `quote` block — not assumed)
+# exposes exactly two timestamp-shaped fields, with two DIFFERENT semantics
+# that must never be conflated:
+#
+#   c["lastTradeDate"]            LAST_TRADE_AT — per-CONTRACT, Unix seconds.
+#                                  When THIS strike/expiry last actually
+#                                  traded. A liquid contract's current bid/ask
+#                                  can be live while its last trade is old
+#                                  (nobody happened to cross the spread
+#                                  recently); an illiquid one can have a
+#                                  fresh trade and a stale, wide quote. NOT a
+#                                  quote-observation timestamp — never mapped
+#                                  to `quote_timestamp` (see
+#                                  test_option_chain_timestamp_provenance.py).
+#                                  Exposed separately, verbatim, as
+#                                  `last_trade_timestamp` — a real, useful,
+#                                  differently-scoped fact, not discarded.
+#
+#   quote.regularMarketTime       CHAIN_FETCHED_AT / PROVIDER_RESPONSE_AT for
+#   (chain-level, not per-contract) the UNDERLYING's own live quote — bundled
+#                                  once per HTTP response, in the SAME
+#                                  payload as every contract row it applies
+#                                  to (Yahoo's options endpoint returns the
+#                                  underlying quote object alongside the full
+#                                  chain in one atomic backend call). This
+#                                  repo already trusts this exact field as a
+#                                  genuine quote-observation timestamp
+#                                  elsewhere (dashboard/research.py's pooled
+#                                  quote layer: "the moment the quote is
+#                                  FOR", not a fetch/receipt time). Applied
+#                                  uniformly to every contract in a given
+#                                  response, this is Phase 3's tier-3
+#                                  "documented chain snapshot timestamp
+#                                  applying to every row" — the strongest tier
+#                                  this provider actually offers (there is no
+#                                  per-contract bid/ask observation timestamp
+#                                  at all). Passed in by the caller
+#                                  (get_options_chain() /
+#                                  get_unusual_options_activity()), which owns
+#                                  the `quote` block; never computed here from
+#                                  local fetch time.
+
+def _normalize_epoch_seconds_to_iso(value: Any) -> Optional[str]:
+    """Yahoo's `regularMarketTime`/`lastTradeDate` are Unix seconds — the
+    ONLY timestamp format actually observed on this endpoint (verified by
+    inspection, not a general-purpose parser for formats no provider here
+    uses). Deterministic, UTC-normalized, timezone-aware internally.
+    Invalid/unparseable/None -> None (unavailable), never a guess."""
+    if value is None:
+        return None
+    try:
+        return datetime.fromtimestamp(float(value), tz=timezone.utc).isoformat()
+    except (TypeError, ValueError, OSError, OverflowError):
+        return None
+
+
+def _normalize_contract(c: Dict[str, Any], side: str, *,
+                        quote_timestamp: Optional[str] = None,
+                        quote_timestamp_source: Optional[str] = None) -> Dict[str, Any]:
+    """Flatten a Yahoo option contract into the shape we return.
+
+    `quote_timestamp`/`quote_timestamp_source` are supplied by the caller
+    (the chain-level snapshot time — see the module-level provenance note
+    above) and applied verbatim; this function never invents one from local
+    time. `last_trade_timestamp` is this CONTRACT's own last-trade time,
+    kept separate — see the same note for why it is never substituted here.
+    """
     return {
         "contract_symbol": c.get("contractSymbol"),
         "side": side,  # 'call' or 'put'
@@ -155,6 +223,9 @@ def _normalize_contract(c: Dict[str, Any], side: str) -> Dict[str, Any]:
         "implied_volatility": _safe_round(c.get("impliedVolatility"), 4),
         "in_the_money": c.get("inTheMoney"),
         "expiration": _fmt_expiry(c.get("expiration")),
+        "last_trade_timestamp": _normalize_epoch_seconds_to_iso(c.get("lastTradeDate")),
+        "quote_timestamp": quote_timestamp,
+        "quote_timestamp_source": quote_timestamp_source,
     }
 
 
@@ -206,13 +277,25 @@ def get_options_chain(symbol: str, expiry: Optional[str] = None) -> dict:
             }
 
     # If a specific expiry was requested, re-fetch scoped to that timestamp.
+    # This is the path _pick_option_idea() actually uses (it always passes an
+    # explicit chosen_expiry) — re-pointing `underlying` at the RE-FETCHED
+    # response's own quote block (not the earlier, nearest-expiry one) means
+    # the snapshot timestamp below describes the response that actually
+    # produced these contract rows, not a stale prior one.
     if target_expiry_ts is not None:
         try:
             data = _fetch(f"{_BASE}/{sym}?date={target_expiry_ts}")
             chain = data["optionChain"]["result"][0]
+            underlying = chain.get("quote", {}) or underlying
         except (urllib.error.URLError, urllib.error.HTTPError,
                 json.JSONDecodeError, KeyError, IndexError) as e:
             return {"symbol": sym, "error": f"failed to fetch expiry: {e}"}
+
+    # Chain-snapshot timestamp (Step 9.1) — see the provenance note above
+    # _normalize_contract(). Computed ONCE per response, from the SAME
+    # payload as the contracts it is attached to; applied uniformly below.
+    snapshot_ts = _normalize_epoch_seconds_to_iso(underlying.get("regularMarketTime"))
+    snapshot_source = "chain_snapshot" if snapshot_ts else "unavailable"
 
     options_blocks = chain.get("options", []) or []
     if not options_blocks:
@@ -227,8 +310,12 @@ def get_options_chain(symbol: str, expiry: Optional[str] = None) -> dict:
         }
 
     block = options_blocks[0]
-    calls = [_normalize_contract(c, "call") for c in block.get("calls", [])]
-    puts = [_normalize_contract(p, "put") for p in block.get("puts", [])]
+    calls = [_normalize_contract(c, "call", quote_timestamp=snapshot_ts,
+                                 quote_timestamp_source=snapshot_source)
+            for c in block.get("calls", [])]
+    puts = [_normalize_contract(p, "put", quote_timestamp=snapshot_ts,
+                                quote_timestamp_source=snapshot_source)
+           for p in block.get("puts", [])]
 
     return {
         "symbol": sym,
@@ -242,6 +329,8 @@ def get_options_chain(symbol: str, expiry: Optional[str] = None) -> dict:
         "put_count": len(puts),
         "calls": calls,
         "puts": puts,
+        "quote_timestamp": snapshot_ts,
+        "quote_timestamp_source": snapshot_source,
         "source": "Yahoo Finance",
     }
 
@@ -307,21 +396,31 @@ def get_unusual_options_activity(
     for ts in expirations:
         try:
             d = _fetch(f"{_BASE}/{sym}?date={ts}")
-            blk = d["optionChain"]["result"][0]["options"][0]
+            result0 = d["optionChain"]["result"][0]
+            blk = result0["options"][0]
         except (urllib.error.URLError, urllib.error.HTTPError,
                 json.JSONDecodeError, KeyError, IndexError):
             # Skip a broken expiry rather than failing the whole call.
             continue
 
+        # Each expiry is its OWN re-fetch (own HTTP round-trip) — snapshot
+        # timestamp uses THIS response's own quote block, not the initial
+        # nearest-expiry one, same reasoning as get_options_chain() above.
+        iter_underlying = result0.get("quote", {}) or underlying
+        iter_ts = _normalize_epoch_seconds_to_iso(iter_underlying.get("regularMarketTime"))
+        iter_source = "chain_snapshot" if iter_ts else "unavailable"
+
         fetched_expiries.append(_fmt_expiry(ts))
         for c in blk.get("calls", []):
             v = c.get("volume") or 0
             total_call_vol += v
-            all_contracts.append(_normalize_contract(c, "call"))
+            all_contracts.append(_normalize_contract(c, "call", quote_timestamp=iter_ts,
+                                                      quote_timestamp_source=iter_source))
         for p in blk.get("puts", []):
             v = p.get("volume") or 0
             total_put_vol += v
-            all_contracts.append(_normalize_contract(p, "put"))
+            all_contracts.append(_normalize_contract(p, "put", quote_timestamp=iter_ts,
+                                                      quote_timestamp_source=iter_source))
 
     if not all_contracts:
         return {

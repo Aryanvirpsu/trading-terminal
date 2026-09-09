@@ -93,43 +93,49 @@ def _num(x) -> Optional[float]:
 
 
 # ── Black-Scholes (MODEL — only used when a provider gives no Greeks) ────────
+# Extracted to canonical/option_risk_math.py (Canonical Option Architecture
+# v1.1, Step 4.1) so canonical code never has to import this dashboard module
+# to reuse it — there is exactly ONE Black-Scholes implementation, imported
+# here, not redefined. Public names (bs_greeks, _norm_cdf, _norm_pdf) kept
+# bound in this module's namespace for full backward compatibility.
+from canonical.option_risk_math import bs_greeks, _norm_cdf, _norm_pdf  # noqa: E402,F401
 
-def _norm_cdf(x: float) -> float:
-    return 0.5 * (1.0 + math.erf(x / math.sqrt(2.0)))
+# ── Canonical Option Architecture v1.1, Step 8 ───────────────────────────────
+# Pipeline 2 (scanner -> options desk -> tracker) migration. These are the
+# SOLE authority for option structural quality, account-fit eligibility,
+# instrument choice, final sizing and executable status from here on — see
+# analyse_contract(), evaluate_candidate() and decide() below. Legacy
+# option_risk_mod (contract_eligibility, instrument_choice, portfolio_check)
+# and this module's own size_position()/analyse_contract() liquidity-gate
+# section remain, UNMODIFIED, for DISPLAY numbers and as parity diagnostics
+# only — see each function's own comments for exactly what still reads them.
+# Nothing in canonical/ imports anything from dashboard/ — the dependency
+# direction stays dashboard -> canonical, never the reverse.
+import dataclasses as _dc
+from canonical.contract_quality import (  # noqa: E402
+    ContractQualityResult, evaluate_contract_quality,
+    from_analyse_contract_shape as _cq_from_analyse_shape,
+)
+from canonical.risk_policy import DASHBOARD_POLICY  # noqa: E402
+from canonical.account_fit import (  # noqa: E402
+    AccountFitResult,
+    stock_account_fit as _canon_stock_account_fit,
+    option_account_fit as _canon_option_account_fit,
+)
+from canonical.instrument_choice import (  # noqa: E402
+    InstrumentChoice, OptionEdge, choose_instrument as _canon_choose_instrument,
+)
+from canonical.sizing import size_instrument as _canon_size_instrument  # noqa: E402
+from canonical.executable import (  # noqa: E402
+    evaluate_stock_executable as _canon_stock_executable,
+    evaluate_option_executable as _canon_option_executable,
+)
 
-
-def _norm_pdf(x: float) -> float:
-    return math.exp(-0.5 * x * x) / math.sqrt(2.0 * math.pi)
-
-
-def bs_greeks(spot: float, strike: float, iv: float, dte_days: float, side: str,
-              r: float = 0.042) -> Optional[Dict[str, Any]]:
-    """Black-Scholes Greeks. Returns None unless every input is usable. The result
-    is tagged `provenance: model` by the caller and must never be shown as observed."""
-    if not (spot and strike and iv and dte_days) or spot <= 0 or strike <= 0 or iv <= 0 or dte_days <= 0:
-        return None
-    T = dte_days / 365.0
-    try:
-        d1 = (math.log(spot / strike) + (r + 0.5 * iv * iv) * T) / (iv * math.sqrt(T))
-        d2 = d1 - iv * math.sqrt(T)
-    except (ValueError, ZeroDivisionError):
-        return None
-    disc = math.exp(-r * T)
-    call = side.upper().startswith("C")
-    delta = _norm_cdf(d1) if call else _norm_cdf(d1) - 1.0
-    gamma = _norm_pdf(d1) / (spot * iv * math.sqrt(T))
-    vega = spot * _norm_pdf(d1) * math.sqrt(T) / 100.0            # per 1 vol point
-    theta_year = (-spot * _norm_pdf(d1) * iv / (2 * math.sqrt(T))
-                  + (-r * strike * disc * _norm_cdf(d2) if call
-                     else r * strike * disc * _norm_cdf(-d2)))
-    price = (spot * _norm_cdf(d1) - strike * disc * _norm_cdf(d2)) if call else \
-            (strike * disc * _norm_cdf(-d2) - spot * _norm_cdf(-d1))
-    return {"delta": round(delta, 4), "gamma": round(gamma, 6),
-            "theta": round(theta_year / 365.0, 4), "vega": round(vega, 4),
-            "theoretical_price": round(price, 4),
-            "provenance": "model", "model": "black_scholes",
-            "inputs": {"spot": spot, "strike": strike, "iv": iv,
-                       "dte_days": dte_days, "risk_free_rate": r}}
+_INSTRUMENT_LABEL = {
+    InstrumentChoice.OPTION: "OPTION PREFERRED",
+    InstrumentChoice.STOCK: "STOCK PREFERRED",
+    InstrumentChoice.NO_TRADE: "NO TRADE",
+}
 
 
 # ── Robinhood chain ──────────────────────────────────────────────────────────
@@ -330,6 +336,25 @@ def analyse_contract(c: Dict[str, Any], *, spot: float, cfg: Dict[str, Any],
     else:
         out["otm_pct"] = None
         missing.append("moneyness")
+
+    # --- canonical Layer-A structural quality (Canonical Option Architecture
+    # v1.1, Step 8) — the AUTHORITATIVE structural verdict for Pipeline 2.
+    # Computed once, here, from the RAW contract `c` (never this function's
+    # own modeled delta or liquidity math below) so canonical's own OI/
+    # spread/DTE/freshness/Greeks-provenance/OTM rules decide `quality_pass`
+    # exactly once per contract. `out["tradeable"]` / `out["liquidity_failures"]`
+    # further down remain LEGACY DIAGNOSTIC fields only — kept for existing
+    # display/parity purposes — and must not gate canonical behavior anywhere
+    # downstream; evaluate_candidate()'s `passing` filter and decide() both
+    # read `quality_pass`, never `tradeable`.
+    cq = evaluate_contract_quality(
+        strike=strike, underlying=spot, side="CALL" if call else "PUT",
+        bid=bid, ask=ask, volume=c.get("volume"), open_interest=c.get("open_interest"),
+        implied_volatility=c.get("implied_volatility"), delta=c.get("delta"),
+        dte=dte, quote_timestamp=c.get("quote_timestamp"), session_open=session_open,
+        allow_model_greeks=cfg["allow_model_greeks"], risk_free_rate=cfg["risk_free_rate"])
+    out["contract_quality"] = cq
+    out["quality_pass"] = cq.quality_pass
 
     # --- Greeks: observed, else model, never invented ------------------------
     greeks_src = "observed" if c.get("delta") is not None else None
@@ -745,8 +770,22 @@ def size_position(*, entry: float, stop: float, buying_power: Optional[float],
                   portfolio: Optional[Dict[str, Any]] = None,
                   pol: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
     """Share and contract sizing under the configured caps. Never assumes the whole
-    account is available; reports the BINDING constraint."""
-    out: Dict[str, Any] = {"limits": cfg, "blocked": [], "buying_power": buying_power}
+    account is available; reports the BINDING constraint.
+
+    Canonical Option Architecture v1.1, Step 8.1: this function's output is
+    LEGACY DISPLAY/DIAGNOSTIC ONLY. It is never the authoritative source for
+    final quantity, eligibility, or binding constraint — those come
+    exclusively from canonical B (`canonical.account_fit`) and canonical E
+    (`canonical.sizing`), computed independently in decide(). Every return
+    path is tagged `out["role"]` so a consumer inspecting this dict alone
+    (without also reading `decide()["canonical"]`) cannot mistake it for an
+    authoritative second answer — see decide()'s own `canonical` key for the
+    real one.
+    """
+    out: Dict[str, Any] = {
+        "limits": cfg, "blocked": [], "buying_power": buying_power,
+        "role": "legacy_display_diagnostic_not_authoritative",
+    }
     if open_positions >= cfg["max_concurrent_positions"]:
         out["blocked"].append(f"already at the {cfg['max_concurrent_positions']}-position limit")
     if sector_positions >= cfg["max_positions_per_sector"]:
@@ -945,11 +984,45 @@ def decide(*, candidate: Dict[str, Any], best_contract: Optional[Dict[str, Any]]
         blockers.append(f"reward:risk {lv['rr_target_1']:.2f} to target 1 is below the "
                         f"{cfg['min_reward_risk']} minimum")
 
+    # ---- canonical A, computed FIRST so the reasons block below gates on it,
+    # not on legacy `tradeable` (Canonical Option Architecture v1.1, Step 8.1:
+    # the reasons block used to gate on best_contract.get("tradeable"), which
+    # meant a legacy-fail/canonical-pass disagreement silently skipped every
+    # detailed reason and fed quality_tilt a single stock-favoring entry even
+    # when canonical A — the field D's own option_available check actually
+    # reads — considered the contract structurally fine. Computed once, here;
+    # reused below (line ~1074) rather than recomputed a second time. ------
+    spot = ind.get("price")
+    canon_quality: Optional[ContractQualityResult] = None
+    if best_contract is not None:
+        canon_quality = best_contract.get("contract_quality")
+        if canon_quality is None:
+            canon_quality = _cq_from_analyse_shape(best_contract, spot)
+    option_structurally_ok = bool(canon_quality and canon_quality.quality_pass)
+
+    # tilt_for_* feed ONLY quality_tilt — a strictly narrower subset of the
+    # reasons below. reasons_for_option/reasons_for_stock stay rich for
+    # DISPLAY (spread/OI/theta/break-even/Greeks-provenance commentary is
+    # still shown to a reader), but several of those signals duplicate a
+    # question A/B/D already canonically own (spread, OI, and modelled-Greeks
+    # provenance duplicate Layer A's own domain; theta and break-even-within-
+    # expected-move are ALREADY passed to canonical D via `OptionEdge` a few
+    # lines below and would double-count if tallied here too). Only three
+    # signals survive as genuine, non-duplicated D-preference information:
+    # IV-richness vs. realized volatility, horizon/theta timing interaction,
+    # and earnings-event risk before expiry. See Step 8.1's quality_tilt
+    # audit for the full reason-by-reason classification.
+    tilt_for_option: List[str] = []
+    tilt_for_stock: List[str] = []
+
     # ---- the option case ---------------------------------------------------
     if best_contract is None:
         reasons_for_stock.append("no contract in the chain passed the liquidity gates")
-    elif not best_contract.get("tradeable"):
-        reasons_for_stock.append("best available contract fails: " + (best_contract.get("rejection") or "unknown"))
+    elif not option_structurally_ok:
+        reasons_for_stock.append(
+            "best available contract fails canonical structural quality: "
+            + ("; ".join(canon_quality.hard_failures) if canon_quality and canon_quality.hard_failures
+               else (best_contract.get("rejection") or "unknown")))
     else:
         sp = best_contract.get("spread_pct")
         if sp is not None and sp <= 5:
@@ -989,20 +1062,40 @@ def decide(*, candidate: Dict[str, Any], best_contract: Optional[Dict[str, Any]]
             rv_basis = "ATR-based proxy (approximate, runs high)"
         if iv is not None and realized_annual:
             if iv * 100 > realized_annual * 1.35:
-                reasons_for_stock.append(
-                    f"implied volatility {iv*100:.0f}% is well above the {realized_annual:.0f}% the stock has "
-                    f"actually been moving ({rv_basis}) — you would be paying up for volatility")
+                msg = (f"implied volatility {iv*100:.0f}% is well above the {realized_annual:.0f}% the stock has "
+                      f"actually been moving ({rv_basis}) — you would be paying up for volatility")
+                reasons_for_stock.append(msg)
+                tilt_for_stock.append(msg)   # genuine D preference: option-vs-realized richness,
+                                              # not an A/B duplicate (A checks the contract's own IV
+                                              # sanity/extremity, never IV-vs-realized-vol richness)
             else:
-                reasons_for_option.append(f"implied volatility {iv*100:.0f}% is not inflated versus "
-                                          f"{realized_annual:.0f}% realized ({rv_basis})")
+                msg = (f"implied volatility {iv*100:.0f}% is not inflated versus "
+                      f"{realized_annual:.0f}% realized ({rv_basis})")
+                reasons_for_option.append(msg)
+                tilt_for_option.append(msg)
         if horizon and "intraday" in str(horizon):
-            reasons_for_option.append("an intraday horizon limits theta exposure")
+            msg = "an intraday horizon limits theta exposure"
+            reasons_for_option.append(msg)
+            tilt_for_option.append(msg)   # genuine D preference: how the SETUP's horizon (C) interacts
+                                           # with an option-intrinsic characteristic (theta decay)
         elif horizon and "week" in str(horizon):
-            reasons_for_stock.append("a multi-week horizon gives theta time to work against a long option")
+            msg = "a multi-week horizon gives theta time to work against a long option"
+            reasons_for_stock.append(msg)
+            tilt_for_stock.append(msg)
         if best_contract.get("event_before_expiry"):
-            reasons_for_stock.append(best_contract.get("event_note") or
-                                     "an earnings event falls before this expiry")
+            msg = best_contract.get("event_note") or "an earnings event falls before this expiry"
+            reasons_for_stock.append(msg)
+            tilt_for_stock.append(msg)   # genuine D preference: option-specific IV-crush/event risk,
+                                          # no A/B field currently represents this
         if best_contract.get("greeks_provenance") == "model":
+            # DISPLAY ONLY, deliberately not counted in tilt_for_*: this is
+            # analyse_contract()'s OWN legacy-computed greeks_provenance, a
+            # duplicate of canonical A's ContractQualityResult.greeks_provenance
+            # (already the basis for the structured low-confidence preference
+            # signal choose_instrument() applies via
+            # AccountFitResult.risk_confidence, Step 5.1) — counting it again
+            # here would be exactly the kind of A-duplication this audit
+            # exists to remove.
             reasons_for_stock.append("Greeks are modelled, not provider-supplied — less certainty about the option's risk")
 
     # ---- affordability / sizing -------------------------------------------
@@ -1014,27 +1107,26 @@ def decide(*, candidate: Dict[str, Any], best_contract: Optional[Dict[str, Any]]
     # count and returns "prefer-option" for a premium far above buying power and many
     # multiples of the risk budget. Contract quality and portfolio suitability are
     # different questions and are now answered separately.
-    option_ineligible: Optional[str] = None
-    option_eligibility: Optional[Dict[str, Any]] = None
+    #
+    # Canonical Option Architecture v1.1, Step 8: account-fit eligibility,
+    # instrument choice, final sizing and executable status below are decided
+    # EXCLUSIVELY by canonical.account_fit / canonical.instrument_choice /
+    # canonical.sizing / canonical.executable, policy=DASHBOARD_POLICY. The
+    # legacy `sizing` dict (option_risk_mod.contract_eligibility() etc., via
+    # size_position() above) remains only for DISPLAY numbers (cost per
+    # contract, notional, status text, the fractional-shares preference note
+    # below) and for the account-level blockers below; it no longer gates
+    # eligibility, instrument choice, or sizing.
     bp = account_info.get("buying_power")
+    equity = account_info.get("portfolio_value") or bp
     if bp is None:
         blockers.append("buying power unavailable — position size cannot be checked against the account")
     if sizing and sizing.get("state") == "ok":
-        opt = sizing.get("option") or {}
         sh = sizing.get("shares") or {}
-        option_eligibility = opt.get("eligibility")
-        if opt and not opt.get("affordable"):
-            option_ineligible = (f"{opt.get('status')} — "
-                                 f"{(option_eligibility or {}).get('reason') or opt.get('binding_constraint')}")
-            reasons_for_stock.append(option_ineligible)
         if sh.get("quantity") and cfg["fractional_shares"]:
             reasons_for_stock.append(
                 f"fractional shares allow an exact {sh['quantity']} share position sized to the "
                 f"{sh.get('binding_constraint')}")
-    elif best_contract and best_contract.get("tradeable"):
-        # Sizing unavailable means suitability was never established. Silence is not
-        # a pass — a prefer-option verdict must not ride through on quality alone.
-        option_ineligible = "position size could not be computed — suitability unverified"
     if sizing and (sizing.get("blocked") or []):
         blockers.extend(sizing["blocked"])
     # A broken risk policy blocks BOTH instruments, not just the option leg — the
@@ -1042,25 +1134,95 @@ def decide(*, candidate: Dict[str, Any], best_contract: Optional[Dict[str, Any]]
     if sizing and sizing.get("risk_config_error"):
         blockers.append("risk policy configuration error: " + sizing["risk_config_error"])
 
+    # ---- canonical A / B / D / E / executable ------------------------------
+    setup_tradeable = True   # lv.get("state") == "ok" was already enforced by the
+                             # early "reject" return above, so this is always True here
+    # canon_quality/spot already computed earlier (Step 8.1) so the reasons
+    # block above could gate on canonical quality_pass instead of legacy
+    # tradeable — reused here, not recomputed.
+
+    canon_stock_fit: Optional[AccountFitResult] = None
+    if equity is not None and lv.get("reference_price") is not None and lv.get("invalidation") is not None:
+        canon_stock_fit = _canon_stock_account_fit(
+            policy=DASHBOARD_POLICY, equity=equity, entry=lv["reference_price"],
+            stop=lv["invalidation"], buying_power=bp,
+            open_positions=account_info.get("position_count") or len(account_info.get("positions") or []))
+
+    canon_option_fit: Optional[AccountFitResult] = None
+    if equity is not None and best_contract is not None and canon_quality is not None:
+        canon_option_fit = _canon_option_account_fit(
+            policy=DASHBOARD_POLICY, equity=equity, contract_quality=canon_quality,
+            side=best_contract.get("side") or "CALL",
+            limit_price=best_contract.get("limit_price") or 0.0,
+            spot=spot or 0.0, stop=lv.get("invalidation") or 0.0,
+            strike=best_contract.get("strike") or 0.0,
+            iv=best_contract.get("implied_volatility"), dte=best_contract.get("dte"),
+            atr_pct=ind.get("atr_pct"), multiplier=best_contract.get("multiplier") or 100.0,
+            fee_per_contract=cfg["fee_per_contract"], spread_dollars=best_contract.get("spread_dollars"),
+            risk_free_rate=cfg["risk_free_rate"], buying_power=bp)
+
     # ---- instrument choice: quality and suitability answered separately ----
-    # CONTRACT QUALITY  — "is this the right contract in this chain?"  (gates above)
-    # PORTFOLIO SUITABILITY — "should THIS account trade it?"          (policy/sizing)
+    # CONTRACT QUALITY  — "is this the right contract in this chain?"  (canonical A)
+    # PORTFOLIO SUITABILITY — "should THIS account trade it?"          (canonical B)
     # A contract can be the best in its chain and still fail suitability; the two are
     # reported side by side rather than collapsed into one green label.
-    option_quality_ok = bool(best_contract and best_contract.get("tradeable"))
-    stock_sizeable = bool(sizing and (sizing.get("shares") or {}).get("quantity"))
-    instrument = option_risk_mod.instrument_choice(
-        stock=((sizing.get("shares") or {}).get("risk") if sizing else None),
-        option=((sizing.get("option") or {}).get("risk") if sizing else None),
-        option_eligibility=option_eligibility,
-        stock_sizeable=stock_sizeable,
-        option_quality_ok=option_quality_ok and option_ineligible is None,
-        quality_tilt=len(reasons_for_option) - len(reasons_for_stock),
-        option_edge={
-            "theta_pct_per_day": (best_contract or {}).get("theta_pct_of_premium_per_day"),
-            "break_even_within_expected_move":
-                (best_contract or {}).get("break_even_within_expected_move"),
-        })
+    option_quality_ok = bool(canon_quality and canon_quality.quality_pass)
+    stock_sizeable = bool(canon_stock_fit and canon_stock_fit.eligible and canon_stock_fit.quantity_allowed > 0)
+
+    option_ineligible: Optional[str] = None
+    option_eligibility: Optional[Dict[str, Any]] = None
+    if canon_option_fit is not None:
+        option_eligibility = {"eligible": canon_option_fit.eligible,
+                              "reason": canon_option_fit.binding_constraint,
+                              "checks": [v.check for v in canon_option_fit.violations]}
+        if not canon_option_fit.eligible:
+            option_ineligible = ("NO CONTRACT FITS CURRENT RISK POLICY — "
+                                 + (canon_option_fit.binding_constraint or "ineligible"))
+            reasons_for_stock.append(option_ineligible)
+    elif best_contract is not None:
+        # A contract exists but there was no equity/quality to size it
+        # against — suitability was never established. Silence is not a
+        # pass — a prefer-option verdict must not ride through on quality alone.
+        option_ineligible = "position size could not be computed — suitability unverified"
+
+    ev = (best_contract or {}).get("expected_value")
+    edge = OptionEdge(
+        theta_pct_per_day=(best_contract or {}).get("theta_pct_of_premium_per_day"),
+        break_even_within_expected_move=(best_contract or {}).get("break_even_within_expected_move"),
+        ev_positive=(ev > 0) if ev is not None else None)
+
+    # Canonical Option Architecture v1.1, Step 8.1: quality_tilt is built
+    # from tilt_for_option/tilt_for_stock ONLY — the narrow, audited subset
+    # of D-owned preference signals (IV-vs-realized-vol richness, horizon/
+    # theta timing, earnings-event risk). It deliberately excludes spread,
+    # OI, and modelled-Greeks-provenance (those duplicate canonical A's own
+    # domain) and theta/break-even-within-expected-move (those are already
+    # passed to choose_instrument() via `edge` above; counting them here too
+    # would double them). reasons_for_option/reasons_for_stock remain the
+    # richer DISPLAY lists (see the "instrument" output dict below) and are
+    # never read for this computation.
+    canon_choice = _canon_choose_instrument(
+        setup_tradeable=setup_tradeable, stock_account_fit=canon_stock_fit,
+        option_account_fit=canon_option_fit, contract_quality=canon_quality,
+        option_edge=edge, quality_tilt=len(tilt_for_option) - len(tilt_for_stock))
+
+    canon_sizing = _canon_size_instrument(
+        choice=canon_choice, stock_account_fit=canon_stock_fit, option_account_fit=canon_option_fit)
+
+    canon_stock_exec = _canon_stock_executable(
+        setup_tradeable=setup_tradeable, account_fit=canon_stock_fit, choice=canon_choice,
+        sizing=canon_sizing, execution_policy_allows=True)
+    # Pipeline 2 tracks/researches ideas; it never marks a setup shadow-only —
+    # that concept belongs to Strategy-500 (Pipeline 3), untouched here.
+    canon_option_exec = _canon_option_executable(
+        setup_tradeable=setup_tradeable, contract_quality=canon_quality, account_fit=canon_option_fit,
+        choice=canon_choice, sizing=canon_sizing, execution_policy_allows=True, shadow_only=False)
+
+    instrument = {
+        "instrument": _INSTRUMENT_LABEL[canon_choice.choice],
+        "reason": canon_choice.reason, "reasons": list(canon_choice.reasons),
+        "option_eligible": bool(canon_option_fit and canon_option_fit.eligible),
+    }
 
     # ---- spreads -----------------------------------------------------------
     spread_note = None
@@ -1104,11 +1266,28 @@ def decide(*, candidate: Dict[str, Any], best_contract: Optional[Dict[str, Any]]
              "pass": lv.get("state") == "ok",
              "detail": f"entry {lv.get('entry_zone')}, stop {lv.get('invalidation')} "
                        f"({lv.get('invalidation_basis')}), targets {lv.get('target_1')}/{lv.get('target_2')}"},
+            # Canonical Option Architecture v1.1, Step 8.1: this check used to
+            # gate on legacy size_position()'s `shares.quantity` truthiness —
+            # a genuine authority leak, since a "prefer-stock" verdict only
+            # reaches this block when canon_choice.choice == STOCK, which
+            # canonical.instrument_choice.choose_instrument() only returns
+            # when stock_account_fit.eligible is True (and eligible implies
+            # canon_sizing.quantity > 0, per canonical.sizing's own
+            # contract). A legacy/canonical disagreement here (e.g. legacy's
+            # independent risk-budget formula rounding to 0 shares on an
+            # extreme entry/stop ratio while canonical E still sizes a real
+            # position) could silently downgrade a genuinely sound canonical
+            # STOCK preference to "watch-only". Canonical E is now the sole
+            # authority for this check; the legacy numbers remain only in
+            # the display `detail` string below.
             {"check": "position can be sized within the caps",
-             "pass": bool(sizing and (sizing.get("shares") or {}).get("quantity")),
-             "detail": ((f"{(sizing.get('shares') or {}).get('quantity')} shares, "
-                         f"${(sizing.get('shares') or {}).get('notional')} notional, max loss "
-                         f"${(sizing.get('shares') or {}).get('max_loss')}") if sizing else "not sized")},
+             "pass": bool(canon_sizing and canon_sizing.instrument == "STOCK"
+                          and canon_sizing.quantity and canon_sizing.quantity > 0),
+             "detail": ((f"{(sizing.get('shares') or {}).get('quantity')} shares "
+                         f"(legacy diagnostic), ${(sizing.get('shares') or {}).get('notional')} "
+                         f"notional, max loss ${(sizing.get('shares') or {}).get('max_loss')}; "
+                         f"canonical E: {canon_sizing.quantity} shares")
+                        if sizing else f"canonical E: {canon_sizing.quantity} shares")},
             # "an option was evaluated" means the CHAIN was read and judged — not that
             # a contract survived. A chain where all 120 contracts were rejected is the
             # strongest possible evidence for preferring shares, so treating it as a
@@ -1149,8 +1328,11 @@ def decide(*, candidate: Dict[str, Any], best_contract: Optional[Dict[str, Any]]
             "pass": option_ineligible is None and option_quality_ok,
             "status": ((sizing.get("option") or {}).get("status") if sizing else None),
             "eligibility": option_eligibility,
-            "policy_profile": ((sizing.get("option") or {}).get("policy_profile")
-                               if sizing else option_risk_mod.active_profile()),
+            # Canonical B(option) now decides eligibility under
+            # DASHBOARD_POLICY (a fixed canonical.risk_policy.RiskPolicy),
+            # not the legacy RISK_PROFILE-driven option_risk_mod.policy() —
+            # report the policy that actually gated this verdict.
+            "policy_profile": DASHBOARD_POLICY.name,
             "detail": "whether THIS account should trade it, under the active risk policy",
         },
         "instrument": instrument["instrument"],
@@ -1167,6 +1349,23 @@ def decide(*, candidate: Dict[str, Any], best_contract: Optional[Dict[str, Any]]
         "horizon": horizon,
         "sizing": sizing,
         "verification": stock_checks,
+        # Canonical Option Architecture v1.1, Step 8: the actual structured
+        # results, in plain-dict (JSON-safe) form via dataclasses.asdict — the
+        # flat fields above remain for existing consumers (tracker, UI); this
+        # is the forward-looking structured view. `shadow` is always False for
+        # Pipeline 2 (see canon_option_exec's shadow_only=False above) — kept
+        # explicit here so a later persistence migration can read it directly
+        # instead of inferring execution status from context.
+        "canonical": {
+            "contract_quality": _dc.asdict(canon_quality) if canon_quality else None,
+            "stock_account_fit": _dc.asdict(canon_stock_fit) if canon_stock_fit else None,
+            "option_account_fit": _dc.asdict(canon_option_fit) if canon_option_fit else None,
+            "instrument_choice": _dc.asdict(canon_choice),
+            "sizing": _dc.asdict(canon_sizing),
+            "stock_executable": _dc.asdict(canon_stock_exec),
+            "option_executable": _dc.asdict(canon_option_exec),
+            "shadow": False,
+        },
         "decided_at": datetime.now(timezone.utc).isoformat(),
         "disclaimer": "Research only. No order is placed, previewed or queued by this system.",
     }
@@ -1236,7 +1435,12 @@ def evaluate_candidate(candidate: Dict[str, Any], *, account_info: Optional[Dict
     earn = next_earnings(sym)
     apply_event_risk(analysed, earn)
 
-    passing = [c for c in analysed if c.get("tradeable")]
+    # Canonical Option Architecture v1.1, Step 8: candidate selection now
+    # gates on canonical Layer A's `quality_pass`, not the legacy
+    # `tradeable` liquidity-gate flag — this is the actual authoritative-gate
+    # migration point (analyse_contract()'s own `tradeable` field stays a
+    # legacy diagnostic only, see its comments).
+    passing = [c for c in analysed if c.get("quality_pass")]
     # Best = tightest spread among those closest to the money, then deepest OI.
     passing.sort(key=lambda c: (abs(c.get("otm_pct") or 99), c.get("spread_pct") or 99,
                                 -(c.get("open_interest") or 0)))

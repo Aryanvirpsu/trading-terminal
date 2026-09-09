@@ -23,6 +23,7 @@ import concurrent.futures as _cf
 import json
 import math
 import os
+import sys
 import threading as _threading
 import time
 from datetime import datetime, timezone
@@ -38,6 +39,18 @@ from tradingview_mcp.core.services.paper_trading_service import (
     paper_trade,
     paper_option_trade,
 )
+
+# Canonical Option Architecture v1.1, Step 10 migration: `canonical/` lives at
+# the repo root, not under `src/`, so it isn't reachable via the installed
+# `tradingview_mcp` package path alone — bootstrap the repo root onto
+# sys.path exactly the way dashboard/options_desk.py and
+# lab/paper/canonical_bridge.py already do, so this works whether the
+# package is pip-installed, run via PYTHONPATH, or invoked directly.
+_REPO_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(
+    os.path.dirname(os.path.dirname(os.path.abspath(__file__))))))
+if _REPO_ROOT not in sys.path:
+    sys.path.insert(0, _REPO_ROOT)
+from canonical.risk_policy import STRATEGY_500_POLICY, per_trade_loss_cap  # noqa: E402
 
 STRATEGY_ACCOUNT = "strategy-500"
 INITIAL_BALANCE = 500.0
@@ -318,23 +331,42 @@ def _size_stock(entry: float, stop: float, balance: float) -> Optional[Dict[str,
 
 
 def _size_option(premium: float, balance: float) -> Optional[Dict[str, Any]]:
-    """Size a long option position. For a small account this is realistically
-    1 contract; only surfaced if the full premium (the true max loss) fits under
-    the capital cap. Planned risk assumes a -50% premium stop."""
+    """Size a long option position under the canonical Strategy-500 per-trade
+    risk cap (Canonical Option Architecture v1.1, Step 10 migration — P0 fix
+    #1). A long option's max loss IS its full premium, so that is the RISK
+    that must fit under `canonical.risk_policy.STRATEGY_500_POLICY`'s
+    per-trade loss cap — not an independent capital-commitment percentage
+    (the old `MAX_COMMIT_PCT` math let a $1.00 premium be reported as a
+    "fits!" $100-max-loss idea against the account's real $5 per-trade cap,
+    a 20x violation; see test_no_path_exceeds_configured_per_trade_cap).
+
+    Returns `contracts=0` (never `None`) when nothing fits under the cap, so
+    a caller can tell "evaluated, ineligible" from "not evaluated" — the
+    `max_loss` this function reports can therefore never itself exceed the
+    canonical cap, for this or any future caller. `None` is still returned
+    only for a non-positive premium (nothing to size at all)."""
     if premium <= 0:
         return None
-    max_commit = balance * MAX_COMMIT_PCT
+    cap = per_trade_loss_cap(STRATEGY_500_POLICY, balance).limit
     cost_per_contract = premium * portfolio.OPTION_CONTRACT_MULTIPLIER
-    if cost_per_contract > max_commit:
-        return None  # even one contract breaches the capital cap
-    contracts = int(max_commit // cost_per_contract)
-    contracts = max(1, min(contracts, 3))  # cap tiny-account concentration
+    if cap is None or cost_per_contract <= 0 or cost_per_contract > cap:
+        # Even one contract's max loss (its full premium) breaches the
+        # canonical per-trade cap — options trade in $100 multiples, so a
+        # tiny account under a small absolute cap often cannot safely hold
+        # any long option at all. Reported honestly rather than silently
+        # oversized.
+        return {"contracts": 0, "capital_committed": 0.0, "max_loss": 0.0,
+                "planned_risk_50pct_stop": 0.0,
+                "binding_constraint": "per_trade_loss_cap"}
+    contracts = 1   # one contract's own premium already consumes most/all of
+                     # a tiny account's per-trade cap; sizing up is never sound here
     cost = round(contracts * cost_per_contract, 2)
     return {
         "contracts": contracts,
         "capital_committed": cost,
         "max_loss": cost,                       # long option: can't lose more than premium
         "planned_risk_50pct_stop": round(cost * 0.5, 2),
+        "binding_constraint": "canonical_per_trade_loss_cap",
     }
 
 
@@ -495,9 +527,21 @@ def _pick_option_idea(symbol: str, entry: float, balance: float, direction: str 
         else:
             usable.sort(key=lambda x: x[0], reverse=True)
         strike, premium, best = usable[0]
-        sizing = _size_option(premium, balance)
-        if not sizing:
-            continue
+        # Canonical Option Architecture v1.1, Step 10 migration: sizing no
+        # longer GATES candidate generation — describing/analyzing the best
+        # contract found and deciding whether it may be sized/executed are
+        # different authorities now. `_size_option()` may report
+        # `contracts=0` (ineligible under the canonical per-trade cap); that
+        # is attached as metadata for the caller (and for canonical
+        # downstream, which computes its OWN authoritative sizing and never
+        # reads this field), not a reason to hide the candidate. Previously
+        # an unaffordable idea here silently vanished (`continue`d to the
+        # next expiry, usually finding nothing either); now it is reported
+        # honestly instead.
+        sizing = _size_option(premium, balance) or {
+            "contracts": 0, "capital_committed": 0.0, "max_loss": 0.0,
+            "planned_risk_50pct_stop": 0.0, "binding_constraint": "no_premium",
+        }
 
         # Grade the chosen contract with the SHARED grader so the scanner's inline
         # option carries the same bid/ask/mid/spread$/spread%/vol/OI/liquidity/grade/
@@ -536,10 +580,33 @@ def _pick_option_idea(symbol: str, entry: float, balance: float, direction: str 
             "delta": graded.get("delta"),
             "liquidity_score": graded.get("liquidity_score"), "grade": graded.get("grade"),
             "tradeable": graded.get("tradeable"), "rejection": graded.get("rejection"),
+            # Timestamp provenance (Canonical Option Architecture v1.1, Step
+            # 9.1): grade_contract() merges `**c` (the raw normalized
+            # contract) first, so `best`'s own quote_timestamp/
+            # quote_timestamp_source/last_trade_timestamp — set by
+            # options_service._normalize_contract(), never invented here —
+            # pass straight through `graded` unless it's empty (the
+            # `except Exception: graded = {}` above), which is why `best` is
+            # still the fallback source, exactly like volume/open_interest/
+            # implied_volatility two lines up. NEVER datetime.now() — if
+            # options_service found no trustworthy timestamp, these are None
+            # here too, and stay None all the way to canonical A.
+            "quote_timestamp": graded.get("quote_timestamp", best.get("quote_timestamp")),
+            "quote_timestamp_source": graded.get("quote_timestamp_source", best.get("quote_timestamp_source")),
+            "last_trade_timestamp": graded.get("last_trade_timestamp", best.get("last_trade_timestamp")),
             "sizing": sizing,
+            # `contracts == 0` (Step 10 migration): the contract itself is
+            # real and gradeable, but even a single contract's max loss
+            # would breach the canonical per-trade risk cap — never suggest
+            # a `paper_option_trade(...)` call for a size that isn't
+            # actually sizeable.
             "how_to_trade": (
                 f"paper_option_trade(symbol='{symbol}', option_type='{opt_type}', strike={strike}, "
                 f"expiry='{chosen_expiry}', quantity={sizing['contracts']}, side='BUY', user_id='strategy-500')"
+                if sizing.get("contracts") else
+                "NOT SIZEABLE — even 1 contract's max loss "
+                f"(${premium * portfolio.OPTION_CONTRACT_MULTIPLIER:.2f}) exceeds the account's "
+                "per-trade risk cap; no order suggested."
             ),
             "rationale": "Defined-risk leverage — max loss = premium paid.",
         }
