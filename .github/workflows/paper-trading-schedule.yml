@@ -13,20 +13,34 @@ name: Paper Trading — Daily Automated Run
 # ~/.tradingview_mcp_data — the two are not synced (see the "dual paper-ledger
 # strategy" — Case 1 cloud / Case 2 local).
 #
-# GitHub can delay a scheduled fire by hours (observed: ~3.5h on this
-# workflow's first day live), not just minutes — so timing is NOT trusted to
-# be precise. Two cron lines target 9:30am ET across both DST offsets, but
-# the guard step only enforces a generous same-day sanity window (not a tight
-# one) and skips US market holidays (computed at runtime — no yearly date
-# list to maintain). A second guard, after checkout, skips the rest of the
-# job if today's report was already committed by an earlier fire — so however
-# many times GitHub actually delivers the schedule today, the pipeline runs
-# for real exactly once.
+# GitHub explicitly deprioritizes `schedule` events under load — observed on
+# this workflow's first live day, a fire landed ~3.5h late — so `schedule`
+# below is kept only as a same-day BACKUP, not the primary trigger. The
+# primary, accurate trigger is `workflow_dispatch` called directly via
+# GitHub's REST API by a free external cron service (e.g. cron-job.org),
+# which GitHub treats as a normal API request and starts within seconds, not
+# hours. See the "precise external trigger" setup notes near the bottom of
+# this file for exactly what to configure there.
+#
+# Two cron lines target 9:30am ET across both DST offsets for the backup; the
+# guard step enforces a generous same-day sanity window (not a tight one) on
+# schedule fires, skips US market holidays either way (computed at runtime —
+# no yearly date list to maintain), and a `force` input lets a manual
+# workflow_dispatch bypass both for testing. A second guard, after checkout,
+# skips the rest of the job if today's report was already committed by an
+# earlier fire — so however many times this actually gets triggered on a
+# given day (external pinger + schedule backup + a manual run), the pipeline
+# runs for real exactly once.
 on:
   schedule:
-    - cron: "30 13 * * 1-5"   # ~9:30am ET while EDT (UTC-4) is in effect
-    - cron: "30 14 * * 1-5"   # ~9:30am ET while EST (UTC-5) is in effect
-  workflow_dispatch: {}         # manual "run now" button in the Actions tab
+    - cron: "30 13 * * 1-5"   # backup only — ~9:30am ET while EDT (UTC-4)
+    - cron: "30 14 * * 1-5"   # backup only — ~9:30am ET while EST (UTC-5)
+  workflow_dispatch:
+    inputs:
+      force:
+        description: "Bypass the holiday/day guard entirely (manual testing only)"
+        type: boolean
+        default: false
 
 permissions:
   contents: write
@@ -44,15 +58,18 @@ jobs:
       - name: Only proceed on a trading day, same-day window (holiday guard)
         id: gate
         run: |
-          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ "${{ github.event.inputs.force }}" = "true" ]; then
             echo "run=true" >> "$GITHUB_OUTPUT"
-            echo "Manual run — skipping the day/holiday guard."
+            echo "Manual forced run — bypassing the day/holiday guard entirely."
             exit 0
           fi
-          python3 - <<'PYEOF'
+          python3 - "${{ github.event_name }}" <<'PYEOF'
           import datetime as dt
           import os
+          import sys
           from zoneinfo import ZoneInfo
+
+          event_name = sys.argv[1]
 
           MON = 0
 
@@ -110,12 +127,12 @@ jobs:
           now = dt.datetime.now(ZoneInfo("America/New_York"))
           today = now.date()
           hm = now.hour * 100 + now.minute
-          # Generous sanity window, NOT a precision check — GitHub has been
-          # observed delivering this schedule hours late. This only exists to
-          # reject a truly wild delay (e.g. landing overnight); the real
-          # "run once" guarantee is the post-checkout dedup step, which skips
-          # if today's report is already committed.
-          in_window = 600 <= hm <= 2000
+          # workflow_dispatch (an external precise pinger, or a manual run
+          # without `force`) is by definition "run now" — no delayed-delivery
+          # risk, so skip the sanity window and only check the holiday.
+          # `schedule` fires (the backup path) still get the generous window,
+          # since GitHub has been observed delivering those hours late.
+          in_window = True if event_name == "workflow_dispatch" else (600 <= hm <= 2000)
           # Span adjacent years too: an observed holiday can land on Dec 31
           # (e.g. Jan 1 falling on a Saturday shifts observance to the prior
           # Friday, which is Dec 31 of the previous year).
@@ -124,8 +141,8 @@ jobs:
                       | nyse_holidays(today.year + 1))
           is_holiday = today in holidays
 
-          print(f"America/New_York now: {now.isoformat()} (hm={hm})")
-          print(f"in 6:00-20:00 sanity window: {in_window}; NYSE holiday: {is_holiday}")
+          print(f"America/New_York now: {now.isoformat()} (hm={hm}) event={event_name}")
+          print(f"in sanity window: {in_window}; NYSE holiday: {is_holiday}")
 
           run = in_window and not is_holiday
           if is_holiday:
