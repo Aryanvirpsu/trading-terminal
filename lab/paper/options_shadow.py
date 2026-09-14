@@ -71,7 +71,37 @@ def evaluate_contract(opt: Dict[str, Any], underlying_price: Optional[float],
                       buying_power: Optional[float] = None) -> Dict[str, Any]:
     """Grade one contract. Returns preference + the exact missing fields when it can't
     be graded — never a fabricated score. On a $500 account the FIRST question is
-    affordability, not edge: an unaffordable contract is not a trade at any quality."""
+    affordability, not edge: an unaffordable contract is not a trade at any quality.
+
+    STATUS (Evidence & Graduation v1.2 audit): this function is NOT called by the
+    live production path. `workflow.py::premarket()` calls `record()` below directly
+    with `canonical_bridge.py`'s already-built option view — it never calls this
+    function. Traced by grep + import/call-graph audit, not assumed from grep alone:
+    no caller exists in workflow.py, canonical_bridge.py, broker.py, or any script
+    under automation/. Its only callers are its own unit tests
+    (tests/unit/test_paper_trading.py::test_ungradeable_option_is_honest,
+    test_no_affordable_option_is_a_valid_result, test_short_and_multileg_options_not_simulated).
+
+    It is NOT dead weight, though: `expected_move` here is computed from the
+    contract's own IMPLIED volatility (`underlying * iv * sqrt(dte/365)`), and `edge`
+    is a numeric distance from break-even to that expected move. The live path
+    (`canonical_bridge.py`'s `option_display`) computes a DIFFERENT, ATR-based
+    (historical-volatility-proxy) expected move and only a boolean
+    `break_even_within_expected_move` — never a numeric edge. So this function's
+    IV-based geometry is genuinely independent information, not a duplicate.
+
+    What this function's OWN `ev_after_costs`/`preference` fields are NOT: they are a
+    second, competing EV/preference model — geometry-based (edge x $100 - spread
+    cost), distinct from the live `p_direction`-based `model_ev_per_contract` in
+    canonical_bridge.py. Do not treat this function's output as "the" Model EV; the
+    authoritative live figure is `canonical_bridge.py`'s `option_display`
+    ("model_ev_per_contract"). `PAPER_GRADUATION_CHECKLIST.md` previously cited this
+    function as the enforcement mechanism for the liquidity-floor graduation
+    criterion — that was stale; the real enforcement is
+    `canonical.contract_quality.evaluate_contract_quality()`'s hard-fail checks
+    (see EVIDENCE_GRADUATION_AFTER.md for the correction and the recommendation:
+    KEEP this function as-is, retitled in docs as a standalone IV-based contract-
+    geometry reference implementation, not wired into the live pipeline)."""
     from . import config as cfg
     ocfg = cfg.options()
 
@@ -232,3 +262,175 @@ def _stock_stable() -> bool:
         return broker.reconcile()["reconciled"] and n >= 50
     except Exception:
         return False
+
+
+# ══════════════════════════════════════════════════════════════════════════
+# Evidence & Graduation (v1.2) — explicit gates
+#
+# graduation_readiness() above answers one question: "is there enough DATA to
+# start evaluating the model?" It has never authorized execution and never
+# will on its own — but a flat all-checks-pass boolean invites exactly that
+# misreading. The six gates below make each question, and each gate's actual
+# authority, explicit and separately inspectable. Reaching Gate 2 means "we
+# can start asking whether the model's opinions track reality." It does NOT
+# mean options may execute — only Gates 4 AND 5 together, both currently
+# closed by explicit policy (not by sample size), authorize that.
+#
+# HONEST STATUS (adversarial review, 2026-09): Gate 2 cannot currently be
+# reached by waiting. A shadow record's `outcome` column is set to 'open' at
+# insert and NOTHING in this codebase ever transitions it to target_hit/
+# stop_hit/expired — options_shadow has no equivalent of
+# journal.update_excursions() (confirmed: zero `UPDATE options_shadow`
+# statements anywhere in the repo). resolved_outcomes will read 0 forever
+# until that resolver is built, regardless of elapsed time or record count.
+# ══════════════════════════════════════════════════════════════════════════
+
+GATE_NAMES = (
+    "data_collection", "outcome_evidence", "predictive_validity",
+    "economic_eligibility", "risk_authorization", "execution",
+)
+
+
+def execution_gate_state() -> Dict[str, Any]:
+    """The six-gate state machine. Each gate reports its own status and what it
+    does/does not authorize — no gate's status is inferred from another's."""
+    ready = graduation_readiness()
+    by_name = {c["name"]: c for c in ready["checks"]}
+    resolved_n = next((c for c in ready["checks"] if c["name"] == "resolved_outcomes"), None)
+    resolved_n = int(resolved_n["detail"].split()[0]) if resolved_n else 0
+
+    gate1 = {
+        "gate": "data_collection",
+        "passed": by_name["sample_size"]["passed"] and by_name["gradeable_rate"]["passed"],
+        "detail": f"{by_name['sample_size']['detail']}; {by_name['gradeable_rate']['detail']}",
+        "authorizes": "nothing — only that enough observations exist to begin evaluating the model",
+    }
+    gate2 = {
+        "gate": "outcome_evidence",
+        "passed": by_name["resolved_outcomes"]["passed"],
+        "detail": by_name["resolved_outcomes"]["detail"] + " — NOTE: no production mechanism "
+                 "currently transitions a shadow record's outcome away from 'open' (no equivalent "
+                 "of journal.update_excursions() exists for options_shadow; confirmed zero "
+                 "'UPDATE options_shadow' statements anywhere in the codebase). resolved_outcomes "
+                 "will stay at 0 regardless of how much time passes until that resolver is built — "
+                 "this is not a 'wait for more data' situation.",
+        "authorizes": "nothing — only that model scores can start being compared to realized outcomes",
+    }
+    # Gate 3 deliberately never returns PASS/FAIL — see model_ev_calibration_buckets().
+    # A minimum-N floor for even attempting a verdict; MIN_RESOLVED_FOR_CALIBRATION_VERDICT
+    # below documents why. Same "no resolver exists yet" caveat as gate2 applies here too.
+    gate3_status = "INSUFFICIENT_EVIDENCE" if resolved_n < MIN_RESOLVED_FOR_CALIBRATION_VERDICT \
+        else "SEE model_ev_calibration_buckets()"
+    gate3 = {
+        "gate": "predictive_validity",
+        "status": gate3_status,
+        "detail": f"{resolved_n} resolved shadow outcomes (need >= "
+                 f"{MIN_RESOLVED_FOR_CALIBRATION_VERDICT} before any bucket is even attempted) — "
+                 "this number cannot currently increase on its own; see gate2's detail",
+        "authorizes": "nothing, ever, by itself — informs a human decision, never gates automatically",
+    }
+    gate4 = {
+        "gate": "economic_eligibility",
+        "status": "PER_CONTRACT",
+        "detail": "answered per-contract by canonical.account_fit.option_account_fit() "
+                 "(binding_constraint, most commonly 'per_trade_risk' on this account — "
+                 "see canonical_audit_metadata()['option_binding_constraint'] for any given signal)",
+        "authorizes": "nothing on its own — independent of model quality by construction",
+    }
+    gate5 = {
+        "gate": "risk_authorization",
+        "status": "NOT_AUTHORIZED",
+        "detail": "STRATEGY_500_POLICY (canonical/risk_policy.py) has no option-specific "
+                 "policy fields — they are explicitly None, not an unbounded/implicit grant. "
+                 "This is a closed policy decision, not a missing configuration default.",
+        "authorizes": "nothing — no option-specific execution policy exists to authorize against",
+    }
+    gate6 = {
+        "gate": "execution",
+        "status": "SHADOW_ONLY",
+        "detail": "canonical_bridge.py hard-codes shadow_only=True; "
+                 "canonical.executable.evaluate_option_executable() cannot return "
+                 "executable=True while shadow_only=True, regardless of every other input",
+        "authorizes": "nothing — structurally blocked, not merely unauthorized today",
+    }
+
+    gates = [gate1, gate2, gate3, gate4, gate5, gate6]
+    return {
+        "gates": gates,
+        "execution_authorized": False,
+        "note": ("Gates 1-2 measure DATA sufficiency. Gate 3 measures whether the model's "
+                "opinions have been shown to track reality (never auto-authorizes). Gates 4-5 "
+                "are independent economic/policy questions, not model-quality questions. Gate 6 "
+                "is the only one that can ever flip to executable, and only a human policy "
+                "decision — not a sample count — can open Gate 5 first."),
+    }
+
+
+# Below this many RESOLVED shadow outcomes, no bucket in
+# model_ev_calibration_buckets() is even attempted — a handful of resolved
+# trades split across 5 buckets would average single digits per bucket, which
+# is not "a small sample", it's noise dressed as a bucket. 20 matches
+# graduation_readiness()'s own "resolved_outcomes" floor (PAPER_GRADUATION_
+# CHECKLIST.md) rather than inventing a second, different number.
+MIN_RESOLVED_FOR_CALIBRATION_VERDICT = 20
+
+MODEL_EV_BUCKETS = (
+    ("< -25", None, -25.0),
+    ("-25 to 0", -25.0, 0.0),
+    ("0 to +10", 0.0, 10.0),
+    ("+10 to +25", 10.0, 25.0),
+    ("> +25", 25.0, None),
+)
+
+
+def model_ev_calibration_buckets() -> Dict[str, Any]:
+    """Bucket RESOLVED shadow records by model_ev (== ev_after_costs, the persisted
+    column) and report win rate / avg realized P&L per bucket — the plumbing for
+    "do positive Model EV records outperform negative ones", never a verdict computed
+    prematurely. An unresolved record ('outcome' == 'open') is never counted as a
+    winner OR a loser; it is excluded, not defaulted. Returns INSUFFICIENT_SAMPLE
+    instead of numbers until MIN_RESOLVED_FOR_CALIBRATION_VERDICT is met — this
+    threshold is deliberately NOT tuned against whatever the live row count happens
+    to be right now."""
+    rows = db.query("""SELECT ev_after_costs, outcome, outcome_pnl FROM options_shadow
+                        WHERE outcome IN ('target_hit', 'stop_hit', 'expired')
+                        AND ev_after_costs IS NOT NULL""")
+    if len(rows) < MIN_RESOLVED_FOR_CALIBRATION_VERDICT:
+        return {"status": "INSUFFICIENT_SAMPLE",
+                "resolved_n": len(rows), "required_n": MIN_RESOLVED_FOR_CALIBRATION_VERDICT,
+                "buckets": None,
+                "note": "no bucket is computed below the minimum — a ratio over a handful "
+                        "of rows is not evidence, it's noise with a label"}
+
+    buckets: Dict[str, Dict[str, Any]] = {}
+    for label, lo, hi in MODEL_EV_BUCKETS:
+        in_bucket = [r for r in rows
+                    if (lo is None or r["ev_after_costs"] >= lo)
+                    and (hi is None or r["ev_after_costs"] < hi)]
+        wins = [r for r in in_bucket if r["outcome"] == "target_hit"]
+        pnls = [r["outcome_pnl"] for r in in_bucket if r["outcome_pnl"] is not None]
+        buckets[label] = {
+            "n": len(in_bucket),
+            "win_rate_pct": round(100 * len(wins) / len(in_bucket), 1) if in_bucket else None,
+            "avg_realized_pnl": round(sum(pnls) / len(pnls), 2) if pnls else None,
+        }
+    return {"status": "OK", "resolved_n": len(rows), "required_n": MIN_RESOLVED_FOR_CALIBRATION_VERDICT,
+            "buckets": buckets,
+            "note": "monotonic win-rate/avg-P&L rise across buckets would support the model; "
+                    "it is not claimed here — read the numbers, do not infer a verdict from this "
+                    "function alone"}
+
+
+def format_shadow_disclosure(option_display: Dict[str, Any]) -> str:
+    """The user-facing block Evidence & Graduation v1.2 exists to make unavoidable —
+    render a shadow option's model output next to its calibration/executability
+    status so nobody reads a dollar figure as a demonstrated edge. Takes a
+    canonical_bridge.py `option_display` dict (or any dict carrying the same keys)."""
+    ev = option_display.get("model_ev_per_contract", option_display.get("ev_per_contract"))
+    ev_str = f"{'+' if (ev or 0) >= 0 else ''}${ev:.2f} / contract" if ev is not None else "n/a"
+    calib = option_display.get("calibration_status", "UNCALIBRATED")
+    model = option_display.get("direction_model", "HEURISTIC")
+    return (f"Model EV              {ev_str}\n"
+            f"Calibration           {calib}\n"
+            f"Direction model       {model}\n"
+            f"Executable            NO — SHADOW ONLY")

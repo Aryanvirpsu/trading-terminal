@@ -14,15 +14,36 @@ to the paper ledger, and `options_shadow.summary()["in_ledger"]` returns `False`
 |---|---|---|---|
 | 1 | Sample size | ≥ 50 shadow records | `graduation_readiness()` |
 | 2 | Chain validity | ≥ 50 % of records had full microstructure (bid, ask, spread, OI, volume, DTE, delta) | `gradeable_rate` |
-| 3 | Resolved outcomes | ≥ 20 shadow records reached a terminal outcome | `resolved_outcomes` |
+| 3 | Resolved outcomes | ≥ 20 shadow records reached a terminal outcome | `resolved_outcomes` — **currently stuck at 0, structurally**: no production code ever transitions a shadow record's `outcome` away from `open` (confirmed: zero `UPDATE options_shadow` statements anywhere in the repo). This is not a "wait for more data" situation — a resolver has to be built first (see `EVIDENCE_GRADUATION_AFTER.md`) |
 | 4 | Stock launch stable | stock P&L reconciles **and** ≥ 50 resolved stock trades | `stock_launch_stable` |
 | 5 | Fill realism | assumed fill is the **ask**, never the midpoint | enforced in `conservative_fill()` |
-| 6 | Liquidity floor | spread ≤ 10 %, OI ≥ 250, volume ≥ 25 | enforced in `evaluate_contract()` |
-| 7 | Risk model | option max-loss (premium) sized within the same per-trade risk budget | to be added at graduation |
+| 6 | Liquidity floor | spread ≤ 12 %, OI ≥ 250, session-open volume ≥ 10 | enforced in `canonical.contract_quality.evaluate_contract_quality()`'s hard-fail checks (`ContractQualityPolicy`) — **corrected 2026-09 (Evidence & Graduation v1.2)**: this row previously cited `options_shadow.evaluate_contract()`, which the live pipeline never calls, and stated stale numbers (10%/25) that never matched the real policy |
+| 7 | Risk model | option max-loss (premium) sized within an explicit, option-specific risk budget | **not built** — see §A.1 below; this is a closed policy decision, not a pending default |
 
-`graduation_readiness()["ready"]` is `False` today, and will stay `False` until every
-box is ticked with real data. **"No valid option" is an acceptable result** and is
-expected to be the common one.
+`graduation_readiness()["ready"]` being `True` means checks 1–4 have real data behind
+them — it does **not** mean options may execute. See §A.1: reaching every row above
+still leaves execution `NOT_AUTHORIZED` by explicit, independent policy.
+
+### A.1 — Six gates, not one checklist (Evidence & Graduation v1.2)
+
+A flat pass/fail list invites reading "enough samples" as "cleared for trading." It
+isn't. `lab/paper/options_shadow.py::execution_gate_state()` makes the six actual
+questions, and what each one does and does not authorize, explicit and separately
+inspectable — call it directly (`python3 -c "from paper import options_shadow;
+print(options_shadow.execution_gate_state())"`) rather than reading
+`graduation_readiness()["ready"]` as a verdict:
+
+| Gate | Question | Authorizes |
+|---|---|---|
+| 1. Data collection | Enough observations to evaluate the model? (rows 1–2 above) | Nothing |
+| 2. Outcome evidence | Enough resolved outcomes to compare model vs. reality? (row 3) | Nothing — **and this gate cannot currently be reached by waiting**: no resolver exists yet, see row 3 above |
+| 3. Predictive validity | Do the model's opinions actually track outcomes? | Nothing — ever, automatically. Informs a human decision only. Returns `INSUFFICIENT_EVIDENCE` below 20 resolved outcomes, never a fabricated verdict |
+| 4. Economic eligibility | Can this account afford the contract under policy? | Nothing on its own — independent of model quality by construction (`canonical.account_fit.option_account_fit`) |
+| 5. Risk authorization | Does an option-specific execution policy exist? | Nothing — `STRATEGY_500_POLICY`'s option fields are explicitly `None`. **`NOT_AUTHORIZED` today, by design, regardless of sample size.** |
+| 6. Execution | Is the trade actually routed? | `shadow_only=True` is hard-coded in `canonical_bridge.py` — structurally blocked, not merely unauthorized |
+
+No amount of Gate 1/2/3 evidence opens Gate 5 — that requires an explicit,
+separate policy decision (see `EVIDENCE_GRADUATION_AFTER.md`'s open questions).
 
 ---
 
@@ -75,12 +96,18 @@ with separate safety work, deliberately out of scope.
 
 ## Current status
 
+Two independent ledgers exist (Case 1 cloud / Case 2 local — see
+`DUAL_LEDGER` note in project memory); each has its own counts. Check live rather
+than trusting a number written here:
+
 ```
-resolved paper trades        0 / 50
-options shadow records       0 / 50
-reconciliation               passing
-stale-data leaks             0 (enforced + unit-tested)
-critical integrity issues    0
+python automation/paper_scheduler.py status     # resolved trades, this ledger
+python automation/paper_scheduler.py options     # shadow records + graduation_readiness()
+python3 -c "from paper import options_shadow; print(options_shadow.execution_gate_state())"  # the 6 gates
 ```
 
-Nothing on either list can be assessed yet. **Run the platform.**
+As of the last check (2026-09-14, cloud ledger): 1 resolved-*paper-trade*-eligible
+position open (HAL — not yet resolved, does not count until it closes), 10 options
+shadow records, 0 resolved shadow outcomes. Local ledger: 0 and 0. Both numbers are
+already stale by the time you read this — that's expected of a live system; run the
+commands above instead of trusting this block.

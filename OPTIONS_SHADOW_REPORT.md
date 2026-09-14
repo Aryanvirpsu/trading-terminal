@@ -9,7 +9,15 @@ Regenerate with:
 python automation/paper_scheduler.py options
 ```
 
-**Status: 0 shadow records.** The structure below is live; the data is not yet.
+**Status: check live** — `python automation/paper_scheduler.py options` (this doc no
+longer freezes a sample-count number here; two independent ledgers exist, see
+`DUAL_LEDGER` note in project memory, and any number written here goes stale
+immediately).
+
+> **Corrected 2026-09 (Evidence & Graduation v1.2):** several field descriptions
+> below previously described `options_shadow.evaluate_contract()` — a standalone,
+> unit-tested function that the live pipeline never actually calls. See
+> `EVIDENCE_GRADUATION_AFTER.md` for the full audit. Corrections are marked inline.
 
 ## What is recorded per contract
 
@@ -21,25 +29,29 @@ python automation/paper_scheduler.py options
 | **assumed fill** | the **ask** — we assume we pay up, never the midpoint |
 | spread %, volume, open interest | liquidity evidence |
 | Greeks (delta, gamma, theta, vega), IV | only scored when present |
-| IV context, expected move | expected move = `price × IV × √(DTE/365)` |
+| IV context, expected move | **not currently populated** — `record()` writes these two columns as `NULL` unconditionally; a real value is computed but never persisted (a genuine gap, not yet fixed — see open questions) |
 | break-even | `strike ± assumed_fill` |
 | max loss | premium × 100 (long option) |
-| EV after costs | edge minus the cost of crossing the spread |
+| **Model EV** (column: `ev_after_costs`) | **corrected**: NOT "edge minus spread cost" — the live value is `canonical_bridge.py`'s `p_direction`-based `model_ev_per_contract` (same `_expected_value(p_win, profit, loss, cost)` formula used everywhere in `decision_engine.py`, applied to the option premium). **This is a model opinion, not a measured expectation** — its probability input (`p_direction`) has no calibration evidence behind it. Treat a positive number as "the model currently favors this," never as "this contract has demonstrated a $X edge." `calibration_status` is `UNCALIBRATED` and `direction_model` is `HEURISTIC` for every record today; call `options_shadow.format_shadow_disclosure()` to render both alongside the number |
 | preference | `prefer-stock` · `prefer-option` · `avoid-both` |
 | later outcome | tracked forward like any other signal |
 
 ## Affordability comes first ($500 account)
 
-Before any edge calculation: total premium = ask x 100 + fees must fit **both** the
-$75 per-trade allocation and available buying power. Max loss on a long option is the
-**full premium**. At $75 that means contracts priced around **<= $0.75** — a large
-share of liquid near-the-money options are simply unreachable at this account size.
+**Live path**: `canonical.account_fit.option_account_fit()` checks the contract against
+`STRATEGY_500_POLICY` — the same `max_loss_per_trade = $5.00` cap used for stock (no
+option-specific policy fields exist; see `PAPER_GRADUATION_CHECKLIST.md` §A.1 gate 5).
+A standard 100-multiplier long option's max loss ($70–125+ for a typical liquid
+contract) is routinely 15–25x that cap. In the shadow data collected so far, this is
+the single most common reason an otherwise-gradeable, even positive-Model-EV contract
+never becomes eligible — `option_binding_constraint: "per_trade_risk"`, not a data or
+quality problem. **This is not a bug and not something to loosen without an explicit
+policy decision** — see the open questions in `EVIDENCE_GRADUATION_AFTER.md`.
 
-| Premium | Total | Affordable |
-|---:|---:|---|
-| $0.35 | $35.00 | yes |
-| $0.80 | $80.00 | no - exceeds the $75 allocation |
-| $1.50 | $150.00 | no - exceeds the $75 allocation |
+*(The standalone `evaluate_contract()` function — not called by the live pipeline —
+has its own, different affordability rule: total premium = ask × 100 + fees against a
+configured `max_premium_per_trade` allocation. That number is real for that function's
+own unit tests, but it is not what determines a live shadow record's eligibility.)*
 
 Long single-leg only. Spreads, shorts, naked and multi-leg are **not simulated** - the
 real account is not approved or funded for them.
@@ -54,7 +66,12 @@ itself does not qualify).
 **"No valid option" is an acceptable result** and is expected to be the common one.
 A weak or missing option never rejects the underlying stock.
 
-Liquidity floor for a `prefer-option` verdict: spread ≤ 10 %, OI ≥ 250, volume ≥ 25.
+Liquidity floor (live path — `canonical.contract_quality.ContractQualityPolicy`):
+spread ≤ 12 %, OI ≥ 250 for "adequate+" (≥ 50 is the illiquid hard-fail floor, 50–250
+is graded "thin"), session-open volume ≥ 10. *(Corrected: previously stated as ≤10 %
+/ ≥250 / ≥25, which described the standalone `evaluate_contract()` function's own
+`OptionsConfig` thresholds, not the live `ContractQualityPolicy` the canonical
+pipeline actually enforces.)*
 
 ## Why shadow mode
 
@@ -65,13 +82,13 @@ separately and enter the ledger only after `PAPER_GRADUATION_CHECKLIST.md` §A p
 
 ## Current readiness
 
-```
-sample_size          0 / 50 shadow records
-gradeable_rate       n/a
-resolved_outcomes    0 / 20
-stock_launch_stable  false (0 / 50 resolved stock trades)
-ready                FALSE
-```
+`graduation_readiness()["ready"]` becoming `True` means checks 1–4 have real data —
+it does **not** mean options may execute. Run `python automation/paper_scheduler.py
+options` for live numbers and the full six-gate state
+(`options_shadow.execution_gate_state()`, see `PAPER_GRADUATION_CHECKLIST.md` §A.1).
+Gates 5 (risk authorization) and 6 (execution) stay `NOT_AUTHORIZED` /
+`SHADOW_ONLY` regardless of how Gates 1–4 read — that's a closed policy decision,
+not a pending default.
 
 `options_shadow.summary()["in_ledger"]` is `False` and is asserted by
 `test_options_never_enter_the_ledger`.

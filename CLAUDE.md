@@ -38,6 +38,7 @@ those skills feed the automated pipeline; they're for conversation and ad hoc re
 | Data quality / provider layer | `DATA_QUALITY_AFTER.md`, `DATA_PROVIDER_MATRIX.md` |
 | Sector map | `SECTOR_MAP_AFTER.md` |
 | Options (shadow mode only) | `OPTIONS_SHADOW_REPORT.md` |
+| Model EV vs. calibrated evidence vs. execution authorization (options) | `EVIDENCE_GRADUATION_AFTER.md` |
 | Stock research method | `STOCK_RESEARCH_PLAYBOOK.md` |
 | Imported finance skills | `CLAUDE_SKILLS_FINANCE.md`, `CLAUDE_TRADING_SKILLS.md` |
 | Graduating past paper trading | `PAPER_GRADUATION_CHECKLIST.md` |

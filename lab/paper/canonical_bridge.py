@@ -20,6 +20,17 @@ shadow_only=True is hardcoded — easy to find and audit.
 ADDITIVE to the existing Pipeline-3 modules: nothing here writes to the
 ledger, journal schema, or options_shadow schema directly. Callers
 (workflow.py) decide what to do with the result.
+
+Evidence & Graduation (v1.2) note on `option_display["ev_per_contract"]`:
+this number is a MODEL OPINION, not a measured expectation. Its probability
+input (`p_direction`/`p_trade`, from decision_engine's indicator-agreement
+heuristic) has no calibration evidence behind it — see
+EVIDENCE_GRADUATION_AFTER.md. `option_display` now also carries
+`model_ev_per_contract` (identical value, explicit name),
+`calibration_status`, and `direction_model` so any consumer can render the
+disclosure without re-deriving it. `ev_per_contract` is kept unchanged for
+backward compatibility (tests and other pipelines key off that exact name —
+see test_canonical_v11_invariants.py's field-provenance check).
 """
 from __future__ import annotations
 
@@ -185,10 +196,18 @@ def evaluate_canonical(result: Dict[str, Any], *, symbol: str, direction: str,
                           break_even_within_expected_move=break_even_within_move,
                           ev_positive=(ev_opt > 0))
 
+        _model_ev = round(ev_opt * 100, 2)
         option_display = {
             "contract": opt.get("label"), "premium": prem, "pct_otm": opt.get("pct_otm"),
             "spread_pct": liq_opt.get("spread_pct"), "theta_drag": round(theta_drag, 2),
-            "ev_per_contract": round(ev_opt * 100, 2),
+            "ev_per_contract": _model_ev,
+            # Explicit semantic aliases (Evidence & Graduation v1.2) — same
+            # number as ev_per_contract, named so a consumer never has to
+            # infer "is this calibrated?" from the bare figure. See the
+            # module docstring and EVIDENCE_GRADUATION_AFTER.md.
+            "model_ev_per_contract": _model_ev,
+            "calibration_status": "UNCALIBRATED",
+            "direction_model": "HEURISTIC",
             "verdict": "structure OK" if ev_opt > 0 else "AVOID option — take the stock",
             "bid": opt.get("bid"), "ask": opt.get("ask"),
             "strike": opt.get("strike"), "expiry": opt.get("expiry"),
