@@ -27,7 +27,7 @@ import threading
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 
-SCHEMA_VERSION = 1
+SCHEMA_VERSION = 2
 
 _DATA_DIR = os.path.expanduser(os.environ.get(
     "PAPER_DATA_DIR", "~/.tradingview_mcp_data/paper"))
@@ -267,6 +267,54 @@ _MIGRATIONS: Dict[int, List[str]] = {
               FOREIGN KEY(signal_id) REFERENCES signals(signal_id)
            )""",
         "CREATE INDEX IF NOT EXISTS idx_shadow_date ON options_shadow(session_date)",
+    ],
+
+    # Evidence & Graduation v1.2 phase 2 (2026-09): options_shadow previously
+    # discarded the exact model inputs (p_direction, theta_drag, p_trade, the
+    # stock setup's own entry/stop/target) the moment evaluate_canonical()
+    # returned — none of it was persisted, so it was gone forever the instant
+    # the process moved to the next candidate. Additive only: every new column
+    # is nullable, existing rows get NULL (never fabricated) for fields that
+    # didn't exist when they were written, and no existing column changes
+    # meaning. `outcome`/`outcome_at`/`outcome_pnl` (already in schema v1) now
+    # actually get written by resolve_outcomes() — their meaning is now
+    # explicit: the UNDERLYING/stock thesis outcome, not the option contract's
+    # own P&L (no historical option pricing source exists in this repo to
+    # grade that honestly — see `option_outcome`, which says so explicitly
+    # rather than silently guessing).
+    2: [
+        # Exact model inputs, single-sourced from canonical_bridge.py's
+        # option_display — never recomputed here or anywhere downstream.
+        "ALTER TABLE options_shadow ADD COLUMN direction TEXT",
+        "ALTER TABLE options_shadow ADD COLUMN p_direction REAL",
+        "ALTER TABLE options_shadow ADD COLUMN theta_drag REAL",
+        "ALTER TABLE options_shadow ADD COLUMN p_trade REAL",
+        # The DTE actually fed into the formula (post `opt.get(...) or 7`
+        # fallback) — NOT reconstructible from `expiry` alone when the
+        # fallback fired, which is exactly when naive reconstruction would
+        # silently give the wrong number.
+        "ALTER TABLE options_shadow ADD COLUMN dte_used_in_model REAL",
+        "ALTER TABLE options_shadow ADD COLUMN underlying_price REAL",
+        "ALTER TABLE options_shadow ADD COLUMN stock_stop REAL",
+        "ALTER TABLE options_shadow ADD COLUMN stock_target REAL",
+        "ALTER TABLE options_shadow ADD COLUMN expected_move_pct REAL",
+        "ALTER TABLE options_shadow ADD COLUMN move_to_be_pct REAL",
+        "ALTER TABLE options_shadow ADD COLUMN break_even_within_expected_move INTEGER",
+        # Contract quality (Layer A) and the binding reasons Layers B/D
+        # already compute — persisted so a later "why did the model reject
+        # this" question doesn't require an approximate audit-table join.
+        "ALTER TABLE options_shadow ADD COLUMN contract_quality_score REAL",
+        "ALTER TABLE options_shadow ADD COLUMN contract_quality_grade TEXT",
+        "ALTER TABLE options_shadow ADD COLUMN quality_eligible INTEGER",
+        "ALTER TABLE options_shadow ADD COLUMN quality_rejection_reason TEXT",
+        "ALTER TABLE options_shadow ADD COLUMN risk_rejection_reason TEXT",
+        "ALTER TABLE options_shadow ADD COLUMN strategy TEXT",
+        # Explicit, separate from `outcome` (which grades the underlying
+        # stock thesis): always NULL while open, 'unavailable' once the
+        # underlying resolves — this repo has no historical option-chain
+        # pricing source, so the option contract's own P&L is never faked
+        # from the underlying's move.
+        "ALTER TABLE options_shadow ADD COLUMN option_outcome TEXT",
     ],
 }
 

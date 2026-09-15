@@ -182,9 +182,16 @@ def evaluate_contract(opt: Dict[str, Any], underlying_price: Optional[float],
 
 
 def record(result: Dict[str, Any], symbol: str, signal_id: Optional[str] = None,
-           session_date: Optional[str] = None) -> Optional[str]:
+           session_date: Optional[str] = None, strategy: Optional[str] = None) -> Optional[str]:
     """Record the option view for a stock signal. Returns shadow_id, or None when the
-    engine produced no option idea (a perfectly normal outcome)."""
+    engine produced no option idea (a perfectly normal outcome).
+
+    `strategy` is the one evidence field this function cannot source from `result`
+    itself — it's a workflow-loop concept (the scanner strategy name), passed through
+    by the caller exactly as it already is to journal.record_signal()/
+    broker.submit_entry(). Every other new field below is read straight off
+    canonical_bridge.py's option_display dict (`opt`) — the exact values already used
+    to compute ev_opt/model_ev_per_contract, never recomputed here."""
     session_date = session_date or dt.date.today().isoformat()
     oq = result.get("option_quality") or {}
     opt = result.get("option") or {}
@@ -195,13 +202,19 @@ def record(result: Dict[str, Any], symbol: str, signal_id: Optional[str] = None,
     contract = opt.get("contract") or oq.get("contract") or f"{symbol}-none"
     sid = _shadow_id(symbol, str(contract), now)
     greeks = opt.get("greeks") or {}
+    bewm = opt.get("break_even_within_expected_move")
 
     db.execute("""INSERT OR REPLACE INTO options_shadow(
         shadow_id, created_at, session_date, signal_id, symbol, contract, expiry, strike,
         option_type, bid, ask, assumed_fill, spread_pct, volume, open_interest,
         delta, gamma, theta, vega, iv, iv_context, expected_move, break_even,
-        max_loss, ev_after_costs, preference, gradeable, missing_json, outcome)
-        VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+        max_loss, ev_after_costs, preference, gradeable, missing_json, outcome,
+        direction, p_direction, theta_drag, p_trade, dte_used_in_model,
+        underlying_price, stock_stop, stock_target, expected_move_pct, move_to_be_pct,
+        break_even_within_expected_move, contract_quality_score, contract_quality_grade,
+        quality_eligible, quality_rejection_reason, risk_rejection_reason, strategy)
+        VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,
+               ?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
         (sid, now, session_date, signal_id, symbol, str(contract),
          opt.get("expiry"), opt.get("strike"), opt.get("option_type"),
          opt.get("bid"), opt.get("ask"),
@@ -214,11 +227,187 @@ def record(result: Dict[str, Any], symbol: str, signal_id: Optional[str] = None,
          (round(opt["premium"] * 100, 2) if opt.get("premium") is not None else None),
          opt.get("ev_per_contract"), oq.get("preference", "prefer-stock"),
          1 if oq.get("gradeable") else 0,
-         json.dumps(oq.get("missing") or [], default=str), "open"))
+         json.dumps(oq.get("missing") or [], default=str), "open",
+         opt.get("direction"), opt.get("p_direction"), opt.get("theta_drag"), opt.get("p_trade"),
+         opt.get("dte_used_in_model"), opt.get("underlying_price"), opt.get("stock_stop"),
+         opt.get("stock_target"), opt.get("expected_move_pct"), opt.get("move_to_be_pct"),
+         (None if bewm is None else (1 if bewm else 0)),
+         opt.get("contract_quality_score"), opt.get("contract_quality_grade"),
+         (None if opt.get("quality_eligible") is None else (1 if opt.get("quality_eligible") else 0)),
+         opt.get("quality_rejection_reason"), opt.get("risk_rejection_reason"), strategy))
     db.audit("options_shadow", sid, "recorded",
              {"symbol": symbol, "preference": oq.get("preference"),
               "gradeable": oq.get("gradeable")})
     return sid
+
+
+# ══════════════════════════════════════════════════════════════════════════
+# Evidence & Graduation (v1.2 phase 2) — the missing outcome resolver
+#
+# WHAT THIS GRADES: the UNDERLYING STOCK THESIS that generated the option
+# candidate — did the same entry/stop/target the stock setup itself used go
+# on to hit stop or target? This is deliberately NOT the option contract's
+# own P&L. This repo has no historical option-chain pricing source (the
+# chain is only ever fetched live, for the current moment, via
+# strategy_service._pick_option_idea() — there is no historical bid/ask/
+# settlement lookup anywhere in the codebase), so faking an option exit price
+# from the underlying's move (delta, Black-Scholes, whatever) would
+# contaminate the exact evidence this exists to collect honestly. Every
+# resolved row gets `option_outcome = 'unavailable'` for that reason —
+# stated, not silently omitted.
+#
+# Why the underlying thesis still matters even without option pricing: the
+# live Model EV (canonical_bridge.py) is built directly from the stock
+# setup's own risk/reward geometry (risk_ps/reward_ps feed opt_profit) — so
+# "did the underlying thesis play out" is real, relevant evidence about the
+# geometry half of the model, even though it says nothing about theta/IV/
+# spread realism.
+#
+# SAME-BAR AMBIGUITY: reuses the exact policy already established for stock
+# signals (journal.update_excursions()) and positions (broker.
+# manage_open_positions()) — if one day's bar touches both stop and target,
+# the STOP is assumed to have hit first. This is NOT "ambiguous" by choice:
+# the project already has a real, tested, deliberately conservative answer
+# to this question ("never flatter the record"), and reusing it is more
+# honest than inventing a third state this codebase has never used anywhere
+# else.
+#
+# IDEMPOTENT: only rows with outcome='open' are ever touched; a resolved row
+# is never re-graded. Never places, modifies, or cancels an order — reads
+# `options_shadow` and the same `quotes` dict market_hours() already
+# fetched, writes only to `options_shadow`.
+# ══════════════════════════════════════════════════════════════════════════
+
+def resolve_outcomes(quotes: Dict[str, Any], session_date: Optional[str] = None) -> Dict[str, Any]:
+    """Grade open shadow observations against today's quotes. Shadow-only: issues
+    zero broker/order calls, touches only the options_shadow table. Call this from
+    the same lifecycle stage that updates stock excursions (workflow.market_hours()),
+    with the same `quotes` dict already fetched there — no new data fetch here."""
+    session_date = session_date or dt.date.today().isoformat()
+    rows = db.query("SELECT * FROM options_shadow WHERE outcome='open'")
+    checked = expired = resolved = skipped = 0
+    for r in rows:
+        checked += 1
+        expiry = r.get("expiry")
+        if expiry and expiry < session_date:
+            db.execute("""UPDATE options_shadow SET outcome=?, outcome_at=?, option_outcome=?
+                          WHERE shadow_id=?""",
+                       ("expired", db.utcnow(), "unavailable", r["shadow_id"]))
+            expired += 1
+            continue
+
+        direction = r.get("direction")
+        entry, stop, target = r.get("underlying_price"), r.get("stock_stop"), r.get("stock_target")
+        q = quotes.get(r["symbol"])
+        if direction is None or entry is None or stop is None or target is None or q is None:
+            # Missing required evidence (historical pre-migration row, or no
+            # quote available today) — stays open honestly, never guessed.
+            skipped += 1
+            continue
+
+        hi = q.high if q.high is not None else q.last
+        lo = q.low if q.low is not None else q.last
+        if hi is None or lo is None:
+            skipped += 1
+            continue
+
+        is_long = direction.upper() == "LONG"
+        # Stop checked before target — same conservative tie-break as
+        # journal.update_excursions()/broker.manage_open_positions().
+        hit_stop = (lo <= stop) if is_long else (hi >= stop)
+        hit_target = (hi >= target) if is_long else (lo <= target)
+        if hit_stop:
+            outcome = "stop_hit"
+            pnl_ps = round((stop - entry) if is_long else (entry - stop), 4)
+        elif hit_target:
+            outcome = "target_hit"
+            pnl_ps = round((target - entry) if is_long else (entry - target), 4)
+        else:
+            continue  # still open, no change
+
+        db.execute("""UPDATE options_shadow SET outcome=?, outcome_at=?, outcome_pnl=?,
+                      option_outcome=? WHERE shadow_id=?""",
+                   (outcome, db.utcnow(), pnl_ps, "unavailable", r["shadow_id"]))
+        db.audit("options_shadow", r["shadow_id"], "resolved",
+                 {"symbol": r["symbol"], "outcome": outcome, "outcome_pnl": pnl_ps})
+        resolved += 1
+
+    return {"checked": checked, "resolved": resolved, "expired": expired,
+            "skipped_missing_data": skipped}
+
+
+def backfill_recoverable_evidence(dry_run: bool = True) -> Dict[str, Any]:
+    """One-time backfill for rows recorded before Evidence & Graduation v1.2 phase 2
+    (i.e. missing `underlying_price`) — NOT a general migration step, never called
+    automatically. Only fills fields DETERMINISTICALLY recoverable from durable,
+    already-written data:
+
+    - contract_quality_score / contract_quality_grade / quality_eligible /
+      risk_rejection_reason: from the immutable `audit` table's own
+      'canonical_evaluated' event for this exact shadow_id (entity_id == shadow_id,
+      an EXACT match, not approximate) — this was written at the moment of the
+      original evaluation and never modified since.
+    - underlying_price / stock_stop / stock_target / strategy: from the `signals`
+      table, joined on (symbol, session_date) — safe ONLY because workflow.py's
+      per-symbol same-day dedup guarantees at most one evaluation per (symbol,
+      session_date), so a row is backfilled ONLY when EXACTLY ONE signals row
+      matches; zero or multiple matches are skipped, never guessed.
+    - direction: derived from the recovered target vs. entry (target > entry =>
+      LONG, the same relationship decision_engine.evaluate() itself would have
+      produced) — arithmetic on recovered data, not a new independent guess.
+
+    NEVER recovers p_direction, theta_drag, p_trade, expected_move_pct,
+    move_to_be_pct, break_even_within_expected_move, or dte_used_in_model — none of
+    these were ever persisted anywhere (schema v1 or the audit trail), so for rows
+    written before this phase they are genuinely lost and stay NULL, honestly,
+    forever. `dry_run=True` (default) reports what WOULD change without writing;
+    pass `dry_run=False` to actually apply it."""
+    rows = db.query("SELECT * FROM options_shadow WHERE underlying_price IS NULL")
+    plan: List[Dict[str, Any]] = []
+    for r in rows:
+        update: Dict[str, Any] = {}
+        audit_row = db.query(
+            """SELECT detail_json FROM audit WHERE entity='options_shadow_canonical'
+               AND entity_id=? AND event='canonical_evaluated'""", (r["shadow_id"],))
+        if len(audit_row) == 1:
+            meta = json.loads(audit_row[0]["detail_json"])
+            if meta.get("quality_score") is not None:
+                update["contract_quality_score"] = meta["quality_score"]
+            if meta.get("quality_grade") is not None:
+                update["contract_quality_grade"] = meta["quality_grade"]
+            if meta.get("quality_pass") is not None:
+                update["quality_eligible"] = 1 if meta["quality_pass"] else 0
+            if meta.get("option_eligible") is False and meta.get("option_binding_constraint"):
+                update["risk_rejection_reason"] = meta["option_binding_constraint"]
+
+        sig_rows = db.query(
+            "SELECT entry, stop, target, strategy FROM signals WHERE symbol=? AND session_date=?",
+            (r["symbol"], r["session_date"]))
+        if len(sig_rows) == 1:
+            s = sig_rows[0]
+            if s["entry"] is not None:
+                update["underlying_price"] = s["entry"]
+            if s["stop"] is not None:
+                update["stock_stop"] = s["stop"]
+            if s["target"] is not None:
+                update["stock_target"] = s["target"]
+            if s["strategy"] is not None:
+                update["strategy"] = s["strategy"]
+            if s["entry"] is not None and s["target"] is not None:
+                update["direction"] = "LONG" if s["target"] > s["entry"] else "SHORT"
+
+        if update:
+            plan.append({"shadow_id": r["shadow_id"], "symbol": r["symbol"],
+                        "session_date": r["session_date"], "fields": update})
+            if not dry_run:
+                sets = ", ".join(f"{k}=?" for k in update)
+                db.execute(f"UPDATE options_shadow SET {sets} WHERE shadow_id=?",
+                          (*update.values(), r["shadow_id"]))
+
+    if not dry_run and plan:
+        db.audit("options_shadow", "backfill", "backfill_recoverable_evidence",
+                 {"rows_updated": len(plan)})
+    return {"dry_run": dry_run, "candidates": len(rows), "backfilled": len(plan), "plan": plan}
 
 
 def summary(session_date: Optional[str] = None) -> Dict[str, Any]:
@@ -276,19 +465,28 @@ def _stock_stable() -> bool:
 # mean options may execute — only Gates 4 AND 5 together, both currently
 # closed by explicit policy (not by sample size), authorize that.
 #
-# HONEST STATUS (adversarial review, 2026-09): Gate 2 cannot currently be
-# reached by waiting. A shadow record's `outcome` column is set to 'open' at
-# insert and NOTHING in this codebase ever transitions it to target_hit/
-# stop_hit/expired — options_shadow has no equivalent of
-# journal.update_excursions() (confirmed: zero `UPDATE options_shadow`
-# statements anywhere in the repo). resolved_outcomes will read 0 forever
-# until that resolver is built, regardless of elapsed time or record count.
+# STATUS (Evidence & Graduation v1.2 phase 2): Gate 2 is now reachable —
+# resolve_outcomes() (this module) is wired into workflow.market_hours(),
+# grading the UNDERLYING STOCK THESIS (not the option contract's own P&L —
+# no historical option-chain pricing source exists in this repo) daily
+# against the persisted stock_stop/stock_target. Historical rows recorded
+# before this phase have NULL stock_stop/stock_target/underlying_price and
+# can never resolve — that's honest, not a bug (see EVIDENCE_GRADUATION_
+# AFTER.md's backfill table). Reaching Gate 2/3 still authorizes NOTHING;
+# see Gates 4-6.
 # ══════════════════════════════════════════════════════════════════════════
 
 GATE_NAMES = (
     "data_collection", "outcome_evidence", "predictive_validity",
     "economic_eligibility", "risk_authorization", "execution",
 )
+
+# Gate 3 thresholds. 20 matches graduation_readiness()'s own resolved_outcomes
+# floor (not a second, invented number). 50 matches the overall shadow
+# sample-size floor for the same reason. Neither threshold means "calibrated"
+# — they only widen what kind of DESCRIPTIVE read is honest to attempt.
+MIN_RESOLVED_FOR_DESCRIPTIVE = 20
+MIN_RESOLVED_FOR_VALIDATION_READY = 50
 
 
 def execution_gate_state() -> Dict[str, Any]:
@@ -308,25 +506,28 @@ def execution_gate_state() -> Dict[str, Any]:
     gate2 = {
         "gate": "outcome_evidence",
         "passed": by_name["resolved_outcomes"]["passed"],
-        "detail": by_name["resolved_outcomes"]["detail"] + " — NOTE: no production mechanism "
-                 "currently transitions a shadow record's outcome away from 'open' (no equivalent "
-                 "of journal.update_excursions() exists for options_shadow; confirmed zero "
-                 "'UPDATE options_shadow' statements anywhere in the codebase). resolved_outcomes "
-                 "will stay at 0 regardless of how much time passes until that resolver is built — "
-                 "this is not a 'wait for more data' situation.",
+        "detail": by_name["resolved_outcomes"]["detail"] + " — grades the underlying stock "
+                 "thesis only (resolve_outcomes(), run daily from market_hours()); "
+                 "option_outcome is always 'unavailable' — no historical option-chain pricing "
+                 "source exists in this repo to grade the contract's own P&L honestly.",
         "authorizes": "nothing — only that model scores can start being compared to realized outcomes",
     }
-    # Gate 3 deliberately never returns PASS/FAIL — see model_ev_calibration_buckets().
-    # A minimum-N floor for even attempting a verdict; MIN_RESOLVED_FOR_CALIBRATION_VERDICT
-    # below documents why. Same "no resolver exists yet" caveat as gate2 applies here too.
-    gate3_status = "INSUFFICIENT_EVIDENCE" if resolved_n < MIN_RESOLVED_FOR_CALIBRATION_VERDICT \
-        else "SEE model_ev_calibration_buckets()"
+    # Gate 3 deliberately never returns PASS/FAIL, and never CALIBRATED at any N.
+    if resolved_n < MIN_RESOLVED_FOR_DESCRIPTIVE:
+        gate3_status = "INSUFFICIENT_EVIDENCE"
+    elif resolved_n < MIN_RESOLVED_FOR_VALIDATION_READY:
+        gate3_status = "DESCRIPTIVE_ONLY"
+    else:
+        gate3_status = "READY_FOR_VALIDATION"
     gate3 = {
         "gate": "predictive_validity",
         "status": gate3_status,
-        "detail": f"{resolved_n} resolved shadow outcomes (need >= "
-                 f"{MIN_RESOLVED_FOR_CALIBRATION_VERDICT} before any bucket is even attempted) — "
-                 "this number cannot currently increase on its own; see gate2's detail",
+        "detail": f"{resolved_n} resolved shadow outcomes (underlying-thesis only). "
+                 f"<{MIN_RESOLVED_FOR_DESCRIPTIVE}: not enough to look. "
+                 f"{MIN_RESOLVED_FOR_DESCRIPTIVE}-{MIN_RESOLVED_FOR_VALIDATION_READY-1}: "
+                 f"descriptive buckets only (model_ev_calibration_buckets()), no verdict. "
+                 f">={MIN_RESOLVED_FOR_VALIDATION_READY}: enough to consider a real validation "
+                 "study — still not itself calibration.",
         "authorizes": "nothing, ever, by itself — informs a human decision, never gates automatically",
     }
     gate4 = {
@@ -366,14 +567,6 @@ def execution_gate_state() -> Dict[str, Any]:
     }
 
 
-# Below this many RESOLVED shadow outcomes, no bucket in
-# model_ev_calibration_buckets() is even attempted — a handful of resolved
-# trades split across 5 buckets would average single digits per bucket, which
-# is not "a small sample", it's noise dressed as a bucket. 20 matches
-# graduation_readiness()'s own "resolved_outcomes" floor (PAPER_GRADUATION_
-# CHECKLIST.md) rather than inventing a second, different number.
-MIN_RESOLVED_FOR_CALIBRATION_VERDICT = 20
-
 MODEL_EV_BUCKETS = (
     ("< -25", None, -25.0),
     ("-25 to 0", -25.0, 0.0),
@@ -382,6 +575,34 @@ MODEL_EV_BUCKETS = (
     ("> +25", 25.0, None),
 )
 
+# p_direction is a [0.15, 0.85]-clamped heuristic (lab/decision_engine.py),
+# not a probability — bucket edges chosen to match that clamp's natural
+# quintile-ish spread, not fitted to any observed distribution.
+P_DIRECTION_BUCKETS = (
+    ("0.15-0.30", 0.15, 0.30),
+    ("0.30-0.45", 0.30, 0.45),
+    ("0.45-0.60", 0.45, 0.60),
+    ("0.60-0.70", 0.60, 0.70),
+    ("0.70-0.85", 0.70, 0.86),  # 0.86 so the real upper clamp (0.85) is inclusive
+)
+
+
+def _dedupe_by_observation(rows: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    """Observation identity is (session_date, symbol, contract) — workflow.py's
+    per-symbol same-day dedup already prevents same-day duplicates in normal
+    operation, but this is a defensive second line, not a trust exercise: if two
+    rows ever share an observation identity (e.g. a retried/rerun premarket
+    before that guard applied), only the most recently created one counts. A
+    symbol's contract evaluated again on a LATER session_date is a genuinely
+    separate observation and is never collapsed."""
+    best: Dict[tuple, Dict[str, Any]] = {}
+    for r in rows:
+        key = (r.get("session_date"), r.get("symbol"), r.get("contract"))
+        prior = best.get(key)
+        if prior is None or (r.get("created_at") or "") > (prior.get("created_at") or ""):
+            best[key] = r
+    return list(best.values())
+
 
 def model_ev_calibration_buckets() -> Dict[str, Any]:
     """Bucket RESOLVED shadow records by model_ev (== ev_after_costs, the persisted
@@ -389,15 +610,17 @@ def model_ev_calibration_buckets() -> Dict[str, Any]:
     "do positive Model EV records outperform negative ones", never a verdict computed
     prematurely. An unresolved record ('outcome' == 'open') is never counted as a
     winner OR a loser; it is excluded, not defaulted. Returns INSUFFICIENT_SAMPLE
-    instead of numbers until MIN_RESOLVED_FOR_CALIBRATION_VERDICT is met — this
-    threshold is deliberately NOT tuned against whatever the live row count happens
-    to be right now."""
-    rows = db.query("""SELECT ev_after_costs, outcome, outcome_pnl FROM options_shadow
+    instead of numbers until MIN_RESOLVED_FOR_DESCRIPTIVE is met — this threshold is
+    deliberately NOT tuned against whatever the live row count happens to be right
+    now. Grades the underlying-thesis outcome only (see resolve_outcomes())."""
+    rows = db.query("""SELECT session_date, symbol, contract, created_at, ev_after_costs,
+                              outcome, outcome_pnl FROM options_shadow
                         WHERE outcome IN ('target_hit', 'stop_hit', 'expired')
                         AND ev_after_costs IS NOT NULL""")
-    if len(rows) < MIN_RESOLVED_FOR_CALIBRATION_VERDICT:
+    rows = _dedupe_by_observation(rows)
+    if len(rows) < MIN_RESOLVED_FOR_DESCRIPTIVE:
         return {"status": "INSUFFICIENT_SAMPLE",
-                "resolved_n": len(rows), "required_n": MIN_RESOLVED_FOR_CALIBRATION_VERDICT,
+                "resolved_n": len(rows), "required_n": MIN_RESOLVED_FOR_DESCRIPTIVE,
                 "buckets": None,
                 "note": "no bucket is computed below the minimum — a ratio over a handful "
                         "of rows is not evidence, it's noise with a label"}
@@ -414,11 +637,50 @@ def model_ev_calibration_buckets() -> Dict[str, Any]:
             "win_rate_pct": round(100 * len(wins) / len(in_bucket), 1) if in_bucket else None,
             "avg_realized_pnl": round(sum(pnls) / len(pnls), 2) if pnls else None,
         }
-    return {"status": "OK", "resolved_n": len(rows), "required_n": MIN_RESOLVED_FOR_CALIBRATION_VERDICT,
+    return {"status": "OK", "resolved_n": len(rows), "required_n": MIN_RESOLVED_FOR_DESCRIPTIVE,
             "buckets": buckets,
             "note": "monotonic win-rate/avg-P&L rise across buckets would support the model; "
                     "it is not claimed here — read the numbers, do not infer a verdict from this "
                     "function alone"}
+
+
+def p_direction_calibration_buckets() -> Dict[str, Any]:
+    """Bucket RESOLVED shadow records by the p_direction heuristic that fed their
+    Model EV, and report the realized directional hit-rate per bucket — asking
+    whether a HIGHER heuristic score corresponds to a HIGHER realized success
+    frequency. This is descriptive-only plumbing, not a calibration claim: never
+    read a bucket's realized hit-rate as proof p_direction=0.70 means a real 70%
+    probability — that would be exactly the conflation this whole pass exists to
+    stop. Only possible for rows recorded after p_direction started being
+    persisted (Evidence & Graduation v1.2 phase 2) — historical rows with
+    p_direction IS NULL are excluded, never treated as 0."""
+    rows = db.query("""SELECT session_date, symbol, contract, created_at, p_direction,
+                              outcome, outcome_pnl FROM options_shadow
+                        WHERE outcome IN ('target_hit', 'stop_hit', 'expired')
+                        AND p_direction IS NOT NULL""")
+    rows = _dedupe_by_observation(rows)
+    if len(rows) < MIN_RESOLVED_FOR_DESCRIPTIVE:
+        return {"status": "INSUFFICIENT_SAMPLE",
+                "resolved_n": len(rows), "required_n": MIN_RESOLVED_FOR_DESCRIPTIVE,
+                "buckets": None,
+                "note": "excludes historical rows with p_direction IS NULL (recorded before "
+                        "this field was persisted) — they are absent from resolved_n, not "
+                        "counted as 0"}
+
+    buckets: Dict[str, Dict[str, Any]] = {}
+    for label, lo, hi in P_DIRECTION_BUCKETS:
+        in_bucket = [r for r in rows if lo <= r["p_direction"] < hi]
+        hits = [r for r in in_bucket if r["outcome"] == "target_hit"]
+        buckets[label] = {
+            "n": len(in_bucket),
+            "realized_directional_hit_rate_pct":
+                round(100 * len(hits) / len(in_bucket), 1) if in_bucket else None,
+        }
+    return {"status": "OK", "resolved_n": len(rows), "required_n": MIN_RESOLVED_FOR_DESCRIPTIVE,
+            "buckets": buckets,
+            "note": "a realized hit-rate is NOT a probability — this only asks whether higher "
+                    "p_direction correlates with better outcomes, never that p_direction IS a "
+                    "probability. Do not present p_direction=0.70 as '70% win probability'."}
 
 
 def format_shadow_disclosure(option_display: Dict[str, Any]) -> str:

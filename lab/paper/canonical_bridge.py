@@ -208,6 +208,28 @@ def evaluate_canonical(result: Dict[str, Any], *, symbol: str, direction: str,
             "model_ev_per_contract": _model_ev,
             "calibration_status": "UNCALIBRATED",
             "direction_model": "HEURISTIC",
+            # Exact model inputs (Evidence & Graduation v1.2 phase 2) — the
+            # same local variables used two lines above to compute ev_opt,
+            # exposed so options_shadow.record() can persist them without a
+            # second computation. Never recompute these downstream.
+            "direction": direction,
+            "p_direction": p_direction,
+            "p_trade": p_trade,
+            "dte_used_in_model": dte,
+            "underlying_price": entry,
+            "stock_stop": stop,
+            "stock_target": result.get("target"),
+            "expected_move_pct": expected_move_pct,
+            "move_to_be_pct": move_to_be_pct,
+            "break_even_within_expected_move": break_even_within_move,
+            # Layer A/B results, already computed above — read, never re-derived.
+            "contract_quality_score": canon_quality.score if canon_quality else None,
+            "contract_quality_grade": canon_quality.grade if canon_quality else None,
+            "quality_eligible": bool(canon_quality.quality_pass) if canon_quality else None,
+            "quality_rejection_reason": ("; ".join(canon_quality.hard_failures)
+                                        if (canon_quality and canon_quality.hard_failures) else None),
+            "risk_rejection_reason": (canon_option_fit.binding_constraint
+                                     if (canon_option_fit and not canon_option_fit.eligible) else None),
             "verdict": "structure OK" if ev_opt > 0 else "AVOID option — take the stock",
             "bid": opt.get("bid"), "ask": opt.get("ask"),
             "strike": opt.get("strike"), "expiry": opt.get("expiry"),

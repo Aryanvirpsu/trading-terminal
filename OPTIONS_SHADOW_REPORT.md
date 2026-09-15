@@ -23,7 +23,8 @@ immediately).
 
 | Field | Note |
 |---|---|
-| underlying setup | the `signal_id` of the stock decision that triggered the look |
+| underlying setup | `signal_id` is currently always `NULL` — `record()` is called before the matching `signals` row is journaled, so this FK is structurally never populated (a known, pre-existing gap, not fixed in this pass). The stock setup itself IS captured directly: `underlying_price`/`stock_stop`/`stock_target`/`direction`/`strategy` (added Evidence & Graduation v1.2 phase 2, single-sourced from the exact values used to compute Model EV — never recomputed) |
+| model inputs | `p_direction`, `theta_drag`, `p_trade`, `dte_used_in_model` (added phase 2) — the exact numbers that produced Model EV, persisted so a later "why this number" question doesn't require re-deriving anything. Only present on rows recorded after phase 2 shipped; earlier rows have these `NULL`, honestly, forever (nothing recoverable) |
 | contract, expiry, strike, type | as reported by the chain |
 | bid, ask | raw quotes |
 | **assumed fill** | the **ask** — we assume we pay up, never the midpoint |
@@ -34,7 +35,8 @@ immediately).
 | max loss | premium × 100 (long option) |
 | **Model EV** (column: `ev_after_costs`) | **corrected**: NOT "edge minus spread cost" — the live value is `canonical_bridge.py`'s `p_direction`-based `model_ev_per_contract` (same `_expected_value(p_win, profit, loss, cost)` formula used everywhere in `decision_engine.py`, applied to the option premium). **This is a model opinion, not a measured expectation** — its probability input (`p_direction`) has no calibration evidence behind it. Treat a positive number as "the model currently favors this," never as "this contract has demonstrated a $X edge." `calibration_status` is `UNCALIBRATED` and `direction_model` is `HEURISTIC` for every record today; call `options_shadow.format_shadow_disclosure()` to render both alongside the number |
 | preference | `prefer-stock` · `prefer-option` · `avoid-both` |
-| later outcome | tracked forward like any other signal |
+| **outcome** | as of phase 2, actually resolved daily by `options_shadow.resolve_outcomes()` (wired into `workflow.market_hours()`) — grades the **underlying stock thesis**: did the persisted `stock_stop`/`stock_target` get hit? `open` → `target_hit` / `stop_hit` / `expired`. Same-bar stop+target collisions resolve stop-first, reusing `journal.update_excursions()`'s exact policy, not an invented "ambiguous" state |
+| **option_outcome** | always `'unavailable'` once `outcome` resolves — this repo has no historical option-chain pricing source, so the option contract's own P&L is never estimated from the underlying's move. Deliberately explicit rather than a silent `NULL` |
 
 ## Affordability comes first ($500 account)
 
@@ -92,3 +94,16 @@ not a pending default.
 
 `options_shadow.summary()["in_ledger"]` is `False` and is asserted by
 `test_options_never_enter_the_ledger`.
+
+## Outcome resolution (Evidence & Graduation v1.2 phase 2)
+
+Before phase 2, `outcome` was written once as `'open'` and never touched again —
+confirmed zero `UPDATE options_shadow` statements anywhere in the repo, no
+equivalent of `journal.update_excursions()` for this table. That's fixed:
+`options_shadow.resolve_outcomes()` runs daily from the same lifecycle stage that
+already resolves stock excursions, grading the underlying stock thesis (never the
+option contract's own P&L — see `option_outcome` above). The 10 rows collected
+before this shipped have no `stock_stop`/`stock_target`/`underlying_price` and can
+never resolve unless backfilled (`options_shadow.backfill_recoverable_evidence()` —
+built, tested against a real cloud-DB copy, not applied to any live ledger in this
+pass; see `EVIDENCE_GRADUATION_AFTER.md`).

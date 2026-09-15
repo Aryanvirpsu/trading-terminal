@@ -102,6 +102,68 @@ decision, not a missing default.** Gate 6 (execution) is `SHADOW_ONLY`, structur
 enforced by `shadow_only=True` regardless of every other gate. No number of shadow
 records moves Gate 5 or 6 — only an explicit policy decision does.
 
+## Phase 2 (2026-09) — persisting evidence and building the missing resolver
+
+Phase 1 (above) fixed the *label*. It left two structural gaps disclosed but
+unfixed: `p_direction`/`theta_drag`/`p_trade`/the stock setup's own entry/stop/
+target were computed and then discarded on every single evaluation, and
+`options_shadow.outcome` had no production mechanism to ever leave `'open'`.
+Both are fixed now.
+
+**What's persisted going forward** (additive migration, schema v2 — 18 new
+nullable columns on `options_shadow`, `lab/paper/db.py`'s `_MIGRATIONS[2]`):
+`direction`, `p_direction`, `theta_drag`, `p_trade`, `dte_used_in_model`,
+`underlying_price`, `stock_stop`, `stock_target`, `expected_move_pct`,
+`move_to_be_pct`, `break_even_within_expected_move`, `contract_quality_score`,
+`contract_quality_grade`, `quality_eligible`, `quality_rejection_reason`,
+`risk_rejection_reason`, `strategy`, `option_outcome`. Every one is read
+straight off `canonical_bridge.py`'s `option_display`/`canon_quality`/
+`canon_option_fit` — the exact objects already used to compute `ev_opt` —
+never recomputed. `strategy` is the one exception: it's a `workflow.py`-loop
+concept, passed through the existing `options_shadow.record()` call with one
+added keyword argument, not threaded into `canonical_bridge.py`.
+
+**The outcome resolver** (`options_shadow.resolve_outcomes()`, wired into
+`workflow.market_hours()` — the same lifecycle stage that already resolves
+stock excursions via `journal.update_excursions()`) grades the **underlying
+stock thesis only** — did the same stop/target the stock setup itself used
+get hit? It deliberately does **not** grade the option contract's own P&L:
+this repo has no historical option-chain pricing source anywhere (the chain
+is only ever fetched live, for the current instant, via
+`strategy_service._pick_option_idea()`), so estimating an option exit price
+from the underlying's move would contaminate the exact evidence this exists
+to collect honestly. Every resolved row gets `option_outcome = 'unavailable'`
+— stated explicitly, never silently omitted. Same-bar stop/target collisions
+reuse the **exact** policy `journal.update_excursions()`/`broker.
+manage_open_positions()` already use — stop wins, "never flatter the record"
+— not an invented "ambiguous" state; the project already had a real, tested
+answer to this question. The resolver issues zero broker/order calls, touches
+only `options_shadow`, and is idempotent (a resolved row is never re-graded).
+
+**Gates 2/3 updated**: Gate 2 (outcome evidence) is now genuinely reachable —
+it was not in Phase 1. Gate 3 (predictive validity) now has three descriptive
+states — `INSUFFICIENT_EVIDENCE` (&lt;20 resolved), `DESCRIPTIVE_ONLY` (20-49),
+`READY_FOR_VALIDATION` (≥50) — and **never** a fourth state claiming
+calibration at any N. Gates 4-6 are unchanged and unmovable by any of this.
+
+**Historical backfill**: checked what's recoverable for the 10 real rows
+already collected (Sept 10/11/14) via `options_shadow.backfill_recoverable_
+evidence()`, tested against a downloaded copy of the real cloud DB (never the
+live one). Two durable, exact sources exist: the immutable `audit` table's own
+`canonical_evaluated` event for that exact `shadow_id` (an exact match, not
+approximate), and the `signals` table joined on `(symbol, session_date)` —
+safe *only* because `workflow.py`'s per-symbol same-day dedup guarantees at
+most one match; a row is backfilled only when exactly one match exists, never
+guessed. Result: **all 10 rows** recovered `underlying_price`/`stock_stop`/
+`stock_target`/`direction`/`strategy`/`contract_quality_score`/
+`contract_quality_grade`/`quality_eligible`/`risk_rejection_reason`.
+**`p_direction`/`theta_drag`/`p_trade`/`expected_move_pct`/`move_to_be_pct`/
+`break_even_within_expected_move`/`dte_used_in_model` remain permanently
+`NULL`** for these 10 rows — never persisted anywhere, not recoverable from
+any durable source, and correctly not fabricated. The function is built and
+tested (`dry_run=True` by default) but was **not** run against the real
+cloud or local ledgers in this pass — see the cloud-safety note below.
+
 ## `evaluate_contract()` — conclusion: KEEP, reclassified
 
 Traced its only callers (its own 3 unit tests), confirmed via grep + call-graph that
@@ -132,9 +194,12 @@ Not resolved here, on purpose:
    15–25x the current $5 per-trade cap. Raising the cap, adding an option-specific
    allocation, or deciding the account size simply cannot carry standard contracts
    are all live options — none chosen here.
-2. Should `p_direction`/`p_trade` themselves ever be persisted per shadow record
-   (needed for a real "p_direction bucket" calibration table, per the original
-   request) — this needs an additive DB migration not performed in this pass.
+2. ~~Should `p_direction`/`p_trade` be persisted per shadow record~~ — **done in
+   Phase 2**, going forward. Still open: should the same be attempted for the
+   ~10 already-collected historical rows for which it's provably impossible
+   (see Phase 2's backfill section) — the answer here is no, honesty requires
+   leaving them `NULL`, but it's worth stating plainly that those 10
+   observations will never contribute to a `p_direction` calibration read.
 3. Should the dashboard/options_desk.py's separate, Robinhood-broker-based EV
    pipeline eventually be reconciled with `canonical_bridge.py`'s, or do they
    legitimately serve different pipelines (Pipeline 2 vs. Pipeline 3)?
@@ -145,3 +210,24 @@ Not resolved here, on purpose:
    `options_shadow.record()` is a genuine, separate correctness gap, flagged but
    **not fixed here** — it's tangential to the semantic-conflation focus of this
    pass and deserves its own small, reviewable fix.
+6. **Who runs `backfill_recoverable_evidence(dry_run=False)` against the real
+   cloud ledger, and when?** It's proven safe against a downloaded copy of the
+   real data, but this repo has no write path to the live GitHub Actions
+   cache — applying it for real requires a deliberate manual step (download
+   the artifact, run it, decide what to do with the result), not something
+   this pass performs or automates.
+7. Should `resolve_outcomes()` eventually distinguish `expired ITM` from
+   `expired OTM` (both are currently just `outcome='expired'`,
+   `option_outcome='unavailable'`)? Deferred — it would need the underlying's
+   close on the expiry date, which the resolver doesn't currently snapshot,
+   and adding it half-built risked exactly the "looks more sophisticated than
+   the evidence supports" trap this whole effort exists to avoid.
+
+## Cloud-ledger safety (Phase 2)
+
+Confirmed before finalizing: no code in this phase runs against
+`~/.tradingview_mcp_data` or the GitHub Actions cache. All migration/resolver/
+backfill testing used either a fresh temporary SQLite file or an explicit
+**copy** of a downloaded, read-only cloud-DB artifact backup in a local
+scratch directory — never the original download, never the live path. HAL's
+position was not read, referenced, or touched in Phase 2 at all.

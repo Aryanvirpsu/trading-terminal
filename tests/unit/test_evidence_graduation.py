@@ -30,6 +30,7 @@ for _p in ("src", "dashboard", "lab"):
 import decision_engine as de                                   # noqa: E402
 
 from paper import canonical_bridge, db, options_shadow          # noqa: E402
+from paper.fills import Quote                                   # noqa: E402
 from canonical.risk_policy import STRATEGY_500_POLICY           # noqa: E402
 
 NOW = datetime.now(timezone.utc).replace(microsecond=0)
@@ -318,3 +319,369 @@ def test_format_shadow_disclosure_defaults_safely_on_missing_keys():
     text = options_shadow.format_shadow_disclosure({"ev_per_contract": -5.0})
     assert "UNCALIBRATED" in text
     assert "$-5.00" in text or "-$5.00" in text
+
+
+# ══════════════════════════════════════════════════════════════════════════
+# Phase 2 — persistence, resolver, and graduation-semantics tests
+# ══════════════════════════════════════════════════════════════════════════
+
+def _seed_shadow_row(shadow_id, **over):
+    row = {
+        "shadow_id": shadow_id, "created_at": db.utcnow(), "session_date": "2026-01-01",
+        "symbol": "TEST", "contract": f"contract-{shadow_id}", "expiry": "2026-02-01",
+        "strike": 100.0, "option_type": "CALL", "ev_after_costs": 10.0,
+        "preference": "prefer-option", "gradeable": 1, "missing_json": "[]",
+        "outcome": "open", "direction": "LONG", "p_direction": 0.6,
+        "underlying_price": 100.0, "stock_stop": 95.0, "stock_target": 110.0,
+    }
+    row.update(over)
+    cols = list(row.keys())
+    placeholders = ",".join("?" for _ in cols)
+    db.execute(f"INSERT INTO options_shadow({','.join(cols)}) VALUES({placeholders})",
+               tuple(row[c] for c in cols))
+
+
+class TestMigration:
+    def test_new_columns_present_and_nullable(self):
+        cols = {c["name"] for c in db.query("PRAGMA table_info(options_shadow)")}
+        for expected in ("direction", "p_direction", "theta_drag", "p_trade",
+                        "dte_used_in_model", "underlying_price", "stock_stop",
+                        "stock_target", "expected_move_pct", "move_to_be_pct",
+                        "break_even_within_expected_move", "contract_quality_score",
+                        "contract_quality_grade", "quality_eligible",
+                        "quality_rejection_reason", "risk_rejection_reason",
+                        "strategy", "option_outcome"):
+            assert expected in cols, f"missing column {expected}"
+
+    def test_migration_idempotent_on_rerun(self):
+        v1 = db.migrate(db.connect())
+        v2 = db.migrate(db.connect())
+        assert v1 == v2 == 2
+
+    def test_existing_row_survives_with_null_new_fields(self):
+        """Simulates a pre-phase-2 row: only the columns that existed in schema v1
+        are populated; every new column must read back as NULL, not fabricated."""
+        db.execute("""INSERT INTO options_shadow(
+            shadow_id, created_at, session_date, symbol, contract, ev_after_costs,
+            preference, gradeable, missing_json, outcome)
+            VALUES(?,?,?,?,?,?,?,?,?,?)""",
+            ("shd_legacy", db.utcnow(), "2026-01-01", "NEM", "legacy-contract",
+             -36.7, "avoid-both", 0, "[]", "open"))
+        row = db.query_one("SELECT * FROM options_shadow WHERE shadow_id='shd_legacy'")
+        assert row["ev_after_costs"] == -36.7          # old data intact
+        assert row["p_direction"] is None               # new field, honestly NULL
+        assert row["underlying_price"] is None
+        assert row["option_outcome"] is None
+
+
+class TestPersistenceNoRecomputation:
+    def test_persisted_fields_match_option_display_exactly(self, monkeypatch):
+        """The values written to options_shadow must be the exact same values
+        canonical_bridge.py used to compute Model EV — read from option_display,
+        never recomputed inside options_shadow.record()."""
+        _, canon = _run_canonical(monkeypatch, option_idea=_option_candidate())
+        disp = canon["option_display"]
+        shadow_result = canonical_bridge.augmented_result_for_shadow(
+            {"option_quality": canon["option_quality_display"]}, canon)
+        sid = options_shadow.record(shadow_result, symbol="BAC", session_date="2026-01-01",
+                                    strategy="sector_relative_strength")
+        assert sid is not None
+        row = db.query_one("SELECT * FROM options_shadow WHERE shadow_id=?", (sid,))
+        assert row["p_direction"] == disp["p_direction"]
+        assert row["p_trade"] == disp["p_trade"]
+        assert row["direction"] == disp["direction"]
+        assert row["underlying_price"] == disp["underlying_price"]
+        assert row["stock_stop"] == disp["stock_stop"]
+        assert row["stock_target"] == disp["stock_target"]
+        assert row["theta_drag"] == disp["theta_drag"]
+        assert row["ev_after_costs"] == disp["ev_per_contract"] == disp["model_ev_per_contract"]
+        assert row["strategy"] == "sector_relative_strength"
+
+    def test_no_new_broker_or_order_call_introduced(self, monkeypatch):
+        """record() must still never touch orders/positions/fills — persistence-only."""
+        _, canon = _run_canonical(monkeypatch, option_idea=_option_candidate())
+        shadow_result = canonical_bridge.augmented_result_for_shadow(
+            {"option_quality": canon["option_quality_display"]}, canon)
+        before = {t: db.query_one(f"SELECT COUNT(*) n FROM {t}")["n"]
+                 for t in ("orders", "fills", "positions")}
+        options_shadow.record(shadow_result, symbol="BAC", session_date="2026-01-01")
+        after = {t: db.query_one(f"SELECT COUNT(*) n FROM {t}")["n"]
+                for t in ("orders", "fills", "positions")}
+        assert before == after
+
+
+class TestResolver:
+    def test_still_open_with_no_quote(self):
+        _seed_shadow_row("shd_a")
+        out = options_shadow.resolve_outcomes({}, "2026-01-02")
+        assert out["skipped_missing_data"] == 1
+        row = db.query_one("SELECT outcome FROM options_shadow WHERE shadow_id='shd_a'")
+        assert row["outcome"] == "open"
+
+    def test_target_hit_only(self):
+        _seed_shadow_row("shd_b")
+        q = Quote("TEST", last=111, high=112, low=105)
+        out = options_shadow.resolve_outcomes({"TEST": q}, "2026-01-02")
+        assert out["resolved"] == 1
+        row = db.query_one("SELECT outcome, outcome_pnl, option_outcome FROM options_shadow "
+                           "WHERE shadow_id='shd_b'")
+        assert row["outcome"] == "target_hit"
+        assert row["outcome_pnl"] == pytest.approx(10.0)   # target(110) - entry(100)
+        assert row["option_outcome"] == "unavailable"
+
+    def test_stop_hit_only(self):
+        _seed_shadow_row("shd_c")
+        q = Quote("TEST", last=94, high=99, low=93)
+        out = options_shadow.resolve_outcomes({"TEST": q}, "2026-01-02")
+        assert out["resolved"] == 1
+        row = db.query_one("SELECT outcome, outcome_pnl FROM options_shadow WHERE shadow_id='shd_c'")
+        assert row["outcome"] == "stop_hit"
+        assert row["outcome_pnl"] == pytest.approx(-5.0)   # stop(95) - entry(100)
+
+    def test_same_bar_both_touched_stop_wins(self):
+        """Reuses journal.update_excursions()'s exact conservative policy — stop
+        wins on a same-bar collision. NOT an invented 'ambiguous' state."""
+        _seed_shadow_row("shd_d")
+        q = Quote("TEST", last=100, high=115, low=90)   # both target and stop crossed
+        options_shadow.resolve_outcomes({"TEST": q}, "2026-01-02")
+        row = db.query_one("SELECT outcome FROM options_shadow WHERE shadow_id='shd_d'")
+        assert row["outcome"] == "stop_hit"
+
+    def test_expired(self):
+        _seed_shadow_row("shd_e", expiry="2026-01-01")
+        out = options_shadow.resolve_outcomes({}, "2026-01-05")
+        assert out["expired"] == 1
+        row = db.query_one("SELECT outcome, option_outcome FROM options_shadow WHERE shadow_id='shd_e'")
+        assert row["outcome"] == "expired"
+        assert row["option_outcome"] == "unavailable"
+
+    def test_missing_market_data_stays_open(self):
+        _seed_shadow_row("shd_f")
+        out = options_shadow.resolve_outcomes({"OTHER_SYMBOL": Quote("OTHER_SYMBOL", last=1)},
+                                              "2026-01-02")
+        assert out["skipped_missing_data"] == 1
+        row = db.query_one("SELECT outcome FROM options_shadow WHERE shadow_id='shd_f'")
+        assert row["outcome"] == "open"
+
+    def test_legacy_row_with_null_stop_target_never_resolves(self):
+        """A pre-phase-2 row (no stock_stop/stock_target persisted) must stay open
+        forever rather than guess — this is the honest, expected outcome for the
+        real 10 historical rows."""
+        _seed_shadow_row("shd_g", stock_stop=None, stock_target=None, underlying_price=None,
+                         direction=None)
+        q = Quote("TEST", last=200, high=200, low=200)
+        out = options_shadow.resolve_outcomes({"TEST": q}, "2026-01-02")
+        assert out["skipped_missing_data"] == 1
+        row = db.query_one("SELECT outcome FROM options_shadow WHERE shadow_id='shd_g'")
+        assert row["outcome"] == "open"
+
+    def test_already_resolved_row_is_never_touched_again(self):
+        _seed_shadow_row("shd_h", outcome="target_hit", outcome_pnl=10.0)
+        q = Quote("TEST", last=50, high=50, low=50)   # would look like a stop-hit if re-graded
+        options_shadow.resolve_outcomes({"TEST": q}, "2026-01-02")
+        row = db.query_one("SELECT outcome, outcome_pnl FROM options_shadow WHERE shadow_id='shd_h'")
+        assert row["outcome"] == "target_hit" and row["outcome_pnl"] == 10.0
+
+    def test_rerun_same_day_is_idempotent(self):
+        _seed_shadow_row("shd_i")
+        q = Quote("TEST", last=111, high=112, low=105)
+        options_shadow.resolve_outcomes({"TEST": q}, "2026-01-02")
+        first = dict(db.query_one("SELECT outcome, outcome_pnl, outcome_at FROM options_shadow "
+                                  "WHERE shadow_id='shd_i'"))
+        options_shadow.resolve_outcomes({"TEST": q}, "2026-01-02")   # rerun, same day
+        second = dict(db.query_one("SELECT outcome, outcome_pnl, outcome_at FROM options_shadow "
+                                   "WHERE shadow_id='shd_i'"))
+        assert first == second
+
+    def test_resolver_issues_zero_order_or_broker_calls(self, monkeypatch):
+        """The resolver must be structurally incapable of trading — assert the
+        broker/order-placement functions are never called, not merely unused today."""
+        import paper.broker as broker_mod
+        calls = []
+        monkeypatch.setattr(broker_mod, "place_order", lambda *a, **k: calls.append("place_order"))
+        monkeypatch.setattr(broker_mod, "submit_entry", lambda *a, **k: calls.append("submit_entry"))
+        _seed_shadow_row("shd_j")
+        q = Quote("TEST", last=111, high=112, low=105)
+        options_shadow.resolve_outcomes({"TEST": q}, "2026-01-02")
+        assert calls == []
+
+    def test_short_direction_resolved_correctly(self):
+        _seed_shadow_row("shd_k", direction="SHORT", underlying_price=100.0,
+                         stock_stop=105.0, stock_target=90.0)
+        q = Quote("TEST", last=89, high=91, low=88)
+        options_shadow.resolve_outcomes({"TEST": q}, "2026-01-02")
+        row = db.query_one("SELECT outcome, outcome_pnl FROM options_shadow WHERE shadow_id='shd_k'")
+        assert row["outcome"] == "target_hit"
+        assert row["outcome_pnl"] == pytest.approx(10.0)   # entry(100) - target(90)
+
+
+class TestBackfill:
+    def _seed_signal(self, symbol, session_date, entry, stop, target, strategy="liquid_momentum"):
+        db.execute("""INSERT INTO signals(signal_id, created_at, session_date, symbol, strategy,
+                      action, quality, entry, stop, target, executed, outcome)
+                      VALUES(?,?,?,?,?,?,?,?,?,?,?,?)""",
+                   (f"sig_{symbol}_{session_date}", db.utcnow(), session_date, symbol, strategy,
+                    "MONITOR", 50.0, entry, stop, target, 0, "open"))
+
+    def test_recovers_from_unique_signals_and_audit_match(self):
+        self._seed_signal("NEM", "2026-01-01", entry=126.16, stop=119.92, target=139.78)
+        db.execute("""INSERT INTO options_shadow(shadow_id, created_at, session_date, symbol,
+                      contract, ev_after_costs, preference, gradeable, missing_json, outcome)
+                      VALUES(?,?,?,?,?,?,?,?,?,?)""",
+                   ("shd_bf1", db.utcnow(), "2026-01-01", "NEM", "c1", -36.7, "avoid-both",
+                    0, "[]", "open"))
+        db.audit("options_shadow_canonical", "shd_bf1", "canonical_evaluated",
+                 {"quality_score": 33.0, "quality_grade": "D", "quality_pass": False,
+                  "option_eligible": False, "option_binding_constraint": "structurally_invalid"})
+        out = options_shadow.backfill_recoverable_evidence(dry_run=False)
+        assert out["backfilled"] == 1
+        row = db.query_one("SELECT * FROM options_shadow WHERE shadow_id='shd_bf1'")
+        assert row["underlying_price"] == 126.16
+        assert row["stock_stop"] == 119.92
+        assert row["stock_target"] == 139.78
+        assert row["direction"] == "LONG"
+        assert row["strategy"] == "liquid_momentum"
+        assert row["contract_quality_score"] == 33.0
+        assert row["contract_quality_grade"] == "D"
+        assert row["quality_eligible"] == 0
+        assert row["risk_rejection_reason"] == "structurally_invalid"
+        # never fabricated:
+        assert row["p_direction"] is None
+        assert row["theta_drag"] is None
+
+    def test_skips_when_multiple_signals_match(self):
+        """Ambiguous — more than one signals row for (symbol, session_date) — must
+        be skipped, never guessed at."""
+        self._seed_signal("DUP", "2026-01-01", entry=100, stop=95, target=110)
+        db.execute("""INSERT INTO signals(signal_id, created_at, session_date, symbol, strategy,
+                      action, quality, entry, stop, target, executed, outcome)
+                      VALUES(?,?,?,?,?,?,?,?,?,?,?,?)""",
+                   ("sig_DUP_2", db.utcnow(), "2026-01-01", "DUP", "other",
+                    "MONITOR", 40.0, 101, 96, 111, 0, "open"))
+        db.execute("""INSERT INTO options_shadow(shadow_id, created_at, session_date, symbol,
+                      contract, ev_after_costs, preference, gradeable, missing_json, outcome)
+                      VALUES(?,?,?,?,?,?,?,?,?,?)""",
+                   ("shd_bf2", db.utcnow(), "2026-01-01", "DUP", "c1", 5.0, "avoid-both",
+                    0, "[]", "open"))
+        out = options_shadow.backfill_recoverable_evidence(dry_run=False)
+        row = db.query_one("SELECT underlying_price, strategy FROM options_shadow WHERE shadow_id='shd_bf2'")
+        assert row["underlying_price"] is None
+        assert row["strategy"] is None
+
+    def test_dry_run_writes_nothing(self):
+        self._seed_signal("NEM", "2026-01-01", entry=126.16, stop=119.92, target=139.78)
+        db.execute("""INSERT INTO options_shadow(shadow_id, created_at, session_date, symbol,
+                      contract, ev_after_costs, preference, gradeable, missing_json, outcome)
+                      VALUES(?,?,?,?,?,?,?,?,?,?)""",
+                   ("shd_bf3", db.utcnow(), "2026-01-01", "NEM", "c1", -36.7, "avoid-both",
+                    0, "[]", "open"))
+        out = options_shadow.backfill_recoverable_evidence(dry_run=True)
+        assert out["backfilled"] == 1   # reports what WOULD change
+        row = db.query_one("SELECT underlying_price FROM options_shadow WHERE shadow_id='shd_bf3'")
+        assert row["underlying_price"] is None   # but nothing actually written
+
+    def test_already_backfilled_row_is_not_a_candidate_again(self):
+        self._seed_signal("NEM", "2026-01-01", entry=126.16, stop=119.92, target=139.78)
+        db.execute("""INSERT INTO options_shadow(shadow_id, created_at, session_date, symbol,
+                      contract, ev_after_costs, preference, gradeable, missing_json, outcome)
+                      VALUES(?,?,?,?,?,?,?,?,?,?)""",
+                   ("shd_bf4", db.utcnow(), "2026-01-01", "NEM", "c1", -36.7, "avoid-both",
+                    0, "[]", "open"))
+        options_shadow.backfill_recoverable_evidence(dry_run=False)
+        out2 = options_shadow.backfill_recoverable_evidence(dry_run=False)
+        assert out2["candidates"] == 0   # underlying_price no longer NULL
+
+
+class TestGraduationSemanticsAfterResolver:
+    def test_open_observations_do_not_count_as_resolved(self):
+        for i in range(30):
+            _seed_shadow_row(f"shd_open_{i}")
+        ready = options_shadow.graduation_readiness()
+        resolved_check = next(c for c in ready["checks"] if c["name"] == "resolved_outcomes")
+        assert resolved_check["passed"] is False
+
+    def test_resolved_observations_count_toward_gate2(self):
+        q = Quote("TEST", last=111, high=112, low=105)
+        for i in range(20):
+            _seed_shadow_row(f"shd_res_{i}")
+        options_shadow.resolve_outcomes({"TEST": q}, "2026-01-02")
+        state = options_shadow.execution_gate_state()
+        gate2 = next(g for g in state["gates"] if g["gate"] == "outcome_evidence")
+        assert gate2["passed"] is True
+
+    def test_twenty_resolved_does_not_authorize_execution(self):
+        q = Quote("TEST", last=111, high=112, low=105)
+        for i in range(20):
+            _seed_shadow_row(f"shd_20_{i}")
+        options_shadow.resolve_outcomes({"TEST": q}, "2026-01-02")
+        state = options_shadow.execution_gate_state()
+        by_name = {g["gate"]: g for g in state["gates"]}
+        assert by_name["predictive_validity"]["status"] == "DESCRIPTIVE_ONLY"
+        assert by_name["risk_authorization"]["status"] == "NOT_AUTHORIZED"
+        assert by_name["execution"]["status"] == "SHADOW_ONLY"
+        assert state["execution_authorized"] is False
+
+    def test_fifty_resolved_still_does_not_authorize_execution(self):
+        q = Quote("TEST", last=111, high=112, low=105)
+        for i in range(50):
+            _seed_shadow_row(f"shd_50_{i}")
+        options_shadow.resolve_outcomes({"TEST": q}, "2026-01-02")
+        state = options_shadow.execution_gate_state()
+        by_name = {g["gate"]: g for g in state["gates"]}
+        assert by_name["predictive_validity"]["status"] == "READY_FOR_VALIDATION"
+        assert by_name["risk_authorization"]["status"] == "NOT_AUTHORIZED"
+        assert by_name["execution"]["status"] == "SHADOW_ONLY"
+        assert state["execution_authorized"] is False
+
+    def test_positive_model_ev_does_not_authorize_execution_even_when_resolved(self):
+        _seed_shadow_row("shd_pos", ev_after_costs=500.0)
+        q = Quote("TEST", last=111, high=112, low=105)
+        options_shadow.resolve_outcomes({"TEST": q}, "2026-01-02")
+        state = options_shadow.execution_gate_state()
+        by_name = {g["gate"]: g for g in state["gates"]}
+        assert by_name["risk_authorization"]["status"] == "NOT_AUTHORIZED"
+        assert by_name["execution"]["status"] == "SHADOW_ONLY"
+
+
+class TestLegacyNullHandling:
+    def test_p_direction_buckets_exclude_null_not_zero(self):
+        for i in range(25):
+            _seed_shadow_row(f"shd_null_{i}", p_direction=None)
+        q = Quote("TEST", last=111, high=112, low=105)
+        options_shadow.resolve_outcomes({"TEST": q}, "2026-01-02")
+        out = options_shadow.p_direction_calibration_buckets()
+        assert out["status"] == "INSUFFICIENT_SAMPLE"
+        assert out["resolved_n"] == 0   # excluded, not counted as 0
+
+    def test_p_direction_buckets_compute_once_persisted_and_resolved(self):
+        q = Quote("TEST", last=111, high=112, low=105)
+        for i in range(20):
+            _seed_shadow_row(f"shd_pd_{i}", p_direction=0.5 + (i % 2) * 0.2)
+        options_shadow.resolve_outcomes({"TEST": q}, "2026-01-02")
+        out = options_shadow.p_direction_calibration_buckets()
+        assert out["status"] == "OK"
+        assert out["resolved_n"] == 20
+
+    def test_calibration_buckets_dedupe_same_day_duplicates(self):
+        """Two rows sharing (session_date, symbol, contract) — a same-day duplicate,
+        not a legitimate separate observation — must count once, not twice."""
+        q = Quote("TEST", last=111, high=112, low=105)
+        _seed_shadow_row("shd_dup_1", contract="dupcontract", created_at="2026-01-01T10:00:00Z")
+        _seed_shadow_row("shd_dup_2", contract="dupcontract", created_at="2026-01-01T11:00:00Z")
+        for i in range(19):   # pad to the 20-row descriptive floor
+            _seed_shadow_row(f"shd_pad_{i}")
+        options_shadow.resolve_outcomes({"TEST": q}, "2026-01-02")
+        out = options_shadow.model_ev_calibration_buckets()
+        assert out["resolved_n"] == 20   # 21 rows resolved, 1 deduped away
+
+    def test_next_day_observation_of_same_contract_not_collapsed(self):
+        """Same symbol+contract on a DIFFERENT session_date is a legitimate
+        separate observation and must not be deduped away."""
+        q = Quote("TEST", last=111, high=112, low=105)
+        _seed_shadow_row("shd_day1", contract="samecontract", session_date="2026-01-01")
+        _seed_shadow_row("shd_day2", contract="samecontract", session_date="2026-01-02")
+        for i in range(18):
+            _seed_shadow_row(f"shd_pad2_{i}")
+        options_shadow.resolve_outcomes({"TEST": q}, "2026-01-02")
+        out = options_shadow.model_ev_calibration_buckets()
+        assert out["resolved_n"] == 20   # both day1 and day2 observations counted

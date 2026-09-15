@@ -14,7 +14,7 @@ to the paper ledger, and `options_shadow.summary()["in_ledger"]` returns `False`
 |---|---|---|---|
 | 1 | Sample size | ≥ 50 shadow records | `graduation_readiness()` |
 | 2 | Chain validity | ≥ 50 % of records had full microstructure (bid, ask, spread, OI, volume, DTE, delta) | `gradeable_rate` |
-| 3 | Resolved outcomes | ≥ 20 shadow records reached a terminal outcome | `resolved_outcomes` — **currently stuck at 0, structurally**: no production code ever transitions a shadow record's `outcome` away from `open` (confirmed: zero `UPDATE options_shadow` statements anywhere in the repo). This is not a "wait for more data" situation — a resolver has to be built first (see `EVIDENCE_GRADUATION_AFTER.md`) |
+| 3 | Resolved outcomes | ≥ 20 shadow records reached a terminal outcome | `resolved_outcomes` — **resolvable as of Evidence & Graduation v1.2 phase 2**: `options_shadow.resolve_outcomes()`, run daily from `workflow.market_hours()`, grades the underlying stock thesis (not the option contract's own P&L — no historical option-chain pricing source exists in this repo). The 10 rows collected before phase 2 have no `stock_stop`/`stock_target` and can never resolve unless backfilled (see `EVIDENCE_GRADUATION_AFTER.md`); rows recorded after phase 2 resolve normally over time |
 | 4 | Stock launch stable | stock P&L reconciles **and** ≥ 50 resolved stock trades | `stock_launch_stable` |
 | 5 | Fill realism | assumed fill is the **ask**, never the midpoint | enforced in `conservative_fill()` |
 | 6 | Liquidity floor | spread ≤ 12 %, OI ≥ 250, session-open volume ≥ 10 | enforced in `canonical.contract_quality.evaluate_contract_quality()`'s hard-fail checks (`ContractQualityPolicy`) — **corrected 2026-09 (Evidence & Graduation v1.2)**: this row previously cited `options_shadow.evaluate_contract()`, which the live pipeline never calls, and stated stale numbers (10%/25) that never matched the real policy |
@@ -36,8 +36,8 @@ print(options_shadow.execution_gate_state())"`) rather than reading
 | Gate | Question | Authorizes |
 |---|---|---|
 | 1. Data collection | Enough observations to evaluate the model? (rows 1–2 above) | Nothing |
-| 2. Outcome evidence | Enough resolved outcomes to compare model vs. reality? (row 3) | Nothing — **and this gate cannot currently be reached by waiting**: no resolver exists yet, see row 3 above |
-| 3. Predictive validity | Do the model's opinions actually track outcomes? | Nothing — ever, automatically. Informs a human decision only. Returns `INSUFFICIENT_EVIDENCE` below 20 resolved outcomes, never a fabricated verdict |
+| 2. Outcome evidence | Enough resolved outcomes to compare model vs. reality? (row 3) | Nothing — grades the underlying stock thesis only; `option_outcome` is always `'unavailable'` |
+| 3. Predictive validity | Do the model's opinions actually track outcomes? | Nothing — ever, automatically. Informs a human decision only. Three states: `INSUFFICIENT_EVIDENCE` (&lt;20 resolved), `DESCRIPTIVE_ONLY` (20-49), `READY_FOR_VALIDATION` (≥50) — never `CALIBRATED` at any N |
 | 4. Economic eligibility | Can this account afford the contract under policy? | Nothing on its own — independent of model quality by construction (`canonical.account_fit.option_account_fit`) |
 | 5. Risk authorization | Does an option-specific execution policy exist? | Nothing — `STRATEGY_500_POLICY`'s option fields are explicitly `None`. **`NOT_AUTHORIZED` today, by design, regardless of sample size.** |
 | 6. Execution | Is the trade actually routed? | `shadow_only=True` is hard-coded in `canonical_bridge.py` — structurally blocked, not merely unauthorized |

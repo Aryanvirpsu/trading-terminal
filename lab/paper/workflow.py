@@ -176,7 +176,12 @@ def premarket(session_date: Optional[str] = None, dry_run: bool = False) -> Dict
         shadow_result = canonical_bridge.augmented_result_for_shadow(result, canon)
         shadow_id = None
         try:
-            shadow_id = options_shadow.record(shadow_result, symbol=sym, session_date=session_date)
+            # strategy is a workflow-loop concept (f["strategy"]), not something
+            # canonical_bridge.py knows about — passed through here rather than
+            # threaded into evaluate_canonical(), same as journal.record_signal
+            # and the stock order call further below already receive it.
+            shadow_id = options_shadow.record(shadow_result, symbol=sym, session_date=session_date,
+                                              strategy=f["strategy"])
         except Exception:
             pass
         # Canonical metadata (quality_pass, eligibility, binding constraint,
@@ -272,6 +277,9 @@ def market_hours(session_date: Optional[str] = None) -> Dict[str, Any]:
     tracked = db.query("SELECT signal_id, symbol FROM signals WHERE outcome='open'")
     for s in tracked:
         symbols.add(s["symbol"])
+    shadow_open = db.query("SELECT DISTINCT symbol FROM options_shadow WHERE outcome='open'")
+    for s in shadow_open:
+        symbols.add(s["symbol"])
 
     quotes: Dict[str, Quote] = {}
     for sym in symbols:
@@ -302,10 +310,16 @@ def market_hours(session_date: Optional[str] = None) -> Dict[str, Any]:
         journal.update_excursions(s["signal_id"], hi, lo)
         tracked_updates += 1
 
+    # 4) shadow-option evidence resolution — grades hypothetical observations
+    # only; never places, modifies, or cancels an order. Same lifecycle stage
+    # as (3) above, on purpose (Evidence & Graduation v1.2 phase 2).
+    shadow_resolved = options_shadow.resolve_outcomes(quotes, session_date)
+
     broker.snapshot_equity(session_date)
     return {"session_date": session_date, "symbols_watched": sorted(symbols),
             "orders_processed": len(filled), "exits": managed["count"],
             "exit_actions": managed["actions"], "tracked_updated": tracked_updates,
+            "shadow_resolved": shadow_resolved,
             "quotes_missing": sorted(symbols - set(quotes))}
 
 
