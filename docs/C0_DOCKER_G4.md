@@ -159,6 +159,27 @@ actually performed, not a full `pip freeze`, so an already-present `packaging` t
 that log. Recorded as an **open, disclosed, low-risk delta** — not a violation of "exact Case 1 pins preserved" for
 any of the 60 *named* packages, and inert by construction (never imported, never affects any code path).
 
+**Correction (2026-09-22, requested before G5): the equivalence contract distinguishes two different things that
+"pip freeze" conflates.** `packaging==26.3` means the container's **full `pip freeze` is not literally identical**
+to the 60-pin file — that statement in §5 above was too strong. What's actually true, and is the claim G5 relies on:
+
+```
+Application dependency closure           Base/bootstrap environment
+= the 60 pins in                         = whatever pip/setuptools/wheel bring with
+  requirements-c0-case1.txt,             them by default on the base image — not
+  exactly, --no-deps throughout           pinned, not part of the freeze, not imported
+  (proven: §5.1's own diff)               by any application code (packaging: confirmed
+                                           zero `import packaging` anywhere in the repo)
+```
+
+G4's claim is **"application dependency closure: exact"**, not **"full environment: exact"** — the base/bootstrap
+layer was never in scope for the freeze (`C0_DEPENDENCY_FREEZE.md` §2.3 already excludes "`pip`/`setuptools`/`wheel`
+preinstalled on the runner's Python" from what the freeze covers, for the identical reason: Case 1 never reinstalls
+them either). `packaging` falls in that same excluded category — it just happens to be visible as a *separate*
+top-level `pip freeze` entry on this base image in a way it apparently isn't (or wasn't logged) on Case 1's runner.
+Nothing below treats "`pip freeze` matches" as the equivalence bar; the bar is "the 60 named pins match exactly and
+nothing outside that closure is ever imported," which is what was actually proven.
+
 ### 5.2 Imports — broad matrix, inside the container
 
 Ran inside `avdi-scheduler:c0` (the smaller, no-Flask image, `C0_PROFILE=case1`): 19 individual `lab`/`dashboard`/

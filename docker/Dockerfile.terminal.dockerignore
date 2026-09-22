@@ -1,0 +1,31 @@
+# Per-Dockerfile ignore for docker/Dockerfile.terminal (G5). BuildKit selects this file,
+# named after the Dockerfile's own basename and placed next to it, over the root
+# .dockerignore for THIS build only — the root .dockerignore's `tests/` exclusion
+# exists for the (unrelated) MCP image and must not block the `tests` target here.
+# Everything else stays denied by default via the allowlist below, mirroring
+# C0_CONTAINER_DESIGN.md §4.2's intent.
+*
+!pyproject.toml
+!README.md
+!src/
+!lab/
+!dashboard/
+!canonical/
+!automation/
+!docker/
+!tests/
+**/__pycache__/
+**/*.py[cod]
+**/*.egg-info/
+**/.env
+**/.env.*
+**/*.db
+**/*.db-*
+**/*.sqlite*
+**/*.jsonl
+**/*.pickle
+**/*token*.json
+**/*session*.json
+**/*credential*
+**/*secret*
+.pytest_cache/

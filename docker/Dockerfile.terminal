@@ -1,11 +1,17 @@
 # syntax=docker/dockerfile:1
 #
-# C0 G4 — the terminal, containerized. See C0_CONTAINER_DESIGN.md §3 for the design
-# this implements. Two targets: `paper` (exactly Case 1's own package set — no Flask,
-# no pytest, matching automation/paper_scheduler.py's real dependency footprint) and
-# `dashboard` (paper + the Flask closure + the serve wrapper). A `tests` target is
-# deliberately NOT built in G4 (out of this gate's scope — see docs/C0_HYGIENE_GATE.md
-# and the G4 acceptance table, which has no TESTS row).
+# C0 G4/G5 — the terminal, containerized. See C0_CONTAINER_DESIGN.md §3 for the design
+# this implements. Targets: `paper` (exactly Case 1's own package set — no Flask, no
+# pytest, matching automation/paper_scheduler.py's real dependency footprint),
+# `dashboard` (paper + the Flask closure + the serve wrapper), and `tests` (dashboard +
+# the pytest closure + tests/ — added in G5 for the deterministic-fixture A/B leg;
+# NOT built in G4, whose acceptance table deliberately had no TESTS row).
+#
+# `tests/` needs a dedicated context ignore file (docker/Dockerfile.terminal.dockerignore
+# — see C0_CONTAINER_DESIGN.md §4.1) because the root .dockerignore excludes tests/ for
+# the (correct, unrelated) MCP image; BuildKit picks a per-Dockerfile ignore file over
+# the root one automatically when it exists in the context root, named after the
+# Dockerfile's own basename.
 #
 # Base image pinned by digest to the exact interpreter Case 1 actually runs
 # (`python:3.11.16-slim-bookworm`, confirmed `python --version` == 3.11.16 at pull
@@ -80,3 +86,17 @@ USER tv
 EXPOSE 5057
 ENTRYPOINT ["/app/docker/entrypoint.sh"]
 CMD ["python", "docker/serve_dashboard.py"]
+
+# ── tests: dashboard + pytest closure + tests/ (G5-A only; not part of G4) ─────────
+FROM app AS tests
+COPY docker/requirements-c0-dashboard-extra.txt docker/requirements-c0-dashboard-extra.txt.sha256 /tmp/req1/
+COPY docker/requirements-c0-tests-extra.txt docker/requirements-c0-tests-extra.txt.sha256 /tmp/req2/
+RUN cd /tmp/req1 && sha256sum -c requirements-c0-dashboard-extra.txt.sha256 \
+        && pip install --no-deps -r requirements-c0-dashboard-extra.txt \
+    && cd /tmp/req2 && sha256sum -c requirements-c0-tests-extra.txt.sha256 \
+        && pip install --no-deps -r requirements-c0-tests-extra.txt \
+    && cd / && rm -rf /tmp/req1 /tmp/req2
+COPY tests ./tests
+USER tv
+ENTRYPOINT ["/app/docker/entrypoint.sh"]
+CMD ["python", "-m", "pytest", "tests/unit", "-q", "-p", "no:cacheprovider", "--ignore=tests/e2e"]
