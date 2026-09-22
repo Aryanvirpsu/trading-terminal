@@ -34,7 +34,11 @@ dashboard/strategy_store.py
 dashboard/symbol_snapshot.py
 dashboard/terminal.html
 dashboard/tracker.py
+docker/Dockerfile.terminal
+docker/c0_preflight.py
+docker/compose.c0.yml
 docker/context.manifest
+docker/entrypoint.sh
 docker/requirements-c0-case1.txt
 docker/requirements-c0-case1.txt.sha256
 docker/requirements-c0-dashboard-extra.txt
@@ -43,6 +47,7 @@ docker/requirements-c0-tests-extra.txt
 docker/requirements-c0-tests-extra.txt.sha256
 docker/requirements-c0-win32-extra.txt
 docker/requirements-c0-win32-extra.txt.sha256
+docker/serve_dashboard.py
 docker/tools/audit_build_context.py
 lab/_config.py
 lab/alphavantage.py

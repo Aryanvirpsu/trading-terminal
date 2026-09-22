@@ -1,0 +1,106 @@
+# C0 G4 — terminal containers. Two profiles (case1/case2), two services each
+# (avdi-scheduler / avdi-dashboard), deliberately no tests service, no avdi-api, no
+# workers, no Redis/Postgres/Nautilus — see C0_CONTAINER_DESIGN.md §6 for the original
+# spec this refines and the user's G4 container-boundary list.
+#
+# STATE SAFETY (K1/K2, unchanged from every earlier C0 gate): every volume below is
+# FRESH — created empty by this file, never the real ~/.tradingview_mcp_data, never a
+# bind mount of any host path. Case 1's non-ledger HOME state is tmpfs (destroyed at
+# container exit, matching "Case 1 only persists paper/" — K2). Case 2's state volume
+# persists ACROSS container restarts (matching the host) but is still not the real
+# directory — `docker compose -f docker/compose.c0.yml -p c0-case2 down -v` discards
+# it entirely; nothing here can reach outside the volumes it declares.
+#
+# Usage (from repo root):
+#   docker compose -f docker/compose.c0.yml -p c0-case1 --profile case1 run --rm avdi-scheduler-case1
+#   docker compose -f docker/compose.c0.yml -p c0-case1 --profile case1 up -d avdi-dashboard-case1
+#   docker compose -f docker/compose.c0.yml -p c0-case2 --profile case2 up -d avdi-dashboard-case2
+
+services:
+  avdi-scheduler-case1:
+    profiles: [case1]
+    build: {context: .., dockerfile: docker/Dockerfile.terminal, target: paper}
+    image: avdi-scheduler:c0        # same image as case2's scheduler — profiles differ only in runtime env
+    container_name: avdi-scheduler-case1
+    user: "10001:10001"
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    restart: "no"
+    env_file: [env/case1.env]
+    volumes:
+      - c0_case1_ledger:/data/case1/paper
+      - c0_case1_out:/out
+      - type: tmpfs
+        target: /home/tv/.tradingview_mcp_data
+        tmpfs: {size: 134217728, mode: 0o1777}
+    command: ["python", "automation/paper_scheduler.py", "status"]
+
+  avdi-dashboard-case1:
+    profiles: [case1]
+    build: {context: .., dockerfile: docker/Dockerfile.terminal, target: dashboard}
+    image: avdi-dashboard:c0        # same image as case2's dashboard — profiles differ only in runtime env
+    container_name: avdi-dashboard-case1
+    user: "10001:10001"
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    restart: "no"
+    env_file: [env/case1.env]
+    volumes:
+      - c0_case1_ledger:/data/case1/paper
+      - c0_case1_out:/out
+      - type: tmpfs
+        target: /home/tv/.tradingview_mcp_data
+        tmpfs: {size: 134217728, mode: 0o1777}
+    ports: ["127.0.0.1:5057:5057"]
+    healthcheck:
+      test: ["CMD", "python", "-c",
+             "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:5057/api/health',timeout=5).status==200 else 1)"]
+      interval: 15s
+      timeout: 8s
+      start_period: 40s
+      retries: 3
+    command: ["python", "docker/serve_dashboard.py"]
+
+  avdi-scheduler-case2:
+    profiles: [case2]
+    build: {context: .., dockerfile: docker/Dockerfile.terminal, target: paper}
+    image: avdi-scheduler:c0
+    container_name: avdi-scheduler-case2
+    user: "10001:10001"
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    restart: "no"
+    env_file: [env/case2.env]
+    volumes:
+      - c0_case2_state:/home/tv/.tradingview_mcp_data
+      - c0_case2_out:/out
+    command: ["python", "automation/paper_scheduler.py", "status"]
+
+  avdi-dashboard-case2:
+    profiles: [case2]
+    build: {context: .., dockerfile: docker/Dockerfile.terminal, target: dashboard}
+    image: avdi-dashboard:c0
+    container_name: avdi-dashboard-case2
+    user: "10001:10001"
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    restart: "no"
+    env_file: [env/case2.env]
+    volumes:
+      - c0_case2_state:/home/tv/.tradingview_mcp_data
+      - c0_case2_out:/out
+    ports: ["127.0.0.1:5057:5057"]
+    healthcheck:
+      test: ["CMD", "python", "-c",
+             "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:5057/api/health',timeout=5).status==200 else 1)"]
+      interval: 15s
+      timeout: 8s
+      start_period: 40s
+      retries: 3
+    command: ["python", "docker/serve_dashboard.py"]
+
+volumes:
+  c0_case1_ledger: {}
+  c0_case1_out: {}
+  c0_case2_state: {}
+  c0_case2_out: {}
