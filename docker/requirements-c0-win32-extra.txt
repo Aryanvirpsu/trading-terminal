@@ -1,0 +1,12 @@
+# =============================================================================
+# C0 DEPENDENCY FREEZE - Windows-only platform extras (R2 reference venvs only)
+# =============================================================================
+# NOT Case 1 evidence and NOT for Linux/Docker. The Case 1 set is a Linux resolution; pip check on Windows reports two
+# unmet requirements that exist only behind Windows markers:
+#     mcp 2.2.0   -> pywin32>=311 ; sys_platform == 'win32'
+#     typer 0.27.2 -> colorama     ; platform_system == "Windows"     (pytest also needs it on Windows)
+# Provenance : versions installed on the Case 2 HOST (CPython 3.14.7) on 2026-09-21.
+# Immutable  : do not edit; supersede with a new dated file.
+# =============================================================================
+colorama==0.4.6 ; sys_platform == "win32"
+pywin32==312 ; sys_platform == "win32"

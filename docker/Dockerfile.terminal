@@ -1,0 +1,102 @@
+# syntax=docker/dockerfile:1
+#
+# C0 G4/G5 — the terminal, containerized. See C0_CONTAINER_DESIGN.md §3 for the design
+# this implements. Targets: `paper` (exactly Case 1's own package set — no Flask, no
+# pytest, matching automation/paper_scheduler.py's real dependency footprint),
+# `dashboard` (paper + the Flask closure + the serve wrapper), and `tests` (dashboard +
+# the pytest closure + tests/ — added in G5 for the deterministic-fixture A/B leg;
+# NOT built in G4, whose acceptance table deliberately had no TESTS row).
+#
+# `tests/` needs a dedicated context ignore file (docker/Dockerfile.terminal.dockerignore
+# — see C0_CONTAINER_DESIGN.md §4.1) because the root .dockerignore excludes tests/ for
+# the (correct, unrelated) MCP image; BuildKit picks a per-Dockerfile ignore file over
+# the root one automatically when it exists in the context root, named after the
+# Dockerfile's own basename.
+#
+# Base image pinned by digest to the exact interpreter Case 1 actually runs
+# (`python:3.11.16-slim-bookworm`, confirmed `python --version` == 3.11.16 at pull
+# time). Debian bookworm vs. Case 1's Ubuntu 24.04 runner is a documented, accepted
+# delta (glibc/OpenSSL/CA-bundle only — see C0_CONTAINER_DESIGN.md §10.7); the CPython
+# patch version itself is now identical, not merely "close."
+
+FROM python:3.11.16-slim-bookworm@sha256:a36c24f9cbdf4fd0f52d67f0823eeac19c2028c637cecc392d97f980d4fec56b AS base
+
+# tzdata: required for TZ=America/New_York to actually change naive datetime.now() —
+# see C0_TEST_BASELINE_311.md §3.1's T-class finding, which this build must be able to
+# reproduce (not fix) under both profiles. ca-certificates: outbound HTTPS to market
+# data providers (C0_INVENTORY.md §9). Nothing else — no compilers: the Case 1 install
+# log shows 0 source builds, all 60 pins are prebuilt wheels.
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends tzdata ca-certificates \
+    && rm -rf /var/lib/apt/lists/*
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1 \
+    PIP_NO_CACHE_DIR=1 \
+    LANG=C.UTF-8 \
+    HOME=/home/tv
+
+# Non-root, fixed uid (C0_CONTAINER_DESIGN.md §3.4). State dirs pre-created and owned
+# by tv BEFORE any volume is ever mounted at these paths, so a fresh named volume
+# inherits this ownership on first use (Docker copies the image directory's contents
+# and metadata into a brand-new named volume the first time it's mounted).
+RUN useradd --create-home --uid 10001 --shell /usr/sbin/nologin tv \
+    && mkdir -p /app /out /data/case1/paper /home/tv/.tradingview_mcp_data \
+    && chown -R tv:tv /app /out /data /home/tv
+
+WORKDIR /app
+
+# ── deps: exactly the C0 dependency freeze, --no-deps, nothing more ─────────────────
+FROM base AS deps
+COPY docker/requirements-c0-case1.txt docker/requirements-c0-case1.txt.sha256 /tmp/req/
+RUN cd /tmp/req \
+    && sha256sum -c requirements-c0-case1.txt.sha256 \
+    && pip install --no-deps -r requirements-c0-case1.txt \
+    && cd / && rm -rf /tmp/req
+
+# ── app: the repo layout the sys.path hacks require, plus the editable install ──────
+FROM deps AS app
+COPY pyproject.toml README.md ./
+COPY src ./src
+COPY lab ./lab
+COPY dashboard ./dashboard
+COPY canonical ./canonical
+COPY automation ./automation
+COPY docker/entrypoint.sh docker/c0_preflight.py ./docker/
+RUN pip install --no-deps -e . \
+    && chmod +x docker/entrypoint.sh \
+    && ln -sf /out/PAPER_DAILY_REPORT.md /app/PAPER_DAILY_REPORT.md
+
+# ── paper: Case 1's own package set, unchanged ───────────────────────────────────────
+FROM app AS paper
+USER tv
+ENTRYPOINT ["/app/docker/entrypoint.sh"]
+CMD ["python", "automation/paper_scheduler.py", "status"]
+
+# ── dashboard: paper + the Flask closure + the serve wrapper (D2) ──────────────────
+FROM app AS dashboard
+COPY docker/requirements-c0-dashboard-extra.txt docker/requirements-c0-dashboard-extra.txt.sha256 /tmp/req/
+RUN cd /tmp/req \
+    && sha256sum -c requirements-c0-dashboard-extra.txt.sha256 \
+    && pip install --no-deps -r requirements-c0-dashboard-extra.txt \
+    && cd / && rm -rf /tmp/req
+COPY docker/serve_dashboard.py ./docker/
+USER tv
+EXPOSE 5057
+ENTRYPOINT ["/app/docker/entrypoint.sh"]
+CMD ["python", "docker/serve_dashboard.py"]
+
+# ── tests: dashboard + pytest closure + tests/ (G5-A only; not part of G4) ─────────
+FROM app AS tests
+COPY docker/requirements-c0-dashboard-extra.txt docker/requirements-c0-dashboard-extra.txt.sha256 /tmp/req1/
+COPY docker/requirements-c0-tests-extra.txt docker/requirements-c0-tests-extra.txt.sha256 /tmp/req2/
+RUN cd /tmp/req1 && sha256sum -c requirements-c0-dashboard-extra.txt.sha256 \
+        && pip install --no-deps -r requirements-c0-dashboard-extra.txt \
+    && cd /tmp/req2 && sha256sum -c requirements-c0-tests-extra.txt.sha256 \
+        && pip install --no-deps -r requirements-c0-tests-extra.txt \
+    && cd / && rm -rf /tmp/req1 /tmp/req2
+COPY tests ./tests
+USER tv
+ENTRYPOINT ["/app/docker/entrypoint.sh"]
+CMD ["python", "-m", "pytest", "tests/unit", "-q", "-p", "no:cacheprovider", "--ignore=tests/e2e"]
