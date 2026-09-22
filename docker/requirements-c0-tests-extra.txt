@@ -1,0 +1,16 @@
+# =============================================================================
+# C0 DEPENDENCY FREEZE - pytest closure for the tests target
+# =============================================================================
+# NOT Case 1 evidence. The Case 1 runner never installed these (the workflow does not run tests; pytest is only a dev-dependency).
+# Provenance : versions installed on the Case 2 HOST (CPython 3.14.7, user-site) on 2026-09-21; validated to install
+#              on CPython 3.11 alongside docker/requirements-c0-case1.txt WITHOUT changing any Case 1 pin.
+# Conflict rule: any package also present in requirements-c0-case1.txt keeps the Case 1 pin (e.g. click 8.5.0, not the
+#              host's 8.4.2).
+# (pytest's Windows-only colorama requirement is supplied by requirements-c0-win32-extra.txt)
+# Layering   : paper (Case 1 set)  <  dashboard (+ dashboard-extra)  <  tests (+ tests-extra)
+# Immutable  : do not edit; supersede with a new dated file.
+# =============================================================================
+pytest==9.1.1
+pluggy==1.6.0
+iniconfig==2.3.0
+packaging==26.3

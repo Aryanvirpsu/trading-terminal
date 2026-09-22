@@ -41,3 +41,54 @@ tests/
 *.md
 !README.md
 LICENSE
+
+# ── C0 hygiene gate additions (2026-09-21) — additive only, nothing above this
+# line was changed. See docs/C0_DEPENDENCY_FREEZE.md / C0_CONTAINER_DESIGN.md.
+
+# Secrets, credentials, keys, tokens, OAuth material
+.env
+.env.*
+*.pem
+*.key
+*.crt
+*.cer
+*.p12
+*.pfx
+id_rsa*
+id_ed25519*
+*.ppk
+.ssh/
+.aws/
+.tokens/
+*credential*
+*secret*
+*token*.json
+*session*.json
+
+# Real trading/runtime state — must never enter a build context. The real
+# ledger lives outside the repo at ~/.tradingview_mcp_data (see
+# C0_INVENTORY.md §6); these patterns guard against a repo-local copy ever
+# existing, and catch any database/JSONL/pickle file regardless of location.
+.tradingview_mcp_data/
+tradingview_mcp_data/
+*.db
+*.db-wal
+*.db-shm
+*.sqlite
+*.sqlite3
+*.sqlite-*
+*.jsonl
+*.pickle
+reports/
+
+# Test/coverage caches
+.pytest_cache/
+.coverage
+.coverage.*
+htmlcov/
+.mypy_cache/
+.ruff_cache/
+
+# Large generated / local-only artifacts not needed at image runtime
+graphify-out/
+*.pdf

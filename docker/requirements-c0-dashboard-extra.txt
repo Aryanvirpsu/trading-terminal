@@ -1,0 +1,17 @@
+# =============================================================================
+# C0 DEPENDENCY FREEZE - Flask closure for the dashboard target
+# =============================================================================
+# NOT Case 1 evidence. The Case 1 runner never installed these (no dashboard runs in the workflow; Flask is only in the [dashboard] extra).
+# Provenance : versions installed on the Case 2 HOST (CPython 3.14.7, user-site) on 2026-09-21; validated to install
+#              on CPython 3.11 alongside docker/requirements-c0-case1.txt WITHOUT changing any Case 1 pin.
+# Conflict rule: any package also present in requirements-c0-case1.txt keeps the Case 1 pin (e.g. click 8.5.0, not the
+#              host's 8.4.2).
+# Layering   : paper (Case 1 set)  <  dashboard (+ dashboard-extra)  <  tests (+ tests-extra)
+# Immutable  : do not edit; supersede with a new dated file.
+# =============================================================================
+flask==3.1.3
+werkzeug==3.1.8
+jinja2==3.1.6
+itsdangerous==2.2.0
+blinker==1.9.0
+markupsafe==3.0.3
