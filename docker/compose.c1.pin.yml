@@ -1,0 +1,14 @@
+# C1.6 — digest pin overlay for the running OCI cloud-synthetic deployment.
+#
+# Applies on top of compose.c1.yml (docker compose -f compose.c1.yml -f compose.c1.pin.yml ...)
+# to replace the mutable sha-cd595eb TAG reference with an immutable @sha256 DIGEST reference,
+# so a future `pull`/`up` on this host can never silently resolve to different bytes even if the
+# tag were ever repointed. These are the exact combined-manifest digests recorded in
+# docs/C1_ARM_EQUIVALENCE.md §3/§8, verified via GHCR CI, an independent local pull, and an
+# independent OCI-host pull before this file was written. No rebuild — this only changes which
+# already-published, already-verified image reference the deployment resolves to.
+services:
+  avdi-dashboard-cloud:
+    image: ghcr.io/aryanvirpsu/trading-terminal/avdi-dashboard@sha256:deb3526440ac5142385883f2f91bcd42fdb46313b30136e27c4a72bbef46b97b
+  avdi-scheduler-cloud:
+    image: ghcr.io/aryanvirpsu/trading-terminal/avdi-scheduler@sha256:cbe22a27f8fdcb6004b10e7af32a6b5bdf12657cae826ed68e5102acaff3db10

@@ -1,0 +1,27 @@
+# C1.6 — reverse proxy overlay. Applies on top of compose.c1.yml (+ compose.c1.pin.yml) in the
+# SAME `docker compose -f ... -f ... -f ...` invocation so it joins the existing project's implicit
+# default network and can reach avdi-dashboard-cloud by container name — no change to the
+# dashboard's own 127.0.0.1:5057 host binding, which stays exactly as compose.c1.yml defines it.
+#
+# Caddy terminates TLS (automatic HTTPS via its built-in ACME client), gates every request with
+# HTTP Basic Auth (see docker/Caddyfile on the host — not committed, contains a bcrypt hash only,
+# never a plaintext password), and reverse-proxies to the dashboard over the private Docker
+# network. This is the only service in the stack that binds to a public-facing port.
+services:
+  avdi-proxy:
+    image: caddy:2-alpine
+    container_name: avdi-proxy
+    restart: unless-stopped
+    mem_limit: 128m
+    cpus: 0.25
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+
+volumes:
+  caddy_data: {}
+  caddy_config: {}

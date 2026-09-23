@@ -1,0 +1,17 @@
+# C1.6 — Caddyfile template. The real file lives ONLY on the deployment host
+# (~/avdi-deploy/docker/Caddyfile), is never committed, and contains a bcrypt password hash in
+# place of <BCRYPT_HASH_HERE> — never a plaintext password. Generate a new hash with:
+#   docker run --rm caddy:2-alpine caddy hash-password --plaintext '<a strong random password>'
+#
+# Caddy's automatic HTTPS (built-in ACME/Let's Encrypt) applies because the site label below is a
+# real hostname, not a bare port — it also makes Caddy redirect plain HTTP to HTTPS by default,
+# before any auth or proxy logic runs. basic_auth is declared before reverse_proxy in the same
+# block, so it gates every request Caddy forwards — dashboard pages, /api/* routes, and the
+# WebSocket upgrade handshake alike — there is no path that reaches avdi-dashboard-cloud without
+# first clearing it.
+<HOSTNAME_HERE> {
+    basic_auth {
+        avdi <BCRYPT_HASH_HERE>
+    }
+    reverse_proxy avdi-dashboard-cloud:5057
+}
