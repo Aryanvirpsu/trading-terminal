@@ -97,6 +97,7 @@ RUN cd /tmp/req1 && sha256sum -c requirements-c0-dashboard-extra.txt.sha256 \
         && pip install --no-deps -r requirements-c0-tests-extra.txt \
     && cd / && rm -rf /tmp/req1 /tmp/req2
 COPY tests ./tests
+COPY docker/tools/ci_test_gate.py ./docker/tools/
 USER tv
 ENTRYPOINT ["/app/docker/entrypoint.sh"]
 CMD ["python", "-m", "pytest", "tests/unit", "-q", "-p", "no:cacheprovider", "--ignore=tests/e2e"]
