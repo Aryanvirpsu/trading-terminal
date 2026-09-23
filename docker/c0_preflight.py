@@ -5,9 +5,10 @@ Refuses to start (non-zero exit) rather than run with an environment that doesn'
 what this gate's containers are supposed to be. See C0_CONTAINER_DESIGN.md §7.3 for the
 design this implements, and C0_INVENTORY.md §5 for why each check exists.
 
-Profile is read from the C0_PROFILE env var ("case1" or "case2"), set by
-docker/compose.c0.yml per service — never guessed from TZ, so a misconfigured TZ is
-itself something this script can catch instead of silently trusting.
+Profile is read from the C0_PROFILE env var ("case1", "case2", or "cloud-synthetic" — see
+docker/compose.c1.yml for the third), set by the relevant compose file per service — never
+guessed from TZ, so a misconfigured TZ is itself something this script can catch instead
+of silently trusting.
 """
 from __future__ import annotations
 
@@ -23,6 +24,11 @@ PROFILES = {
     # profile: (expected TZ env value, expected local date for the fixed instant below)
     "case1": {"tz": "UTC", "fixed_instant_date": "2026-09-22", "home_state_mode": "ephemeral"},
     "case2": {"tz": "America/New_York", "fixed_instant_date": "2026-09-21", "home_state_mode": "persistent"},
+    # C1's remote-deployment profile (docker/compose.c1.yml). Not a Case 1/Case 2
+    # reproduction — a new, disclosed choice: TZ=UTC per docs/C1_HOST_CONTRACT.md §4,
+    # persistent state (like case2, unlike case1's ephemeral tmpfs — a cloud instance
+    # accumulating toward the 50-trade milestone must survive restarts).
+    "cloud-synthetic": {"tz": "UTC", "fixed_instant_date": "2026-09-22", "home_state_mode": "persistent"},
 }
 # 2026-09-22T02:00:00Z == 2026-09-21T22:00:00 EDT — inside the [20:00,24:00) ET window
 # where UTC date and America/New_York date disagree (see C0_TEST_BASELINE_311.md §3.1,
@@ -166,9 +172,10 @@ def check_paths(profile: str) -> dict:
             fail(f"case1 db_path()={resolved_db_path!r} does not resolve under /data/case1/")
     else:
         if os.environ.get("PAPER_DATA_DIR"):
-            fail("case2 must not set PAPER_DATA_DIR (mirrors the host, which never sets it)")
+            fail(f"{profile} must not set PAPER_DATA_DIR (resolves under the default "
+                 "~/.tradingview_mcp_data/paper instead)")
         if not resolved_db_path.startswith("/home/tv/.tradingview_mcp_data/"):
-            fail(f"case2 db_path()={resolved_db_path!r} does not resolve under /home/tv/.tradingview_mcp_data/")
+            fail(f"{profile} db_path()={resolved_db_path!r} does not resolve under /home/tv/.tradingview_mcp_data/")
     for d in REQUIRED_DIRS:
         p = os.path.join(ROOT, d)
         if not os.path.isdir(p):

@@ -1,0 +1,11 @@
+# Force LF line endings for everything under docker/, regardless of a developer's
+# global core.autocrlf setting. Discovered necessary in C1-PREP (2026-09-22): on a
+# Windows checkout with core.autocrlf=true, git silently rewrote docker/entrypoint.sh
+# (a #!/bin/sh script — CRLF there is a real correctness bug inside a Linux container)
+# and every docker/requirements-c0-*.txt / *.sha256 pair (CRLF broke the byte-exact
+# sha256sum -c verification in docker/Dockerfile.terminal, even though the content
+# itself was unchanged) the moment a branch checkout/merge touched them. These files
+# were always authored as LF (Python `open(..., newline="\n")`, see
+# docs/C0_DEPENDENCY_FREEZE.md); this makes that the enforced, permanent policy rather
+# than an accident of how they happened to be created.
+docker/** text=auto eol=lf

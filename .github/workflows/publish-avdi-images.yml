@@ -1,0 +1,144 @@
+# C1-PREP item 3 — builds and publishes ghcr.io/<owner>/<repo>/avdi-dashboard and
+# .../avdi-scheduler from docker/Dockerfile.terminal (the `dashboard` and `paper`
+# targets — same images C0 proved equivalent to the host/cloud terminal). Does NOT
+# touch publish-image.yml, which keeps building the separate, pre-existing upstream
+# MCP image.
+#
+# No deployment happens here or anywhere yet — this workflow's only job is "images
+# exist in a registry, addressable by an immutable commit SHA." docs/
+# C1_HOST_CONTRACT.md §3 is the contract this satisfies. Deployment (Azure or
+# otherwise) is deploy-c1.yml's job, and that workflow's deploy step is explicitly
+# stubbed until Azure OIDC exists (docs/C1_AZURE_BOOTSTRAP_CONTRACT.md).
+#
+# Two separate jobs (not a matrix) on purpose: GitHub Actions collapses matrix-job
+# `outputs:` to whichever combination happens to finish last, which would make the
+# per-image digest outputs unreliable — deploy-c1.yml needs both, correctly.
+#
+# Reusable: also invocable via `workflow_call` so deploy-c1.yml can build+push without
+# duplicating this logic.
+#
+# Triggers:
+#   • push to main or c1/cloud-runtime, only when files that affect the image change
+#     → :latest (main only) + :branch-<name> + :sha-<shortsha>
+#   • push v* tag                                        → :<semver> + :latest
+#   • pull_request                                        → build only, no push
+#   • workflow_dispatch / workflow_call                   → manual or reusable
+
+name: Publish AVDI images
+
+on:
+  push:
+    branches: [main, c1/cloud-runtime]
+    tags: ["v*"]
+    paths: &image-affecting-paths
+      - "docker/Dockerfile.terminal"
+      - "docker/Dockerfile.terminal.dockerignore"
+      - "docker/requirements-c0-*.txt"
+      - "docker/requirements-c0-*.txt.sha256"
+      - "docker/entrypoint.sh"
+      - "docker/c0_preflight.py"
+      - "docker/serve_dashboard.py"
+      - "pyproject.toml"
+      - "src/**"
+      - "lab/**"
+      - "dashboard/**"
+      - "canonical/**"
+      - "automation/**"
+      - ".github/workflows/publish-avdi-images.yml"
+  pull_request:
+    branches: [main, c1/cloud-runtime]
+    paths: *image-affecting-paths
+  workflow_dispatch:
+  workflow_call:
+    outputs:
+      dashboard_digest:
+        description: "Pushed digest of the avdi-dashboard image (empty on a PR/build-only run)"
+        value: ${{ jobs.build-dashboard.outputs.digest }}
+      scheduler_digest:
+        description: "Pushed digest of the avdi-scheduler image (empty on a PR/build-only run)"
+        value: ${{ jobs.build-scheduler.outputs.digest }}
+      sha_tag:
+        description: "The sha-<shortsha> tag suffix used for this build"
+        value: ${{ jobs.build-dashboard.outputs.sha_tag }}
+
+concurrency:
+  group: publish-avdi-images-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-dashboard:
+    runs-on: ubuntu-latest
+    permissions: {contents: read, packages: write}
+    outputs:
+      digest: ${{ steps.build.outputs.digest }}
+      sha_tag: sha-${{ steps.shortsha.outputs.sha }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        if: github.event_name != 'pull_request'
+        with: {registry: ghcr.io, username: "${{ github.repository_owner }}", password: "${{ secrets.GITHUB_TOKEN }}"}
+      - id: shortsha
+        run: echo "sha=${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
+      - id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository }}/avdi-dashboard
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=semver,pattern={{major}}
+            type=sha,prefix=sha-
+            type=raw,value=latest,enable=${{ github.ref == format('refs/heads/{0}', 'main') || startsWith(github.ref, 'refs/tags/v') }}
+      - uses: docker/build-push-action@v6
+        id: build
+        with:
+          context: .
+          file: docker/Dockerfile.terminal
+          target: dashboard
+          platforms: linux/amd64
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha,scope=avdi-dashboard
+          cache-to: type=gha,mode=max,scope=avdi-dashboard
+          provenance: false
+
+  build-scheduler:
+    runs-on: ubuntu-latest
+    permissions: {contents: read, packages: write}
+    outputs:
+      digest: ${{ steps.build.outputs.digest }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        if: github.event_name != 'pull_request'
+        with: {registry: ghcr.io, username: "${{ github.repository_owner }}", password: "${{ secrets.GITHUB_TOKEN }}"}
+      - id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository }}/avdi-scheduler
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=semver,pattern={{major}}
+            type=sha,prefix=sha-
+            type=raw,value=latest,enable=${{ github.ref == format('refs/heads/{0}', 'main') || startsWith(github.ref, 'refs/tags/v') }}
+      - uses: docker/build-push-action@v6
+        id: build
+        with:
+          context: .
+          file: docker/Dockerfile.terminal
+          target: paper
+          platforms: linux/amd64
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha,scope=avdi-scheduler
+          cache-to: type=gha,mode=max,scope=avdi-scheduler
+          provenance: false

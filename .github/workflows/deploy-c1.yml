@@ -1,0 +1,106 @@
+# C1-PREP item 4 — the deploy pipeline shape: tests -> build -> push GHCR -> deploy.
+# The deploy stage is STRUCTURALLY disabled, not just commented out: it is gated on
+# the repository variable `vars.AZURE_DEPLOY_ENABLED`, which does not exist yet (an
+# unset vars.* reads as an empty string, so the `if:` below evaluates false and the
+# job is skipped outright — it does not run and then no-op, it does not run at all).
+# Nothing under `jobs.deploy` may execute any Azure action, secret, or credential
+# until that variable is deliberately set to "true" AND the placeholder steps below
+# are replaced with real ones — that is C1.3 (GitHub OIDC -> Azure AD) and later, not
+# this gate. See docs/C1_AZURE_BOOTSTRAP_CONTRACT.md.
+#
+# tests: builds the `tests` image target (docker/Dockerfile.terminal) and runs the
+# same pytest suite G5-A already proved equivalent to the host baseline
+# (docs/C0_EQUIVALENCE_REPORT.md §1) — a real, currently-live gate: a failing test
+# blocks the build-and-push job via `needs:`.
+#
+# build-and-push: calls publish-avdi-images.yml (item 3) as a reusable workflow —
+# no duplicated build logic between "publish on every push" and "publish as part of
+# a deploy."
+
+name: Deploy AVDI (C1)
+
+on:
+  push:
+    branches: [c1/cloud-runtime]
+    paths:
+      - "docker/**"
+      - "src/**"
+      - "lab/**"
+      - "dashboard/**"
+      - "canonical/**"
+      - "automation/**"
+      - "tests/**"
+      - "pyproject.toml"
+      - ".github/workflows/deploy-c1.yml"
+  workflow_dispatch:
+    inputs:
+      skip_tests:
+        description: "Skip the test stage (debugging this workflow only — never for a real deploy)"
+        type: boolean
+        default: false
+
+concurrency:
+  group: deploy-c1-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  test:
+    if: ${{ !inputs.skip_tests }}
+    runs-on: ubuntu-latest
+    permissions: {contents: read}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - name: Build the tests image (no push — local to this job only)
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: docker/Dockerfile.terminal
+          target: tests
+          platforms: linux/amd64
+          push: false
+          load: true
+          tags: avdi-tests:ci
+          cache-from: type=gha,scope=avdi-tests
+          cache-to: type=gha,mode=max,scope=avdi-tests
+      - name: Run the unit suite inside the image (isolated HOME, both TZ profiles)
+        run: |
+          set -e
+          for tz in UTC "America/New_York"; do
+            echo "::group::pytest tests/unit  (TZ=$tz)"
+            docker run --rm -e C0_PROFILE=cloud-synthetic -e TZ="$tz" \
+              --entrypoint python avdi-tests:ci -m pytest tests/unit -q \
+              -p no:cacheprovider --ignore=tests/e2e
+            echo "::endgroup::"
+          done
+
+  build-and-push:
+    needs: [test]
+    # `always()` + the explicit test-result check lets this still run when tests were
+    # deliberately skipped via workflow_dispatch, while still blocking on a real
+    # failure — `needs` alone would skip this job if `test` is skipped-not-failed.
+    if: ${{ always() && (needs.test.result == 'success' || needs.test.result == 'skipped') }}
+    uses: ./.github/workflows/publish-avdi-images.yml
+    permissions: {contents: read, packages: write}
+
+  deploy:
+    needs: [build-and-push]
+    # STRUCTURALLY DISABLED — see the file header. This is not a placeholder that
+    # "would" skip; an unset repository variable makes the condition false, so this
+    # job does not run.
+    if: ${{ vars.AZURE_DEPLOY_ENABLED == 'true' }}
+    runs-on: ubuntu-latest
+    environment: production
+    permissions:
+      contents: read
+      id-token: write   # required for OIDC once C1.3 wires it up — unused until then
+    steps:
+      - name: Azure login via OIDC (placeholder — not implemented)
+        run: |
+          echo "AZURE_DEPLOY_ENABLED is true, but no OIDC login step exists yet."
+          echo "This is C1.3+ work (docs/C1_AZURE_BOOTSTRAP_CONTRACT.md) — implement"
+          echo "azure/login@v2 with federated credentials here, then the actual"
+          echo "deploy (pull sha-${{ needs.build-and-push.outputs.sha_tag }} images"
+          echo "on the target host, docker compose -f docker/compose.c1.yml"
+          echo "--profile cloud-synthetic up -d, then poll /api/health)."
+          exit 1

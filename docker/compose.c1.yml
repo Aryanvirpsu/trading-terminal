@@ -1,0 +1,80 @@
+# C1-PREP item 2 — the production compose target: "cloud-synthetic" profile.
+#
+# This is the cloud-agnostic implementation of docs/C1_HOST_CONTRACT.md — it runs
+# unmodified on any Linux Docker host (a laptop, a university server, or the eventual
+# Azure VM). Nothing here references Azure. Contrast with docker/compose.c0.yml, which
+# exists to run Case 1 AND Case 2 side by side for equivalence testing (four volumes,
+# tmpfs for case1, restart:"no", loopback-only) — this file runs ONE profile in
+# production shape: persistent state, a real restart policy, resource limits sized for
+# Azure's free B1s/B2ats burstable tier, and still zero broker/live-trading credentials
+# (structurally refused by docker/c0_preflight.py regardless of what this file sets).
+#
+# Local use (no registry, no cloud, builds from source — exactly what C0 already proved):
+#   docker compose -f docker/compose.c1.yml --profile cloud-synthetic build
+#   docker compose -f docker/compose.c1.yml --profile cloud-synthetic up -d avdi-dashboard-cloud
+#
+# Real-deployment use (once images are published — item 3 — and AVDI_TAG is a real
+# commit SHA from a GHCR push; no source checkout needed on the host):
+#   AVDI_TAG=sha-abc1234 docker compose -f docker/compose.c1.yml --profile cloud-synthetic pull
+#   AVDI_TAG=sha-abc1234 docker compose -f docker/compose.c1.yml --profile cloud-synthetic up -d
+#
+# STATE SAFETY: avdi_state starts EMPTY on every fresh deployment. Nothing in this file,
+# or anywhere in this repo, ever seeds it from the real ~/.tradingview_mcp_data — that
+# is a separate, later, explicit decision (docs/C1_HOST_CONTRACT.md §2), not something
+# C1-PREP performs or enables.
+
+services:
+  avdi-dashboard-cloud:
+    profiles: [cloud-synthetic]
+    image: ghcr.io/aryanvirpsu/trading-terminal/avdi-dashboard:${AVDI_TAG:-local}
+    build: {context: .., dockerfile: docker/Dockerfile.terminal, target: dashboard}
+    container_name: avdi-dashboard-cloud
+    user: "10001:10001"
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    restart: unless-stopped
+    mem_limit: 512m
+    cpus: 0.5
+    env_file: [env/cloud-synthetic.env]
+    volumes:
+      - avdi_state:/home/tv/.tradingview_mcp_data
+      - avdi_out:/out
+    # Loopback-only by default — deliberately NOT exposed to 0.0.0.0 here. The Flask
+    # dev server this runs (dashboard/app.py, via docker/serve_dashboard.py) has no
+    # authentication of its own (C0_CONTAINER_DESIGN.md §3.4); a reverse proxy with TLS
+    # and, ideally, an auth layer is C1.6's job, not this file's. Change this binding
+    # only alongside that work, not before it.
+    ports: ["127.0.0.1:5057:5057"]
+    healthcheck:
+      test: ["CMD", "python", "-c",
+             "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:5057/api/health',timeout=5).status==200 else 1)"]
+      interval: 30s
+      timeout: 8s
+      start_period: 40s
+      retries: 3
+    command: ["python", "docker/serve_dashboard.py"]
+
+  avdi-scheduler-cloud:
+    profiles: [cloud-synthetic]
+    image: ghcr.io/aryanvirpsu/trading-terminal/avdi-scheduler:${AVDI_TAG:-local}
+    build: {context: .., dockerfile: docker/Dockerfile.terminal, target: paper}
+    container_name: avdi-scheduler-cloud
+    user: "10001:10001"
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    # "no", not unless-stopped: this is a one-shot batch job (status/premarket/hours/
+    # postmarket/all), the same shape as avdi-scheduler-case1/case2 in compose.c0.yml.
+    # HOW it gets invoked on a schedule (host cron, systemd timer, or something else)
+    # is explicitly undecided — docs/C1_HOST_CONTRACT.md §6 — not fixed by this file.
+    restart: "no"
+    mem_limit: 512m
+    cpus: 0.5
+    env_file: [env/cloud-synthetic.env]
+    volumes:
+      - avdi_state:/home/tv/.tradingview_mcp_data
+      - avdi_out:/out
+    command: ["python", "automation/paper_scheduler.py", "status"]
+
+volumes:
+  avdi_state: {}
+  avdi_out: {}
