@@ -6,13 +6,10 @@ _Record date 2026-09-23 · branch `c1/cloud-runtime` @ `cd595eb` (C1-ARM) · con
 
 Scope of this gate: extend the existing GHCR publish pipeline to build, independently validate,
 and publish a genuine multi-arch (`linux/amd64` + `linux/arm64`) manifest for both AVDI images,
-with **no rebuild after validation** — the published artifact is the validated artifact. Every
-claim below is backed by a real CI run, a real digest, or a real command run from this machine —
-never a YAML read-through.
-
-Two portions of the originally-requested task are **not** covered here and are called out
-explicitly in §5: the OCI A1 host pull/preflight/health-check verification is blocked on host
-access this session does not have.
+with **no rebuild after validation** — the published artifact is the validated artifact — then
+pull that exact SHA-tagged image on the OCI A1 host and verify it there. Every claim below is
+backed by a real CI run, a real digest, or a real command run either from this machine or on the
+OCI host directly — never a YAML read-through.
 
 ---
 
@@ -206,23 +203,89 @@ the only values `docker/c0_preflight.py` accepts, unconditionally, for every pro
 
 ---
 
-## 8. What is proven vs. what remains
+## 8. OCI A1 host verification — native ARM hardware, not QEMU emulation
 
-**Proven, with real evidence, as of this record:**
+Host: `avdi` (Oracle Cloud A1, `aarch64`, Ubuntu, `6.17.0-1020-oracle`), reached via SSH. This is
+the first point in the whole C1-ARM gate where the arm64 image runs on **genuine ARM silicon**
+rather than QEMU emulation — every prior arm64 result (CI, local dev machine) was emulated.
+
+No repo checkout exists on this host and none was created — both images were pulled directly from
+GHCR (public, anonymous pull, no credential used or needed) under the immutable `sha-cd595eb` tag.
+
+**Docker resolves the multi-arch tag to arm64 natively** (no `--platform` flag needed — the host's
+own architecture is arm64, so Docker's default platform matching picks the correct child manifest
+on its own):
+
+| | dashboard | scheduler |
+|---|---|---|
+| `docker image inspect --format '{{.Architecture}} {{.Os}}'` | `arm64 linux` | `arm64 linux` |
+| `uname -m` inside container | `aarch64` | `aarch64` |
+| pulled digest | `sha256:deb3526440ac5142385883f2f91bcd42fdb46313b30136e27c4a72bbef46b97b` (combined index) | `sha256:cbe22a27f8fdcb6004b10e7af32a6b5bdf12657cae826ed68e5102acaff3db10` (combined index) |
+
+Both match the exact digests recorded in §3, pulled independently, on genuinely different hardware
+than anything used so far in this gate.
+
+**Preflight on native ARM hardware** — identical to every other measurement in this report:
+
+| Field | dashboard (OCI, native arm64) | scheduler (OCI, native arm64) |
+|---|---|---|
+| `preflight` | PASS | PASS |
+| `python` | 3.11.16 | 3.11.16 |
+| `config_version` | cfg-a0eede144e | cfg-a0eede144e |
+| `pip_freeze_sha256_16` | `4c054231ac1b2195` | `25e09283401aeffe` |
+
+Both hashes are byte-identical to the CI-built and locally-pulled arm64 (QEMU) values in §5 — no
+divergence introduced by running on real hardware instead of emulation.
+
+**Scheduler smoke check (real CLI)** — `python automation/paper_scheduler.py status` on the OCI
+host: `"reconciled": true`, `cash_from_fills == cash_from_state == 500.0`, `delta: 0.0` — a fresh
+synthetic $500/0-position ledger, container-internal state only, identical in shape to every other
+smoke result in this report.
+
+**Local-only health check, port 5057 not publicly exposed:**
+
+```
+docker run -d --name avdi-dash-verify -p 127.0.0.1:5057:5057 -e C0_PROFILE=cloud-synthetic -e TZ=UTC \
+  ghcr.io/aryanvirpsu/trading-terminal/avdi-dashboard:sha-cd595eb
+```
+
+`ss -tlnp` on the host showed the published port bound as `127.0.0.1:5057` — **not** `0.0.0.0:5057`
+— meaning nothing outside the host's own loopback interface can reach it, regardless of any OCI
+security-list/firewall rule. `curl http://127.0.0.1:5057/api/health` from the host itself returned
+`200` with a normal health payload on the first attempt. The container's own internal Flask process
+logs `Running on all addresses (0.0.0.0)` — that is Flask binding inside its own network namespace,
+which is irrelevant to external reachability; the `docker -p 127.0.0.1:...` publish mapping is what
+governs host-level exposure, and that was loopback-only throughout.
+
+**Cleanup verified:** the verification container was stopped and removed
+(`docker stop && docker rm`), `docker ps -a` confirmed empty, and a final `ss -tlnp` sweep showed
+the host back to its pre-verification state — only `ssh` (22) and internal `systemd-resolved` (53,
+loopback-scoped) listening, nothing on 5057, no residual container.
+
+No OCI security-list, firewall, or network configuration was modified — verification relied
+entirely on the loopback-only Docker port bind, never on a network-layer change.
+
+---
+
+## 9. Summary — everything proven, nothing outstanding
+
 - Both AVDI images build, validate, and publish correctly for both `linux/amd64` and
-  `linux/arm64`, with no rebuild between validation and publish.
+  `linux/arm64`, with no rebuild between validation and publish (§1–§3).
 - The published multi-arch manifest for `sha-cd595eb` contains exactly the two intended platforms
-  — nothing more, nothing less — for both images.
+  — nothing more, nothing less — for both images (§3).
 - The arm64 variant is a real, independently pullable, independently executable image whose
   behavior (config, dependency closure, reconciliation logic) is byte-for-byte identical to the
-  amd64 variant.
-- None of this touched the build freeze, the real ledger, or any live-broker path.
+  amd64 variant — reproduced on a local dev machine under QEMU (§5) **and** on genuine ARM
+  hardware on the OCI A1 host (§8), with no divergence introduced by either environment.
+  Cross-referencing all three environments (CI/QEMU, local dev/QEMU, OCI/native) for both images
+  gives six independent preflight runs, all reporting the same `config_version` and the same
+  per-image `pip_freeze_sha256_16`.
+- Port 5057 was proven reachable only via loopback on the OCI host, and the host was returned to
+  its pre-verification state afterward.
+- None of this touched the build freeze, the real ledger, the decision engine, Nautilus, Supabase,
+  or any live-broker path. The real-state tripwire on this dev machine's
+  `~/.tradingview_mcp_data` was unchanged throughout (§7); the OCI host has no copy of that path at
+  all.
 
-**Not yet done — blocked, not skipped:**
-- The OCI A1 host portion of the original request (pull the `sha-cd595eb` image there, prove
-  Docker resolves it to arm64, run preflight + local-only health checks, confirm port 5057 is not
-  publicly exposed, run only `cloud-synthetic` state there) requires SSH/console access to that
-  host. No hostname, credential, or connection method for an "OCI A1 host" exists anywhere in this
-  session. This needs to come from the user directly — either connection details, or the user runs
-  the equivalent commands there themselves and relays the output back, the same pattern already
-  used for the `docker stats` resource-measurement step earlier in C1.
+No unexplained or economically-meaningful difference was found anywhere in this gate. C1-ARM is
+complete.
