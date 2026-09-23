@@ -1,25 +1,29 @@
-# C1-PREP item 3 (hardened per the C1-PREP acceptance contract) — builds, tests, and
-# publishes ghcr.io/<owner>/<repo>/avdi-dashboard and .../avdi-scheduler. Does NOT
-# touch publish-image.yml, which keeps building the separate, pre-existing upstream
-# MCP image.
+# C1-ARM: extends the AVDI GHCR publish pipeline to linux/amd64 + linux/arm64,
+# without changing trading logic or C0/C1 semantics. Builds on the C1-PREP pipeline
+# (docs/C1_PREP_ACCEPTANCE.md) — the single-arch invariant carries over exactly:
 #
-# The whole point of this file: a failing test/preflight/smoke check means NO image
-# is published as deployable, on every trigger path — not just when something else
-# happens to call this workflow first. So the gate lives HERE, not only in
-# deploy-c1.yml:
+#   tests -> build -> container preflight -> smoke -> ONLY THEN publish
 #
-#   checkout -> static checks -> tests -> docker build (load, no push yet)
-#     -> container preflight -> smoke health/status -> login GHCR -> push
+# The multi-arch wrinkle: `docker buildx build --load` cannot load a multi-platform
+# build into the local daemon (a daemon only ever stores single-platform images —
+# multi-arch only exists as a manifest list in a registry). So "build once, validate,
+# publish exactly that" now means, per architecture:
 #
-# The image that gets pushed is the EXACT image that was just preflighted and
-# smoke-tested — built once with `load: true`, then `docker push`'d per tag, never
-# rebuilt. That is what makes "local image SHA == published image SHA" a real
-# guarantee instead of "both happened to come from the same commit."
+#   build (load, single platform) -> preflight -> smoke -> push under a PER-ARCH tag
+#     (sha-<commit>-amd64 / sha-<commit>-arm64, each independently pullable/inspectable)
 #
-# Triggers: push to main/c1/cloud-runtime (path-filtered) or a v* tag -> full gate,
-# push on success (skipped entirely on a PR — build+gate only, no login, no push).
-# workflow_dispatch and workflow_call also available (deploy-c1.yml no longer calls
-# this directly — see that file's own header for why — but it stays reusable).
+# ...done once natively for amd64 and once under QEMU emulation for arm64, in
+# parallel. ONLY once BOTH architectures have independently passed do their two
+# already-pushed, already-validated digests get combined — via `docker buildx
+# imagetools create`, which references existing pushed digests and builds nothing —
+# into the final multi-arch manifest under the real deployment tags (sha-<commit>,
+# the branch tag, latest/semver where applicable). This is what makes "the published
+# manifest contains exactly the validated artifacts" a mechanical guarantee: nothing
+# downstream of the per-arch push step ever invokes `docker build` again.
+#
+# github.repository is mixed-case ("Owner/repo"); every raw ghcr.io/ reference below
+# is built from a lowercased copy computed once in `meta`, not the raw context value
+# (see deploy-c1.yml's own fix for the same issue, found by actually triggering it).
 
 name: Publish AVDI images
 
@@ -52,17 +56,18 @@ on:
   workflow_dispatch:
   workflow_call:
     outputs:
-      dashboard_digest: {description: "Pushed digest of avdi-dashboard (empty on a PR/build-only run)", value: "${{ jobs.dashboard.outputs.digest }}"}
-      scheduler_digest: {description: "Pushed digest of avdi-scheduler (empty on a PR/build-only run)", value: "${{ jobs.scheduler.outputs.digest }}"}
-      sha_tag: {description: "The sha-<shortsha> tag suffix used for this build", value: "${{ jobs.dashboard.outputs.sha_tag }}"}
+      dashboard_manifest_digest: {description: "Multi-arch manifest digest for avdi-dashboard (empty on a PR/build-only run)", value: "${{ jobs.dashboard-manifest.outputs.digest }}"}
+      scheduler_manifest_digest: {description: "Multi-arch manifest digest for avdi-scheduler (empty on a PR/build-only run)", value: "${{ jobs.scheduler-manifest.outputs.digest }}"}
+      sha_tag: {description: "The sha-<shortsha> tag (the deployment identity)", value: "${{ jobs.meta.outputs.sha_tag }}"}
 
 concurrency:
   group: publish-avdi-images-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  # ── gate: repo-wide checks that don't depend on which of the two images you're
-  #    looking at. Both image jobs require this to succeed first. ─────────────────
+  # ── gate: repo-wide checks, amd64-native (the full suite isn't required under
+  #    arm64 emulation by this gate's own scope — only the two deployable images'
+  #    runtime behaviour is, per-arch, below). ─────────────────────────────────────
   gate:
     runs-on: ubuntu-latest
     permissions: {contents: read}
@@ -92,8 +97,6 @@ jobs:
           cache-to: type=gha,mode=max,scope=avdi-tests
 
       - name: Tests, judged against the known baseline (both TZ profiles)
-        # docker/tools/ci_test_gate.py — see its own header. A bare pytest exit code
-        # is the wrong gate on this repo (docs/C0_EQUIVALENCE_REPORT.md §1).
         run: |
           set -e
           for tz in UTC "America/New_York"; do
@@ -103,20 +106,24 @@ jobs:
             echo "::endgroup::"
           done
 
-  # ── dashboard: build -> preflight -> smoke health -> (push only off a PR) ──────
-  dashboard:
+  # ── meta: compute every tag ONCE (lowercased repo, sha suffix, the full
+  #    deployment-tag list per image) so no downstream job re-derives it. ─────────
+  meta:
     needs: [gate]
     runs-on: ubuntu-latest
-    permissions: {contents: read, packages: write}
+    permissions: {contents: read}
     outputs:
-      digest: ${{ steps.pushed.outputs.digest }}
-      sha_tag: sha-${{ steps.shortsha.outputs.sha }}
+      repo: ${{ steps.repo.outputs.repo }}
+      sha_tag: sha-${{ steps.repo.outputs.sha }}
+      dashboard_tags: ${{ steps.dmeta.outputs.tags }}
+      scheduler_tags: ${{ steps.smeta.outputs.tags }}
     steps:
       - uses: actions/checkout@v4
-      - uses: docker/setup-buildx-action@v3
-      - id: shortsha
-        run: echo "sha=${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
-      - id: meta
+      - id: repo
+        run: |
+          echo "repo=$(echo '${{ github.repository }}' | tr '[:upper:]' '[:lower:]')" >> "$GITHUB_OUTPUT"
+          echo "sha=${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
+      - id: dmeta
         uses: docker/metadata-action@v5
         with:
           images: ghcr.io/${{ github.repository }}/avdi-dashboard
@@ -128,73 +135,7 @@ jobs:
             type=semver,pattern={{major}}
             type=sha,prefix=sha-
             type=raw,value=latest,enable=${{ github.ref == format('refs/heads/{0}', 'main') || startsWith(github.ref, 'refs/tags/v') }}
-
-      - name: Build (load only — nothing pushed yet)
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          file: docker/Dockerfile.terminal
-          target: dashboard
-          platforms: linux/amd64
-          push: false
-          load: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha,scope=avdi-dashboard
-          cache-to: type=gha,mode=max,scope=avdi-dashboard
-
-      - name: Pick one locally-loaded tag to exercise below
-        id: reftag
-        run: echo "tag=$(echo '${{ steps.meta.outputs.tags }}' | head -1)" >> "$GITHUB_OUTPUT"
-
-      - name: Container preflight (cloud-synthetic profile — the deployment target)
-        run: |
-          docker run --rm -e C0_PROFILE=cloud-synthetic -e TZ=UTC \
-            --entrypoint python '${{ steps.reftag.outputs.tag }}' /app/docker/c0_preflight.py
-
-      - name: Smoke health (start it, poll /api/health, tear down)
-        run: |
-          set -e
-          docker run -d --name smoke-dashboard -e C0_PROFILE=cloud-synthetic -e TZ=UTC \
-            -p 127.0.0.1:5057:5057 '${{ steps.reftag.outputs.tag }}'
-          ok=""
-          for i in $(seq 1 20); do
-            code=$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:5057/api/health || true)
-            if [ "$code" = "200" ]; then ok=1; break; fi
-            sleep 3
-          done
-          docker logs smoke-dashboard || true
-          docker rm -f smoke-dashboard || true
-          if [ -z "$ok" ]; then echo "::error::dashboard /api/health never returned 200"; exit 1; fi
-
-      - uses: docker/login-action@v3
-        if: github.event_name != 'pull_request'
-        with: {registry: ghcr.io, username: "${{ github.repository_owner }}", password: "${{ secrets.GITHUB_TOKEN }}"}
-
-      - name: Push every tag of the EXACT image just preflighted and smoke-tested
-        if: github.event_name != 'pull_request'
-        id: pushed
-        run: |
-          set -e
-          digest=""
-          while IFS= read -r t; do
-            [ -z "$t" ] && continue
-            docker push "$t"
-            digest=$(docker inspect --format '{{index .RepoDigests 0}}' "$t" | cut -d'@' -f2)
-          done <<< '${{ steps.meta.outputs.tags }}'
-          echo "digest=$digest" >> "$GITHUB_OUTPUT"
-
-  # ── scheduler: same shape, "smoke health" is a status-command check (no HTTP) ──
-  scheduler:
-    needs: [gate]
-    runs-on: ubuntu-latest
-    permissions: {contents: read, packages: write}
-    outputs:
-      digest: ${{ steps.pushed.outputs.digest }}
-    steps:
-      - uses: actions/checkout@v4
-      - uses: docker/setup-buildx-action@v3
-      - id: meta
+      - id: smeta
         uses: docker/metadata-action@v5
         with:
           images: ghcr.io/${{ github.repository }}/avdi-scheduler
@@ -207,7 +148,155 @@ jobs:
             type=sha,prefix=sha-
             type=raw,value=latest,enable=${{ github.ref == format('refs/heads/{0}', 'main') || startsWith(github.ref, 'refs/tags/v') }}
 
-      - name: Build (load only — nothing pushed yet)
+  # ═══════════════════════════ dashboard ═══════════════════════════════════════
+
+  dashboard-amd64:
+    needs: [meta]
+    runs-on: ubuntu-latest
+    permissions: {contents: read, packages: write}
+    outputs:
+      digest: ${{ steps.push.outputs.digest }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - name: Build linux/amd64 (load only — nothing pushed yet)
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: docker/Dockerfile.terminal
+          target: dashboard
+          platforms: linux/amd64
+          push: false
+          load: true
+          tags: local/avdi-dashboard:amd64
+          provenance: false   # keeps the manifest list to exactly [amd64, arm64] — no attestation-manifest noise
+          cache-from: type=gha,scope=avdi-dashboard-amd64
+          cache-to: type=gha,mode=max,scope=avdi-dashboard-amd64
+      - name: Container preflight (cloud-synthetic profile — native)
+        run: docker run --rm -e C0_PROFILE=cloud-synthetic -e TZ=UTC --entrypoint python local/avdi-dashboard:amd64 /app/docker/c0_preflight.py
+      - name: Smoke health (native)
+        run: |
+          set -e
+          docker run -d --name smoke-dashboard-amd64 -e C0_PROFILE=cloud-synthetic -e TZ=UTC -p 127.0.0.1:5057:5057 local/avdi-dashboard:amd64
+          ok=""
+          for i in $(seq 1 20); do
+            code=$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:5057/api/health || true)
+            [ "$code" = "200" ] && { ok=1; break; }
+            sleep 3
+          done
+          docker logs smoke-dashboard-amd64 || true
+          docker rm -f smoke-dashboard-amd64 || true
+          [ -n "$ok" ] || { echo "::error::amd64 dashboard /api/health never returned 200"; exit 1; }
+      - uses: docker/login-action@v3
+        if: github.event_name != 'pull_request'
+        with: {registry: ghcr.io, username: "${{ github.repository_owner }}", password: "${{ secrets.GITHUB_TOKEN }}"}
+      - name: Push the validated image under its per-arch tag
+        if: github.event_name != 'pull_request'
+        id: push
+        run: |
+          set -e
+          tag="ghcr.io/${{ needs.meta.outputs.repo }}/avdi-dashboard:${{ needs.meta.outputs.sha_tag }}-amd64"
+          docker tag local/avdi-dashboard:amd64 "$tag"
+          docker push "$tag"
+          echo "digest=$(docker inspect --format '{{index .RepoDigests 0}}' "$tag" | cut -d'@' -f2)" >> "$GITHUB_OUTPUT"
+
+  dashboard-arm64:
+    needs: [meta]
+    runs-on: ubuntu-latest
+    permissions: {contents: read, packages: write}
+    outputs:
+      digest: ${{ steps.push.outputs.digest }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-qemu-action@v3
+      - uses: docker/setup-buildx-action@v3
+      - name: Build linux/arm64 under QEMU (load only — nothing pushed yet)
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: docker/Dockerfile.terminal
+          target: dashboard
+          platforms: linux/arm64
+          push: false
+          load: true
+          tags: local/avdi-dashboard:arm64
+          provenance: false
+          cache-from: type=gha,scope=avdi-dashboard-arm64
+          cache-to: type=gha,mode=max,scope=avdi-dashboard-arm64
+      - name: Container preflight (cloud-synthetic profile — under QEMU emulation)
+        run: docker run --rm --platform linux/arm64 -e C0_PROFILE=cloud-synthetic -e TZ=UTC --entrypoint python local/avdi-dashboard:arm64 /app/docker/c0_preflight.py
+      - name: Smoke health (under QEMU emulation)
+        run: |
+          set -e
+          docker run -d --name smoke-dashboard-arm64 --platform linux/arm64 -e C0_PROFILE=cloud-synthetic -e TZ=UTC -p 127.0.0.1:5057:5057 local/avdi-dashboard:arm64
+          ok=""
+          for i in $(seq 1 30); do
+            code=$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:5057/api/health || true)
+            [ "$code" = "200" ] && { ok=1; break; }
+            sleep 4
+          done
+          docker logs smoke-dashboard-arm64 || true
+          docker rm -f smoke-dashboard-arm64 || true
+          [ -n "$ok" ] || { echo "::error::arm64 dashboard /api/health never returned 200"; exit 1; }
+      - uses: docker/login-action@v3
+        if: github.event_name != 'pull_request'
+        with: {registry: ghcr.io, username: "${{ github.repository_owner }}", password: "${{ secrets.GITHUB_TOKEN }}"}
+      - name: Push the validated image under its per-arch tag
+        if: github.event_name != 'pull_request'
+        id: push
+        run: |
+          set -e
+          tag="ghcr.io/${{ needs.meta.outputs.repo }}/avdi-dashboard:${{ needs.meta.outputs.sha_tag }}-arm64"
+          docker tag local/avdi-dashboard:arm64 "$tag"
+          docker push "$tag"
+          echo "digest=$(docker inspect --format '{{index .RepoDigests 0}}' "$tag" | cut -d'@' -f2)" >> "$GITHUB_OUTPUT"
+
+  dashboard-manifest:
+    needs: [meta, dashboard-amd64, dashboard-arm64]
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    permissions: {contents: read, packages: write}
+    outputs:
+      digest: ${{ steps.inspect.outputs.digest }}
+    steps:
+      - uses: docker/login-action@v3
+        with: {registry: ghcr.io, username: "${{ github.repository_owner }}", password: "${{ secrets.GITHUB_TOKEN }}"}
+      - name: Combine the two ALREADY-VALIDATED, ALREADY-PUSHED digests — builds nothing
+        run: |
+          set -e
+          repo="${{ needs.meta.outputs.repo }}"
+          amd64="ghcr.io/$repo/avdi-dashboard@${{ needs.dashboard-amd64.outputs.digest }}"
+          arm64="ghcr.io/$repo/avdi-dashboard@${{ needs.dashboard-arm64.outputs.digest }}"
+          tagargs=""
+          while IFS= read -r t; do
+            [ -z "$t" ] && continue
+            tagargs="$tagargs --tag $t"
+          done <<< '${{ needs.meta.outputs.dashboard_tags }}'
+          docker buildx imagetools create $tagargs "$amd64" "$arm64"
+      - name: Verify the published manifest contains exactly amd64+arm64
+        id: inspect
+        run: |
+          set -e
+          ref="ghcr.io/${{ needs.meta.outputs.repo }}/avdi-dashboard:${{ needs.meta.outputs.sha_tag }}"
+          docker buildx imagetools inspect "$ref"
+          plats=$(docker buildx imagetools inspect "$ref" --raw | python3 -c "import json,sys; d=json.load(sys.stdin); print(sorted(m['platform']['os']+'/'+m['platform']['architecture'] for m in d['manifests'] if 'platform' in m))")
+          echo "platforms=$plats"
+          [ "$plats" = "['linux/amd64', 'linux/arm64']" ] || { echo "::error::expected exactly [linux/amd64, linux/arm64], got $plats"; exit 1; }
+          digest=$(docker buildx imagetools inspect "$ref" --format '{{json .Manifest}}' | python3 -c "import json,sys; print(json.load(sys.stdin)['digest'])")
+          echo "digest=$digest" >> "$GITHUB_OUTPUT"
+
+  # ═══════════════════════════ scheduler (same shape) ═══════════════════════════
+
+  scheduler-amd64:
+    needs: [meta]
+    runs-on: ubuntu-latest
+    permissions: {contents: read, packages: write}
+    outputs:
+      digest: ${{ steps.push.outputs.digest }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - name: Build linux/amd64 (load only — nothing pushed yet)
         uses: docker/build-push-action@v6
         with:
           context: .
@@ -216,41 +305,113 @@ jobs:
           platforms: linux/amd64
           push: false
           load: true
-          tags: ${{ steps.meta.outputs.tags }}
-          labels: ${{ steps.meta.outputs.labels }}
-          cache-from: type=gha,scope=avdi-scheduler
-          cache-to: type=gha,mode=max,scope=avdi-scheduler
-
-      - name: Pick one locally-loaded tag to exercise below
-        id: reftag
-        run: echo "tag=$(echo '${{ steps.meta.outputs.tags }}' | head -1)" >> "$GITHUB_OUTPUT"
-
-      - name: Container preflight (cloud-synthetic profile — the deployment target)
-        run: |
-          docker run --rm -e C0_PROFILE=cloud-synthetic -e TZ=UTC \
-            --entrypoint python '${{ steps.reftag.outputs.tag }}' /app/docker/c0_preflight.py
-
-      - name: Smoke status (no HTTP endpoint on this image — run the real CLI, check it reconciles)
+          tags: local/avdi-scheduler:amd64
+          provenance: false
+          cache-from: type=gha,scope=avdi-scheduler-amd64
+          cache-to: type=gha,mode=max,scope=avdi-scheduler-amd64
+      - name: Container preflight (native)
+        run: docker run --rm -e C0_PROFILE=cloud-synthetic -e TZ=UTC --entrypoint python local/avdi-scheduler:amd64 /app/docker/c0_preflight.py
+      - name: Smoke status (native — run the real CLI, check it reconciles)
         run: |
           set -e
-          out=$(docker run --rm -e C0_PROFILE=cloud-synthetic -e TZ=UTC \
-            '${{ steps.reftag.outputs.tag }}' python automation/paper_scheduler.py status)
+          out=$(docker run --rm -e C0_PROFILE=cloud-synthetic -e TZ=UTC local/avdi-scheduler:amd64 python automation/paper_scheduler.py status)
           echo "$out"
-          echo "$out" | grep -q '"reconciled": true' || { echo "::error::scheduler status did not reconcile"; exit 1; }
-
+          echo "$out" | grep -q '"reconciled": true' || { echo "::error::amd64 scheduler status did not reconcile"; exit 1; }
       - uses: docker/login-action@v3
         if: github.event_name != 'pull_request'
         with: {registry: ghcr.io, username: "${{ github.repository_owner }}", password: "${{ secrets.GITHUB_TOKEN }}"}
-
-      - name: Push every tag of the EXACT image just preflighted and smoke-tested
+      - name: Push the validated image under its per-arch tag
         if: github.event_name != 'pull_request'
-        id: pushed
+        id: push
         run: |
           set -e
-          digest=""
+          tag="ghcr.io/${{ needs.meta.outputs.repo }}/avdi-scheduler:${{ needs.meta.outputs.sha_tag }}-amd64"
+          docker tag local/avdi-scheduler:amd64 "$tag"
+          docker push "$tag"
+          echo "digest=$(docker inspect --format '{{index .RepoDigests 0}}' "$tag" | cut -d'@' -f2)" >> "$GITHUB_OUTPUT"
+
+  scheduler-arm64:
+    needs: [meta]
+    runs-on: ubuntu-latest
+    permissions: {contents: read, packages: write}
+    outputs:
+      digest: ${{ steps.push.outputs.digest }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-qemu-action@v3
+      - uses: docker/setup-buildx-action@v3
+      - name: Build linux/arm64 under QEMU (load only — nothing pushed yet)
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: docker/Dockerfile.terminal
+          target: paper
+          platforms: linux/arm64
+          push: false
+          load: true
+          tags: local/avdi-scheduler:arm64
+          provenance: false
+          cache-from: type=gha,scope=avdi-scheduler-arm64
+          cache-to: type=gha,mode=max,scope=avdi-scheduler-arm64
+      - name: Container preflight (under QEMU emulation)
+        run: docker run --rm --platform linux/arm64 -e C0_PROFILE=cloud-synthetic -e TZ=UTC --entrypoint python local/avdi-scheduler:arm64 /app/docker/c0_preflight.py
+      - name: Smoke status (under QEMU emulation — required gate)
+        run: |
+          set -e
+          out=$(docker run --rm --platform linux/arm64 -e C0_PROFILE=cloud-synthetic -e TZ=UTC local/avdi-scheduler:arm64 python automation/paper_scheduler.py status)
+          echo "$out"
+          echo "$out" | grep -q '"reconciled": true' || { echo "::error::arm64 scheduler status did not reconcile"; exit 1; }
+      - name: "Smoke — full premarket/hours/postmarket cycle (best-effort, per spec's \"preferably\")"
+        # Not gating: this hits live market data, which can be flaky/rate-limited on
+        # a shared GitHub-runner IP regardless of architecture (C0_INVENTORY.md §9) -
+        # a network hiccup here says nothing about arm64 itself. Logged either way.
+        continue-on-error: true
+        run: |
+          docker run --rm --platform linux/arm64 -e C0_PROFILE=cloud-synthetic -e TZ=UTC \
+            local/avdi-scheduler:arm64 python automation/paper_scheduler.py all
+      - uses: docker/login-action@v3
+        if: github.event_name != 'pull_request'
+        with: {registry: ghcr.io, username: "${{ github.repository_owner }}", password: "${{ secrets.GITHUB_TOKEN }}"}
+      - name: Push the validated image under its per-arch tag
+        if: github.event_name != 'pull_request'
+        id: push
+        run: |
+          set -e
+          tag="ghcr.io/${{ needs.meta.outputs.repo }}/avdi-scheduler:${{ needs.meta.outputs.sha_tag }}-arm64"
+          docker tag local/avdi-scheduler:arm64 "$tag"
+          docker push "$tag"
+          echo "digest=$(docker inspect --format '{{index .RepoDigests 0}}' "$tag" | cut -d'@' -f2)" >> "$GITHUB_OUTPUT"
+
+  scheduler-manifest:
+    needs: [meta, scheduler-amd64, scheduler-arm64]
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    permissions: {contents: read, packages: write}
+    outputs:
+      digest: ${{ steps.inspect.outputs.digest }}
+    steps:
+      - uses: docker/login-action@v3
+        with: {registry: ghcr.io, username: "${{ github.repository_owner }}", password: "${{ secrets.GITHUB_TOKEN }}"}
+      - name: Combine the two ALREADY-VALIDATED, ALREADY-PUSHED digests — builds nothing
+        run: |
+          set -e
+          repo="${{ needs.meta.outputs.repo }}"
+          amd64="ghcr.io/$repo/avdi-scheduler@${{ needs.scheduler-amd64.outputs.digest }}"
+          arm64="ghcr.io/$repo/avdi-scheduler@${{ needs.scheduler-arm64.outputs.digest }}"
+          tagargs=""
           while IFS= read -r t; do
             [ -z "$t" ] && continue
-            docker push "$t"
-            digest=$(docker inspect --format '{{index .RepoDigests 0}}' "$t" | cut -d'@' -f2)
-          done <<< '${{ steps.meta.outputs.tags }}'
+            tagargs="$tagargs --tag $t"
+          done <<< '${{ needs.meta.outputs.scheduler_tags }}'
+          docker buildx imagetools create $tagargs "$amd64" "$arm64"
+      - name: Verify the published manifest contains exactly amd64+arm64
+        id: inspect
+        run: |
+          set -e
+          ref="ghcr.io/${{ needs.meta.outputs.repo }}/avdi-scheduler:${{ needs.meta.outputs.sha_tag }}"
+          docker buildx imagetools inspect "$ref"
+          plats=$(docker buildx imagetools inspect "$ref" --raw | python3 -c "import json,sys; d=json.load(sys.stdin); print(sorted(m['platform']['os']+'/'+m['platform']['architecture'] for m in d['manifests'] if 'platform' in m))")
+          echo "platforms=$plats"
+          [ "$plats" = "['linux/amd64', 'linux/arm64']" ] || { echo "::error::expected exactly [linux/amd64, linux/arm64], got $plats"; exit 1; }
+          digest=$(docker buildx imagetools inspect "$ref" --format '{{json .Manifest}}' | python3 -c "import json,sys; print(json.load(sys.stdin)['digest'])")
           echo "digest=$digest" >> "$GITHUB_OUTPUT"
