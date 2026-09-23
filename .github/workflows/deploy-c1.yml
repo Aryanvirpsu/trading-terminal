@@ -43,21 +43,28 @@ jobs:
     permissions: {contents: read, packages: read}
     outputs:
       tag: ${{ steps.tag.outputs.tag }}
+      repo: ${{ steps.tag.outputs.repo }}
     steps:
       - uses: actions/checkout@v4
       - id: tag
+        # github.repository is mixed-case ("Owner/repo"); every ghcr.io reference
+        # below must be all-lowercase or Docker rejects it outright ("invalid
+        # reference format") — computed once here, passed as a job output, never
+        # re-derived from the raw context in a later job.
         run: |
           tag="${{ inputs.image_tag }}"
           if [ -z "$tag" ]; then tag="sha-$(git rev-parse --short HEAD)"; fi
+          repo=$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
           echo "tag=$tag" >> "$GITHUB_OUTPUT"
-          echo "Resolving ghcr.io/${{ github.repository }}/avdi-{dashboard,scheduler}:$tag"
+          echo "repo=$repo" >> "$GITHUB_OUTPUT"
+          echo "Resolving ghcr.io/$repo/avdi-{dashboard,scheduler}:$tag"
       - uses: docker/login-action@v3
         with: {registry: ghcr.io, username: "${{ github.repository_owner }}", password: "${{ secrets.GITHUB_TOKEN }}"}
       - name: Confirm both images exist at this tag (fails clearly if not published)
         run: |
           set -e
-          docker buildx imagetools inspect "ghcr.io/${{ github.repository }}/avdi-dashboard:${{ steps.tag.outputs.tag }}"
-          docker buildx imagetools inspect "ghcr.io/${{ github.repository }}/avdi-scheduler:${{ steps.tag.outputs.tag }}"
+          docker buildx imagetools inspect "ghcr.io/${{ steps.tag.outputs.repo }}/avdi-dashboard:${{ steps.tag.outputs.tag }}"
+          docker buildx imagetools inspect "ghcr.io/${{ steps.tag.outputs.repo }}/avdi-scheduler:${{ steps.tag.outputs.tag }}"
 
   deployment-ready-checks:
     needs: [validate]
@@ -65,6 +72,7 @@ jobs:
     permissions: {contents: read, packages: read}
     env:
       TAG: ${{ needs.validate.outputs.tag }}
+      REPO: ${{ needs.validate.outputs.repo }}
     steps:
       - uses: docker/login-action@v3
         with: {registry: ghcr.io, username: "${{ github.repository_owner }}", password: "${{ secrets.GITHUB_TOKEN }}"}
@@ -72,24 +80,24 @@ jobs:
       - name: Pull the exact published images (not a local rebuild)
         run: |
           set -e
-          docker pull "ghcr.io/${{ github.repository }}/avdi-dashboard:$TAG"
-          docker pull "ghcr.io/${{ github.repository }}/avdi-scheduler:$TAG"
+          docker pull "ghcr.io/$REPO/avdi-dashboard:$TAG"
+          docker pull "ghcr.io/$REPO/avdi-scheduler:$TAG"
 
       - name: Preflight the pulled dashboard image
         run: |
           docker run --rm -e C0_PROFILE=cloud-synthetic -e TZ=UTC --entrypoint python \
-            "ghcr.io/${{ github.repository }}/avdi-dashboard:$TAG" /app/docker/c0_preflight.py
+            "ghcr.io/$REPO/avdi-dashboard:$TAG" /app/docker/c0_preflight.py
 
       - name: Preflight the pulled scheduler image
         run: |
           docker run --rm -e C0_PROFILE=cloud-synthetic -e TZ=UTC --entrypoint python \
-            "ghcr.io/${{ github.repository }}/avdi-scheduler:$TAG" /app/docker/c0_preflight.py
+            "ghcr.io/$REPO/avdi-scheduler:$TAG" /app/docker/c0_preflight.py
 
       - name: Smoke health — pulled dashboard image
         run: |
           set -e
           docker run -d --name deploy-check-dashboard -e C0_PROFILE=cloud-synthetic -e TZ=UTC \
-            -p 127.0.0.1:5057:5057 "ghcr.io/${{ github.repository }}/avdi-dashboard:$TAG"
+            -p 127.0.0.1:5057:5057 "ghcr.io/$REPO/avdi-dashboard:$TAG"
           ok=""
           for i in $(seq 1 20); do
             code=$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:5057/api/health || true)
@@ -104,7 +112,7 @@ jobs:
         run: |
           set -e
           out=$(docker run --rm -e C0_PROFILE=cloud-synthetic -e TZ=UTC \
-            "ghcr.io/${{ github.repository }}/avdi-scheduler:$TAG" python automation/paper_scheduler.py status)
+            "ghcr.io/$REPO/avdi-scheduler:$TAG" python automation/paper_scheduler.py status)
           echo "$out"
           echo "$out" | grep -q '"reconciled": true' || { echo "::error::pulled scheduler image did not reconcile"; exit 1; }
 
@@ -127,7 +135,7 @@ jobs:
           fi
           echo "::error::vars.AZURE_DEPLOY_ENABLED is true but no OIDC login/deploy step has been implemented yet."
           echo "This is still C1.3+ work — implement azure/login@v2 with federated credentials, then the"
-          echo "actual deploy (pull ghcr.io/${{ github.repository }}/avdi-{dashboard,scheduler}:${{ needs.validate.outputs.tag }}"
+          echo "actual deploy (pull ghcr.io/${{ needs.validate.outputs.repo }}/avdi-{dashboard,scheduler}:${{ needs.validate.outputs.tag }}"
           echo "on the target host, docker compose -f docker/compose.c1.yml --profile cloud-synthetic up -d,"
           echo "then poll /api/health) here, replacing this whole step."
           exit 1
