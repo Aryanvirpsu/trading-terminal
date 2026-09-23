@@ -1,112 +1,133 @@
-# C1-PREP item 4 — the deploy pipeline shape: tests -> build -> push GHCR -> deploy.
-# The deploy stage is STRUCTURALLY disabled, not just commented out: it is gated on
-# the repository variable `vars.AZURE_DEPLOY_ENABLED`, which does not exist yet (an
-# unset vars.* reads as an empty string, so the `if:` below evaluates false and the
-# job is skipped outright — it does not run and then no-op, it does not run at all).
-# Nothing under `jobs.deploy` may execute any Azure action, secret, or credential
-# until that variable is deliberately set to "true" AND the placeholder steps below
-# are replaced with real ones — that is C1.3 (GitHub OIDC -> Azure AD) and later, not
-# this gate. See docs/C1_AZURE_BOOTSTRAP_CONTRACT.md.
+# C1-PREP item 4 (redesigned per the C1-PREP acceptance contract) — this workflow no
+# longer builds anything. publish-avdi-images.yml is the only place images get built,
+# tested, preflighted, and pushed — this workflow's job is to take an ALREADY
+# PUBLISHED image tag and answer two questions: (1) does it actually exist and pull
+# cleanly, and (2) does it still pass the same preflight/health checks once pulled
+# from the registry (not just when it was built). Only after both would a deploy be
+# attempted — and no deploy step exists yet.
 #
-# tests: builds the `tests` image target (docker/Dockerfile.terminal) and runs the
-# same pytest suite G5-A already proved equivalent to the host baseline
-# (docs/C0_EQUIVALENCE_REPORT.md §1) — a real, currently-live gate: a failing test
-# blocks the build-and-push job via `needs:`.
+#   workflow_dispatch(image_tag)
+#           |
+#           v
+#     validate image SHA        <- docker buildx imagetools inspect, both images
+#           |
+#           v
+#   deployment-ready checks     <- pull + preflight + smoke, from the registry copy
+#           |
+#           v
+#   AZURE DEPLOYMENT — explicit, loud failure, not a skip
 #
-# build-and-push: calls publish-avdi-images.yml (item 3) as a reusable workflow —
-# no duplicated build logic between "publish on every push" and "publish as part of
-# a deploy."
+# The deploy job always RUNS (no `if:` gate hiding it as "skipped") and always
+# currently FAILS with an unambiguous reason, because no Azure login step exists yet
+# and none may be added until C1.3 (GitHub OIDC -> Azure AD, no static
+# AZURE_CLIENT_SECRET, ever — docs/C1_AZURE_BOOTSTRAP_CONTRACT.md). A red, clearly-
+# explained workflow run is the intended, correct state today, not a bug to quiet.
 
 name: Deploy AVDI (C1)
 
 on:
-  push:
-    branches: [c1/cloud-runtime]
-    paths:
-      - "docker/**"
-      - "src/**"
-      - "lab/**"
-      - "dashboard/**"
-      - "canonical/**"
-      - "automation/**"
-      - "tests/**"
-      - "pyproject.toml"
-      - ".github/workflows/deploy-c1.yml"
   workflow_dispatch:
     inputs:
-      skip_tests:
-        description: "Skip the test stage (debugging this workflow only — never for a real deploy)"
-        type: boolean
-        default: false
+      image_tag:
+        description: "Tag suffix to deploy, e.g. sha-abc1234 (blank = sha-<current HEAD, short>)"
+        type: string
+        default: ""
 
 concurrency:
-  group: deploy-c1-${{ github.ref }}
+  group: deploy-c1
   cancel-in-progress: false
 
 jobs:
-  test:
-    if: ${{ !inputs.skip_tests }}
+  validate:
     runs-on: ubuntu-latest
-    permissions: {contents: read}
+    permissions: {contents: read, packages: read}
+    outputs:
+      tag: ${{ steps.tag.outputs.tag }}
     steps:
       - uses: actions/checkout@v4
-      - uses: docker/setup-buildx-action@v3
-      - name: Build the tests image (no push — local to this job only)
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          file: docker/Dockerfile.terminal
-          target: tests
-          platforms: linux/amd64
-          push: false
-          load: true
-          tags: avdi-tests:ci
-          cache-from: type=gha,scope=avdi-tests
-          cache-to: type=gha,mode=max,scope=avdi-tests
-      - name: Run the unit suite inside the image, judged against the known baseline
-        # A bare `pytest` exit code is the wrong gate here: 6 test IDs are
-        # permanently/deliberately red (2 intentional, 3 optional-dependency, 1
-        # needs git, absent from this minimal image by design) and 3 more have no
-        # fixed expected outcome at all (1 nondeterministic-timing, 2 TZ/wall-clock-
-        # dependent). docker/tools/ci_test_gate.py is the exact classification G5-A
-        # already established (docs/C0_EQUIVALENCE_REPORT.md §1) — it fails this step
-        # only on a genuinely new failure or an unexpected pass of an always-red test.
+      - id: tag
+        run: |
+          tag="${{ inputs.image_tag }}"
+          if [ -z "$tag" ]; then tag="sha-$(git rev-parse --short HEAD)"; fi
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+          echo "Resolving ghcr.io/${{ github.repository }}/avdi-{dashboard,scheduler}:$tag"
+      - uses: docker/login-action@v3
+        with: {registry: ghcr.io, username: "${{ github.repository_owner }}", password: "${{ secrets.GITHUB_TOKEN }}"}
+      - name: Confirm both images exist at this tag (fails clearly if not published)
         run: |
           set -e
-          for tz in UTC "America/New_York"; do
-            echo "::group::ci_test_gate.py  (TZ=$tz)"
-            docker run --rm -e C0_PROFILE=cloud-synthetic -e TZ="$tz" \
-              --entrypoint python avdi-tests:ci /app/docker/tools/ci_test_gate.py
-            echo "::endgroup::"
-          done
+          docker buildx imagetools inspect "ghcr.io/${{ github.repository }}/avdi-dashboard:${{ steps.tag.outputs.tag }}"
+          docker buildx imagetools inspect "ghcr.io/${{ github.repository }}/avdi-scheduler:${{ steps.tag.outputs.tag }}"
 
-  build-and-push:
-    needs: [test]
-    # `always()` + the explicit test-result check lets this still run when tests were
-    # deliberately skipped via workflow_dispatch, while still blocking on a real
-    # failure — `needs` alone would skip this job if `test` is skipped-not-failed.
-    if: ${{ always() && (needs.test.result == 'success' || needs.test.result == 'skipped') }}
-    uses: ./.github/workflows/publish-avdi-images.yml
-    permissions: {contents: read, packages: write}
+  deployment-ready-checks:
+    needs: [validate]
+    runs-on: ubuntu-latest
+    permissions: {contents: read, packages: read}
+    env:
+      TAG: ${{ needs.validate.outputs.tag }}
+    steps:
+      - uses: docker/login-action@v3
+        with: {registry: ghcr.io, username: "${{ github.repository_owner }}", password: "${{ secrets.GITHUB_TOKEN }}"}
+
+      - name: Pull the exact published images (not a local rebuild)
+        run: |
+          set -e
+          docker pull "ghcr.io/${{ github.repository }}/avdi-dashboard:$TAG"
+          docker pull "ghcr.io/${{ github.repository }}/avdi-scheduler:$TAG"
+
+      - name: Preflight the pulled dashboard image
+        run: |
+          docker run --rm -e C0_PROFILE=cloud-synthetic -e TZ=UTC --entrypoint python \
+            "ghcr.io/${{ github.repository }}/avdi-dashboard:$TAG" /app/docker/c0_preflight.py
+
+      - name: Preflight the pulled scheduler image
+        run: |
+          docker run --rm -e C0_PROFILE=cloud-synthetic -e TZ=UTC --entrypoint python \
+            "ghcr.io/${{ github.repository }}/avdi-scheduler:$TAG" /app/docker/c0_preflight.py
+
+      - name: Smoke health — pulled dashboard image
+        run: |
+          set -e
+          docker run -d --name deploy-check-dashboard -e C0_PROFILE=cloud-synthetic -e TZ=UTC \
+            -p 127.0.0.1:5057:5057 "ghcr.io/${{ github.repository }}/avdi-dashboard:$TAG"
+          ok=""
+          for i in $(seq 1 20); do
+            code=$(curl -s -o /dev/null -w '%{http_code}' http://127.0.0.1:5057/api/health || true)
+            [ "$code" = "200" ] && { ok=1; break; }
+            sleep 3
+          done
+          docker logs deploy-check-dashboard || true
+          docker rm -f deploy-check-dashboard || true
+          [ -n "$ok" ] || { echo "::error::pulled dashboard image failed its health check"; exit 1; }
+
+      - name: Smoke status — pulled scheduler image
+        run: |
+          set -e
+          out=$(docker run --rm -e C0_PROFILE=cloud-synthetic -e TZ=UTC \
+            "ghcr.io/${{ github.repository }}/avdi-scheduler:$TAG" python automation/paper_scheduler.py status)
+          echo "$out"
+          echo "$out" | grep -q '"reconciled": true' || { echo "::error::pulled scheduler image did not reconcile"; exit 1; }
 
   deploy:
-    needs: [build-and-push]
-    # STRUCTURALLY DISABLED — see the file header. This is not a placeholder that
-    # "would" skip; an unset repository variable makes the condition false, so this
-    # job does not run.
-    if: ${{ vars.AZURE_DEPLOY_ENABLED == 'true' }}
+    needs: [validate, deployment-ready-checks]
     runs-on: ubuntu-latest
     environment: production
     permissions:
       contents: read
       id-token: write   # required for OIDC once C1.3 wires it up — unused until then
     steps:
-      - name: Azure login via OIDC (placeholder — not implemented)
+      - name: Cloud deployment gate
         run: |
-          echo "AZURE_DEPLOY_ENABLED is true, but no OIDC login step exists yet."
-          echo "This is C1.3+ work (docs/C1_AZURE_BOOTSTRAP_CONTRACT.md) — implement"
-          echo "azure/login@v2 with federated credentials here, then the actual"
-          echo "deploy (pull sha-${{ needs.build-and-push.outputs.sha_tag }} images"
-          echo "on the target host, docker compose -f docker/compose.c1.yml"
-          echo "--profile cloud-synthetic up -d, then poll /api/health)."
+          if [ "${{ vars.AZURE_DEPLOY_ENABLED }}" != "true" ]; then
+            echo "::error::Cloud deployment not enabled: C1.3 (GitHub OIDC -> Azure AD) has not been completed."
+            echo "See docs/C1_AZURE_BOOTSTRAP_CONTRACT.md. No AZURE_CLIENT_SECRET or other static credential"
+            echo "will ever be added here — this step waits for a federated-credential OIDC login step,"
+            echo "added deliberately in C1.3, not for a variable flip alone."
+            exit 1
+          fi
+          echo "::error::vars.AZURE_DEPLOY_ENABLED is true but no OIDC login/deploy step has been implemented yet."
+          echo "This is still C1.3+ work — implement azure/login@v2 with federated credentials, then the"
+          echo "actual deploy (pull ghcr.io/${{ github.repository }}/avdi-{dashboard,scheduler}:${{ needs.validate.outputs.tag }}"
+          echo "on the target host, docker compose -f docker/compose.c1.yml --profile cloud-synthetic up -d,"
+          echo "then poll /api/health) here, replacing this whole step."
           exit 1

@@ -116,19 +116,27 @@ def check_profile_and_time() -> dict:
     return {"profile": profile, "tz": tz, "fixed_instant_date": got_date}
 
 
-def check_dangerous_env() -> None:
+def check_dangerous_env(profile: str) -> None:
+    """Unconditional for every profile (case1/case2/cloud-synthetic) — not a
+    cloud-synthetic-specific rule that happens to also cover the others. The
+    combination this exists to make structurally impossible, named explicitly
+    per C1-PREP: a cloud-synthetic deployment with live-broker credentials set."""
     bp = os.environ.get("BROKER_PROVIDER", "none").strip().lower() or "none"
     if bp != "none":
-        fail(f"BROKER_PROVIDER={bp!r} — must be 'none' or unset for C0")
+        fail(f"BROKER_PROVIDER={bp!r} — must be 'none' or unset (profile={profile!r}); "
+             "a cloud-synthetic deployment with a live broker configured is exactly "
+             "the combination this check exists to make impossible, not just discouraged")
     rte = os.environ.get("ROBINHOOD_TRADING_ENABLED", "false").strip().lower() or "false"
     if rte not in ("false", "0", "no", "off"):
-        fail(f"ROBINHOOD_TRADING_ENABLED={rte!r} — must be false/unset for C0")
+        fail(f"ROBINHOOD_TRADING_ENABLED={rte!r} — must be false/unset (profile={profile!r}); "
+             "a cloud-synthetic deployment with live trading enabled is exactly "
+             "the combination this check exists to make impossible, not just discouraged")
     for k in DANGEROUS_EXACT:
         if os.environ.get(k):
-            fail(f"{k} is set — credentials/live-broker vars must never be set for C0")
+            fail(f"{k} is set (profile={profile!r}) — credentials/live-broker vars must never be set")
     for k, v in os.environ.items():
         if k.endswith("_API_KEY") and v:
-            fail(f"{k} is set — provider keys are not used in this gate's smoke tests")
+            fail(f"{k} is set (profile={profile!r}) — provider keys are not used in this gate's smoke tests")
 
 
 def check_unhashed_tuning_env() -> None:
@@ -211,7 +219,7 @@ def main() -> int:
     try:
         check_python()
         tinfo = check_profile_and_time()
-        check_dangerous_env()
+        check_dangerous_env(tinfo["profile"])
         check_unhashed_tuning_env()
         cv = check_config_version()
         pinfo = check_paths(tinfo["profile"])

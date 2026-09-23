@@ -2,6 +2,7 @@
 .codex-mcp.json
 .codex-plugin/plugin.json
 .dockerignore
+.gitattributes
 README.md
 assets/architecture.png
 automation/daily_runner.py
@@ -35,8 +36,15 @@ dashboard/symbol_snapshot.py
 dashboard/terminal.html
 dashboard/tracker.py
 docker/Dockerfile.terminal
+docker/Dockerfile.terminal.dockerignore
+docker/baseline/image-facts.txt
+docker/baseline/tests-container-case1-utc.json
+docker/baseline/tests-container-case2-et.json
+docker/baseline/tests-host-py311-et.json
+docker/baseline/tests-host-py311-utc0.json
 docker/c0_preflight.py
 docker/compose.c0.yml
+docker/compose.c1.yml
 docker/context.manifest
 docker/entrypoint.sh
 docker/requirements-c0-case1.txt
@@ -49,6 +57,8 @@ docker/requirements-c0-win32-extra.txt
 docker/requirements-c0-win32-extra.txt.sha256
 docker/serve_dashboard.py
 docker/tools/audit_build_context.py
+docker/tools/ci_test_gate.py
+docker/tools/g5_fixture_scenario.py
 lab/_config.py
 lab/alphavantage.py
 lab/auto_paper.py
