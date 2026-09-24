@@ -1,0 +1,1354 @@
+{
+ "results": {
+  "5bps": {
+   "P1 TRADEABLE (primary)": {
+    "CHAMPION": {
+     "n": 4,
+     "resolved": 1,
+     "realized_R": -1.3509789761700115,
+     "total_R": 0.2328946381159676,
+     "usd": 1.756882592019805,
+     "constrained_days": 3,
+     "trades": [
+      [
+       "COP",
+       "09-11"
+      ],
+      [
+       "TMO",
+       "09-16"
+      ],
+      [
+       "DE",
+       "09-17"
+      ],
+      [
+       "AAPL",
+       "09-22"
+      ]
+     ],
+     "pctile_vs_random": 0.0,
+     "differs_from_champion": []
+    },
+    "CH-002A conviction": {
+     "n": 4,
+     "resolved": 1,
+     "realized_R": -1.3509789761700115,
+     "total_R": 0.2328946381159676,
+     "usd": 1.756882592019805,
+     "constrained_days": 3,
+     "trades": [
+      [
+       "COP",
+       "09-11"
+      ],
+      [
+       "TMO",
+       "09-16"
+      ],
+      [
+       "DE",
+       "09-17"
+      ],
+      [
+       "AAPL",
+       "09-22"
+      ]
+     ],
+     "pctile_vs_random": 0.0,
+     "differs_from_champion": []
+    },
+    "CH-002B expected_R": {
+     "n": 4,
+     "resolved": 1,
+     "realized_R": -1.3509789761700115,
+     "total_R": 0.2328946381159676,
+     "usd": 1.756882592019805,
+     "constrained_days": 3,
+     "trades": [
+      [
+       "COP",
+       "09-11"
+      ],
+      [
+       "TMO",
+       "09-16"
+      ],
+      [
+       "DE",
+       "09-17"
+      ],
+      [
+       "AAPL",
+       "09-22"
+      ]
+     ],
+     "pctile_vs_random": 0.0,
+     "differs_from_champion": []
+    },
+    "CH-002C composite": {
+     "n": 4,
+     "resolved": 1,
+     "realized_R": -1.0383415300546412,
+     "total_R": 0.5455320842313378,
+     "usd": 3.3113957030602936,
+     "constrained_days": 3,
+     "trades": [
+      [
+       "CVX",
+       "09-11"
+      ],
+      [
+       "TMO",
+       "09-16"
+      ],
+      [
+       "DE",
+       "09-17"
+      ],
+      [
+       "AAPL",
+       "09-22"
+      ]
+     ],
+     "pctile_vs_random": 0.1625,
+     "differs_from_champion": [
+      [
+       "COP",
+       "09-11"
+      ],
+      [
+       "CVX",
+       "09-11"
+      ]
+     ]
+    },
+    "RANDOM": {
+     "total_mean": 1.2401206690138367,
+     "total_sd": 0.8058401185859533,
+     "realized_mean": -0.06903500428886614,
+     "total_min": 0.2328946381159676,
+     "total_max": 2.1563447760233867
+    }
+   },
+   "P2 TRADEABLE+MONITOR (ranking probe)": {
+    "CHAMPION": {
+     "n": 4,
+     "resolved": 2,
+     "realized_R": 1.1487312829233696,
+     "total_R": 1.431270040716613,
+     "usd": 8.329929115959908,
+     "constrained_days": 11,
+     "trades": [
+      [
+       "COP",
+       "09-10"
+      ],
+      [
+       "DE",
+       "09-11"
+      ],
+      [
+       "META",
+       "09-11"
+      ],
+      [
+       "CRM",
+       "09-17"
+      ]
+     ],
+     "pctile_vs_random": 0.0,
+     "differs_from_champion": []
+    },
+    "CH-002A conviction": {
+     "n": 5,
+     "resolved": 3,
+     "realized_R": 3.2974377005478965,
+     "total_R": 3.418987368719599,
+     "usd": 18.95883576725272,
+     "constrained_days": 11,
+     "trades": [
+      [
+       "COP",
+       "09-10"
+      ],
+      [
+       "META",
+       "09-11"
+      ],
+      [
+       "DE",
+       "09-11"
+      ],
+      [
+       "AMD",
+       "09-17"
+      ],
+      [
+       "AAPL",
+       "09-22"
+      ]
+     ],
+     "pctile_vs_random": 0.7805,
+     "differs_from_champion": [
+      [
+       "AAPL",
+       "09-22"
+      ],
+      [
+       "AMD",
+       "09-17"
+      ],
+      [
+       "CRM",
+       "09-17"
+      ]
+     ]
+    },
+    "CH-002B expected_R": {
+     "n": 5,
+     "resolved": 3,
+     "realized_R": 3.2974377005478965,
+     "total_R": 3.418987368719599,
+     "usd": 18.95883576725272,
+     "constrained_days": 11,
+     "trades": [
+      [
+       "COP",
+       "09-10"
+      ],
+      [
+       "META",
+       "09-11"
+      ],
+      [
+       "DE",
+       "09-11"
+      ],
+      [
+       "AMD",
+       "09-17"
+      ],
+      [
+       "AAPL",
+       "09-22"
+      ]
+     ],
+     "pctile_vs_random": 0.7805,
+     "differs_from_champion": [
+      [
+       "AAPL",
+       "09-22"
+      ],
+      [
+       "AMD",
+       "09-17"
+      ],
+      [
+       "CRM",
+       "09-17"
+      ]
+     ]
+    },
+    "CH-002C composite": {
+     "n": 5,
+     "resolved": 3,
+     "realized_R": 3.2974377005478965,
+     "total_R": 3.418987368719599,
+     "usd": 18.95883576725272,
+     "constrained_days": 11,
+     "trades": [
+      [
+       "COP",
+       "09-10"
+      ],
+      [
+       "META",
+       "09-11"
+      ],
+      [
+       "DE",
+       "09-11"
+      ],
+      [
+       "AMD",
+       "09-17"
+      ],
+      [
+       "AAPL",
+       "09-22"
+      ]
+     ],
+     "pctile_vs_random": 0.7805,
+     "differs_from_champion": [
+      [
+       "AAPL",
+       "09-22"
+      ],
+      [
+       "AMD",
+       "09-17"
+      ],
+      [
+       "CRM",
+       "09-17"
+      ]
+     ]
+    },
+    "RANDOM": {
+     "total_mean": 2.4997397920043856,
+     "total_sd": 0.8542372864188814,
+     "realized_mean": 1.6235367195333223,
+     "total_min": 1.431270040716613,
+     "total_max": 4.445048026291232
+    }
+   }
+  },
+  "15bps": {
+   "P1 TRADEABLE (primary)": {
+    "CHAMPION": {
+     "n": 4,
+     "resolved": 1,
+     "realized_R": -1.3854701154105216,
+     "total_R": 0.10282481498184937,
+     "usd": 1.2568825920197424,
+     "constrained_days": 3,
+     "trades": [
+      [
+       "COP",
+       "09-11"
+      ],
+      [
+       "TMO",
+       "09-16"
+      ],
+      [
+       "DE",
+       "09-17"
+      ],
+      [
+       "AAPL",
+       "09-22"
+      ]
+     ],
+     "pctile_vs_random": 0.0,
+     "differs_from_champion": []
+    },
+    "CH-002A conviction": {
+     "n": 4,
+     "resolved": 1,
+     "realized_R": -1.3854701154105216,
+     "total_R": 0.10282481498184937,
+     "usd": 1.2568825920197424,
+     "constrained_days": 3,
+     "trades": [
+      [
+       "COP",
+       "09-11"
+      ],
+      [
+       "TMO",
+       "09-16"
+      ],
+      [
+       "DE",
+       "09-17"
+      ],
+      [
+       "AAPL",
+       "09-22"
+      ]
+     ],
+     "pctile_vs_random": 0.0,
+     "differs_from_champion": []
+    },
+    "CH-002B expected_R": {
+     "n": 4,
+     "resolved": 1,
+     "realized_R": -1.3854701154105216,
+     "total_R": 0.10282481498184937,
+     "usd": 1.2568825920197424,
+     "constrained_days": 3,
+     "trades": [
+      [
+       "COP",
+       "09-11"
+      ],
+      [
+       "TMO",
+       "09-16"
+      ],
+      [
+       "DE",
+       "09-17"
+      ],
+      [
+       "AAPL",
+       "09-22"
+      ]
+     ],
+     "pctile_vs_random": 0.0,
+     "differs_from_champion": []
+    },
+    "CH-002C composite": {
+     "n": 4,
+     "resolved": 1,
+     "realized_R": -1.1150245901639337,
+     "total_R": 0.3732703402284372,
+     "usd": 2.6896139078998527,
+     "constrained_days": 3,
+     "trades": [
+      [
+       "CVX",
+       "09-11"
+      ],
+      [
+       "TMO",
+       "09-16"
+      ],
+      [
+       "DE",
+       "09-17"
+      ],
+      [
+       "AAPL",
+       "09-22"
+      ]
+     ],
+     "pctile_vs_random": 0.1625,
+     "differs_from_champion": [
+      [
+       "COP",
+       "09-11"
+      ],
+      [
+       "CVX",
+       "09-11"
+      ]
+     ]
+    },
+    "RANDOM": {
+     "total_mean": 1.1023698888444229,
+     "total_sd": 0.8096214434071595,
+     "realized_mean": -0.12901523260155462,
+     "total_min": 0.10282481498184937,
+     "total_max": 2.0371808263015545
+    }
+   },
+   "P2 TRADEABLE+MONITOR (ranking probe)": {
+    "CHAMPION": {
+     "n": 4,
+     "resolved": 2,
+     "realized_R": 1.0573789353213725,
+     "total_R": 1.293964600371721,
+     "usd": 7.762497002501038,
+     "constrained_days": 11,
+     "trades": [
+      [
+       "COP",
+       "09-10"
+      ],
+      [
+       "DE",
+       "09-11"
+      ],
+      [
+       "META",
+       "09-11"
+      ],
+      [
+       "CRM",
+       "09-17"
+      ]
+     ],
+     "pctile_vs_random": 0.0,
+     "differs_from_champion": []
+    },
+    "CH-002A conviction": {
+     "n": 5,
+     "resolved": 3,
+     "realized_R": 3.188683373380127,
+     "total_R": 3.246823993494478,
+     "usd": 18.267753814274027,
+     "constrained_days": 11,
+     "trades": [
+      [
+       "COP",
+       "09-10"
+      ],
+      [
+       "META",
+       "09-11"
+      ],
+      [
+       "DE",
+       "09-11"
+      ],
+      [
+       "AMD",
+       "09-17"
+      ],
+      [
+       "AAPL",
+       "09-22"
+      ]
+     ],
+     "pctile_vs_random": 0.7805,
+     "differs_from_champion": [
+      [
+       "AAPL",
+       "09-22"
+      ],
+      [
+       "AMD",
+       "09-17"
+      ],
+      [
+       "CRM",
+       "09-17"
+      ]
+     ]
+    },
+    "CH-002B expected_R": {
+     "n": 5,
+     "resolved": 3,
+     "realized_R": 3.188683373380127,
+     "total_R": 3.246823993494478,
+     "usd": 18.267753814274027,
+     "constrained_days": 11,
+     "trades": [
+      [
+       "COP",
+       "09-10"
+      ],
+      [
+       "META",
+       "09-11"
+      ],
+      [
+       "DE",
+       "09-11"
+      ],
+      [
+       "AMD",
+       "09-17"
+      ],
+      [
+       "AAPL",
+       "09-22"
+      ]
+     ],
+     "pctile_vs_random": 0.7805,
+     "differs_from_champion": [
+      [
+       "AAPL",
+       "09-22"
+      ],
+      [
+       "AMD",
+       "09-17"
+      ],
+      [
+       "CRM",
+       "09-17"
+      ]
+     ]
+    },
+    "CH-002C composite": {
+     "n": 5,
+     "resolved": 3,
+     "realized_R": 3.188683373380127,
+     "total_R": 3.246823993494478,
+     "usd": 18.267753814274027,
+     "constrained_days": 11,
+     "trades": [
+      [
+       "COP",
+       "09-10"
+      ],
+      [
+       "META",
+       "09-11"
+      ],
+      [
+       "DE",
+       "09-11"
+      ],
+      [
+       "AMD",
+       "09-17"
+      ],
+      [
+       "AAPL",
+       "09-22"
+      ]
+     ],
+     "pctile_vs_random": 0.7805,
+     "differs_from_champion": [
+      [
+       "AAPL",
+       "09-22"
+      ],
+      [
+       "AMD",
+       "09-17"
+      ],
+      [
+       "CRM",
+       "09-17"
+      ]
+     ]
+    },
+    "RANDOM": {
+     "total_mean": 2.3557360616797314,
+     "total_sd": 0.8503079669735916,
+     "realized_mean": 1.534693393299378,
+     "total_min": 1.293964600371721,
+     "total_max": 4.317172011824624
+    }
+   }
+  },
+  "ex_META_5bps": {
+   "P1 TRADEABLE (primary)": {
+    "CHAMPION": {
+     "n": 4,
+     "resolved": 1,
+     "realized_R": -1.3509789761700115,
+     "total_R": 0.2328946381159676,
+     "usd": 1.756882592019805,
+     "constrained_days": 3,
+     "trades": [
+      [
+       "COP",
+       "09-11"
+      ],
+      [
+       "TMO",
+       "09-16"
+      ],
+      [
+       "DE",
+       "09-17"
+      ],
+      [
+       "AAPL",
+       "09-22"
+      ]
+     ],
+     "pctile_vs_random": 0.0,
+     "differs_from_champion": []
+    },
+    "CH-002A conviction": {
+     "n": 4,
+     "resolved": 1,
+     "realized_R": -1.3509789761700115,
+     "total_R": 0.2328946381159676,
+     "usd": 1.756882592019805,
+     "constrained_days": 3,
+     "trades": [
+      [
+       "COP",
+       "09-11"
+      ],
+      [
+       "TMO",
+       "09-16"
+      ],
+      [
+       "DE",
+       "09-17"
+      ],
+      [
+       "AAPL",
+       "09-22"
+      ]
+     ],
+     "pctile_vs_random": 0.0,
+     "differs_from_champion": []
+    },
+    "CH-002B expected_R": {
+     "n": 4,
+     "resolved": 1,
+     "realized_R": -1.3509789761700115,
+     "total_R": 0.2328946381159676,
+     "usd": 1.756882592019805,
+     "constrained_days": 3,
+     "trades": [
+      [
+       "COP",
+       "09-11"
+      ],
+      [
+       "TMO",
+       "09-16"
+      ],
+      [
+       "DE",
+       "09-17"
+      ],
+      [
+       "AAPL",
+       "09-22"
+      ]
+     ],
+     "pctile_vs_random": 0.0,
+     "differs_from_champion": []
+    },
+    "CH-002C composite": {
+     "n": 4,
+     "resolved": 1,
+     "realized_R": -1.0383415300546412,
+     "total_R": 0.5455320842313378,
+     "usd": 3.3113957030602936,
+     "constrained_days": 3,
+     "trades": [
+      [
+       "CVX",
+       "09-11"
+      ],
+      [
+       "TMO",
+       "09-16"
+      ],
+      [
+       "DE",
+       "09-17"
+      ],
+      [
+       "AAPL",
+       "09-22"
+      ]
+     ],
+     "pctile_vs_random": 0.1625,
+     "differs_from_champion": [
+      [
+       "COP",
+       "09-11"
+      ],
+      [
+       "CVX",
+       "09-11"
+      ]
+     ]
+    },
+    "RANDOM": {
+     "total_mean": 1.2401206690138367,
+     "total_sd": 0.8058401185859533,
+     "realized_mean": -0.06903500428886614,
+     "total_min": 0.2328946381159676,
+     "total_max": 2.1563447760233867
+    }
+   },
+   "P2 TRADEABLE+MONITOR (ranking probe)": {
+    "CHAMPION": {
+     "n": 5,
+     "resolved": 2,
+     "realized_R": -2.080166020671825,
+     "total_R": -1.0968064713601187,
+     "usd": -2.917677439086577,
+     "constrained_days": 10,
+     "trades": [
+      [
+       "COP",
+       "09-10"
+      ],
+      [
+       "DE",
+       "09-11"
+      ],
+      [
+       "VZ",
+       "09-14"
+      ],
+      [
+       "CRM",
+       "09-17"
+      ],
+      [
+       "VRTX",
+       "09-17"
+      ]
+     ],
+     "pctile_vs_random": 0.117,
+     "differs_from_champion": []
+    },
+    "CH-002A conviction": {
+     "n": 6,
+     "resolved": 3,
+     "realized_R": 0.06854039695270231,
+     "total_R": 0.8909108566428672,
+     "usd": 7.711229212206232,
+     "constrained_days": 10,
+     "trades": [
+      [
+       "COP",
+       "09-10"
+      ],
+      [
+       "DE",
+       "09-11"
+      ],
+      [
+       "VZ",
+       "09-14"
+      ],
+      [
+       "AMD",
+       "09-17"
+      ],
+      [
+       "VRTX",
+       "09-17"
+      ],
+      [
+       "AAPL",
+       "09-22"
+      ]
+     ],
+     "pctile_vs_random": 0.624,
+     "differs_from_champion": [
+      [
+       "AAPL",
+       "09-22"
+      ],
+      [
+       "AMD",
+       "09-17"
+      ],
+      [
+       "CRM",
+       "09-17"
+      ]
+     ]
+    },
+    "CH-002B expected_R": {
+     "n": 6,
+     "resolved": 3,
+     "realized_R": 0.06854039695270231,
+     "total_R": 0.8909108566428672,
+     "usd": 7.711229212206232,
+     "constrained_days": 10,
+     "trades": [
+      [
+       "COP",
+       "09-10"
+      ],
+      [
+       "DE",
+       "09-11"
+      ],
+      [
+       "VZ",
+       "09-14"
+      ],
+      [
+       "AMD",
+       "09-17"
+      ],
+      [
+       "VRTX",
+       "09-17"
+      ],
+      [
+       "AAPL",
+       "09-22"
+      ]
+     ],
+     "pctile_vs_random": 0.624,
+     "differs_from_champion": [
+      [
+       "AAPL",
+       "09-22"
+      ],
+      [
+       "AMD",
+       "09-17"
+      ],
+      [
+       "CRM",
+       "09-17"
+      ]
+     ]
+    },
+    "CH-002C composite": {
+     "n": 6,
+     "resolved": 3,
+     "realized_R": 0.06854039695270231,
+     "total_R": 0.8909108566428672,
+     "usd": 7.711229212206232,
+     "constrained_days": 10,
+     "trades": [
+      [
+       "COP",
+       "09-10"
+      ],
+      [
+       "DE",
+       "09-11"
+      ],
+      [
+       "VZ",
+       "09-14"
+      ],
+      [
+       "AMD",
+       "09-17"
+      ],
+      [
+       "VRTX",
+       "09-17"
+      ],
+      [
+       "AAPL",
+       "09-22"
+      ]
+     ],
+     "pctile_vs_random": 0.624,
+     "differs_from_champion": [
+      [
+       "AAPL",
+       "09-22"
+      ],
+      [
+       "AMD",
+       "09-17"
+      ],
+      [
+       "CRM",
+       "09-17"
+      ]
+     ]
+    },
+    "RANDOM": {
+     "total_mean": -0.08768985347188597,
+     "total_sd": 1.2111322672427884,
+     "realized_mean": -1.1357170564753334,
+     "total_min": -1.8011161782213732,
+     "total_max": 1.9169715142145005
+    }
+   }
+  }
+ },
+ "loo": {
+  "P1 TRADEABLE (primary)|CH-002A conviction": [
+   [
+    "AAPL",
+    0.0
+   ],
+   [
+    "AMD",
+    0.0
+   ],
+   [
+    "COP",
+    0.0
+   ],
+   [
+    "CRM",
+    0.0
+   ],
+   [
+    "CVX",
+    0.0
+   ],
+   [
+    "DE",
+    0.0
+   ],
+   [
+    "DELL",
+    0.0
+   ],
+   [
+    "HAL",
+    0.0
+   ],
+   [
+    "META",
+    0.0
+   ],
+   [
+    "MRK",
+    0.0
+   ],
+   [
+    "NEM",
+    0.0
+   ],
+   [
+    "NVDA",
+    0.0
+   ],
+   [
+    "OXY",
+    0.0
+   ],
+   [
+    "T",
+    0.0
+   ],
+   [
+    "TMO",
+    0.0
+   ],
+   [
+    "VRTX",
+    0.0
+   ],
+   [
+    "VZ",
+    0.0
+   ]
+  ],
+  "P1 TRADEABLE (primary)|CH-002B expected_R": [
+   [
+    "AAPL",
+    0.0
+   ],
+   [
+    "AMD",
+    0.0
+   ],
+   [
+    "COP",
+    0.0
+   ],
+   [
+    "CRM",
+    0.0
+   ],
+   [
+    "CVX",
+    0.0
+   ],
+   [
+    "DE",
+    0.0
+   ],
+   [
+    "DELL",
+    0.0
+   ],
+   [
+    "HAL",
+    0.0
+   ],
+   [
+    "META",
+    0.0
+   ],
+   [
+    "MRK",
+    0.0
+   ],
+   [
+    "NEM",
+    0.0
+   ],
+   [
+    "NVDA",
+    0.0
+   ],
+   [
+    "OXY",
+    0.0
+   ],
+   [
+    "T",
+    0.0
+   ],
+   [
+    "TMO",
+    0.0
+   ],
+   [
+    "VRTX",
+    0.0
+   ],
+   [
+    "VZ",
+    0.0
+   ]
+  ],
+  "P1 TRADEABLE (primary)|CH-002C composite": [
+   [
+    "AAPL",
+    0.31
+   ],
+   [
+    "AMD",
+    0.31
+   ],
+   [
+    "COP",
+    0.0
+   ],
+   [
+    "CRM",
+    0.31
+   ],
+   [
+    "CVX",
+    0.0
+   ],
+   [
+    "DE",
+    0.31
+   ],
+   [
+    "DELL",
+    0.31
+   ],
+   [
+    "HAL",
+    0.31
+   ],
+   [
+    "META",
+    0.31
+   ],
+   [
+    "MRK",
+    0.31
+   ],
+   [
+    "NEM",
+    0.31
+   ],
+   [
+    "NVDA",
+    0.31
+   ],
+   [
+    "OXY",
+    0.31
+   ],
+   [
+    "T",
+    0.31
+   ],
+   [
+    "TMO",
+    0.31
+   ],
+   [
+    "VRTX",
+    0.31
+   ],
+   [
+    "VZ",
+    0.31
+   ]
+  ],
+  "P2 TRADEABLE+MONITOR (ranking probe)|CH-002A conviction": [
+   [
+    "AAPL",
+    2.0
+   ],
+   [
+    "AMD",
+    0.0
+   ],
+   [
+    "COP",
+    0.0
+   ],
+   [
+    "CRM",
+    -0.84
+   ],
+   [
+    "CVX",
+    1.99
+   ],
+   [
+    "DE",
+    1.99
+   ],
+   [
+    "DELL",
+    1.99
+   ],
+   [
+    "HAL",
+    1.99
+   ],
+   [
+    "META",
+    1.99
+   ],
+   [
+    "MRK",
+    1.99
+   ],
+   [
+    "NEM",
+    1.99
+   ],
+   [
+    "NVDA",
+    1.99
+   ],
+   [
+    "OXY",
+    1.99
+   ],
+   [
+    "T",
+    1.99
+   ],
+   [
+    "TMO",
+    1.99
+   ],
+   [
+    "VRTX",
+    1.99
+   ],
+   [
+    "VZ",
+    1.99
+   ]
+  ],
+  "P2 TRADEABLE+MONITOR (ranking probe)|CH-002B expected_R": [
+   [
+    "AAPL",
+    2.14
+   ],
+   [
+    "AMD",
+    0.0
+   ],
+   [
+    "COP",
+    0.0
+   ],
+   [
+    "CRM",
+    -0.84
+   ],
+   [
+    "CVX",
+    1.99
+   ],
+   [
+    "DE",
+    1.99
+   ],
+   [
+    "DELL",
+    1.99
+   ],
+   [
+    "HAL",
+    1.99
+   ],
+   [
+    "META",
+    1.99
+   ],
+   [
+    "MRK",
+    1.99
+   ],
+   [
+    "NEM",
+    1.99
+   ],
+   [
+    "NVDA",
+    1.99
+   ],
+   [
+    "OXY",
+    1.99
+   ],
+   [
+    "T",
+    1.99
+   ],
+   [
+    "TMO",
+    1.99
+   ],
+   [
+    "VRTX",
+    1.99
+   ],
+   [
+    "VZ",
+    1.99
+   ]
+  ],
+  "P2 TRADEABLE+MONITOR (ranking probe)|CH-002C composite": [
+   [
+    "AAPL",
+    2.0
+   ],
+   [
+    "AMD",
+    0.54
+   ],
+   [
+    "COP",
+    0.0
+   ],
+   [
+    "CRM",
+    -0.84
+   ],
+   [
+    "CVX",
+    1.99
+   ],
+   [
+    "DE",
+    1.99
+   ],
+   [
+    "DELL",
+    1.99
+   ],
+   [
+    "HAL",
+    1.99
+   ],
+   [
+    "META",
+    1.99
+   ],
+   [
+    "MRK",
+    1.99
+   ],
+   [
+    "NEM",
+    1.99
+   ],
+   [
+    "NVDA",
+    1.99
+   ],
+   [
+    "OXY",
+    1.99
+   ],
+   [
+    "T",
+    1.99
+   ],
+   [
+    "TMO",
+    1.99
+   ],
+   [
+    "VRTX",
+    1.99
+   ],
+   [
+    "VZ",
+    1.99
+   ]
+  ]
+ }
+}
