@@ -78,9 +78,24 @@ _LEGACY_PREFERENCE = {
 }
 
 
+def _executable_buy_price(quote: Any) -> Optional[float]:
+    """Per-share cost of a simulated market BUY (ask + slippage) — the SAME price
+    the paper broker will fill at — so sizing can never approve a quantity the
+    fill simulator/risk gate will then refuse. None when there is no quote
+    (sizing falls back to the reference entry; execution is refused anyway)."""
+    if quote is None:
+        return None
+    from . import config as cfg
+    qr = quote.resolved()
+    if not qr.has_market:
+        return None
+    return round(qr.ask * (1 + cfg.execution().slippage_bps / 10000.0), 4)
+
+
 def evaluate_canonical(result: Dict[str, Any], *, symbol: str, direction: str,
                        sector: Optional[str] = None,
-                       session_date: Optional[str] = None) -> Dict[str, Any]:
+                       session_date: Optional[str] = None,
+                       quote: Any = None) -> Dict[str, Any]:
     """The authoritative A/B/D/E/executable evaluation for one candidate.
 
     `result` is decision_engine.evaluate(..., evaluate_option=False)'s own
@@ -110,7 +125,10 @@ def evaluate_canonical(result: Dict[str, Any], *, symbol: str, direction: str,
         sec = sector or "unknown"
         canon_stock_fit = stock_account_fit(
             policy=STRATEGY_500_POLICY, equity=st["equity"], entry=entry, stop=stop,
-            buying_power=st["buying_power"], open_positions=st["open_positions"],
+            fill_price=_executable_buy_price(quote),
+            # RAW spendable cash: stock_account_fit nets out the policy reserve
+            # itself, so st["buying_power"] (already net) would subtract it twice.
+            buying_power=st["available_cash"], open_positions=st["open_positions"],
             sector=sec, sector_open_positions=st["sector_positions"].get(sec, 0),
             sector_exposure=st["sector_value"].get(sec, 0.0),
             # day_pnl is signed (negative = a loss); check_entry()'s own

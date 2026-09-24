@@ -39,6 +39,31 @@ def _group_perf(rows: List[Dict[str, Any]], key: str) -> Dict[str, Any]:
     return {k: _stats(v) for k, v in sorted(buckets.items())}
 
 
+_NOT_EXECUTED_EVENTS = ("not_executed", "unaffordable", "entry_refused",
+                        "risk_blocked", "not_executable")
+
+
+def _entry_outcomes(tradeable: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    """For every TRADEABLE signal: was it executed, and if not, the recorded reason(s).
+    Reasons come from the audit trail so the original refusal is never lost."""
+    rows = []
+    for s in tradeable:
+        reasons: List[str] = []
+        for a in db.audit_trail(s["signal_id"]):
+            if a["event"] not in _NOT_EXECUTED_EVENTS:
+                continue
+            try:
+                d = json.loads(a.get("detail_json") or "{}")
+            except Exception:
+                d = {}
+            got = d.get("reasons") or ([d["reason"]] if d.get("reason") else [])
+            reasons.extend(str(r) for r in got)
+        rows.append({"signal_id": s["signal_id"], "symbol": s["symbol"],
+                     "strategy": s.get("strategy"), "executed": bool(s.get("executed")),
+                     "reasons": reasons})
+    return rows
+
+
 def daily(session_date: Optional[str] = None) -> Dict[str, Any]:
     """The post-market report for one session."""
     session_date = session_date or dt.date.today().isoformat()
@@ -92,6 +117,7 @@ def daily(session_date: Optional[str] = None) -> Dict[str, Any]:
         "generated_at": db.utcnow(),
         "config_version": db.config_version(),
         "config": cfg.snapshot(),
+        "entry_outcomes": _entry_outcomes(tradeable),
         "account": {
             "cash": st["cash"], "equity": st["equity"],
             "starting_equity": st["starting_equity"],

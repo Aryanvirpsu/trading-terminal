@@ -51,7 +51,7 @@ def provider_health() -> Dict[str, Any]:
 def quote_for(symbol: str) -> Optional[Quote]:
     """Build an execution quote from the primary providers (Yahoo/Finnhub consensus)
     plus today's bar for range-dependent fills. Never invents a price."""
-    import time
+    import math
     price = source_ts = provider = None
     try:
         import providers as P
@@ -60,21 +60,49 @@ def quote_for(symbol: str) -> Optional[Quote]:
         source_ts = pc.get("source_timestamp")
     except Exception:
         pass
+    # A quote is only executable if the provider told us WHEN the price was
+    # observed. Never stamp a missing/invalid source time with "now" and never
+    # promote a historical close into a live quote — that launders stale data.
+    try:
+        source_ts = float(source_ts)
+        ts_ok = math.isfinite(source_ts) and source_ts > 0
+    except (TypeError, ValueError):
+        ts_ok = False
+    if price is None or not ts_ok:
+        return None
     o = h = l = v = None
     try:
         import research as R
         hist = R.price_history(symbol, "1M")
         if hist.get("state") == "ok" and hist.get("points"):
             bar = hist["points"][-1]
-            o, h, l, v = bar.get("o"), bar.get("h"), bar.get("l"), bar.get("v")
-            if price is None:
-                price, provider, source_ts = bar.get("c"), "yahoo-history", None
+            # Range-dependent fills (stops/targets) may only see a bar from the
+            # SAME session as the quote; an older bar would trigger phantom exits.
+            if _bar_is_current(bar.get("t"), source_ts):
+                o, h, l, v = bar.get("o"), bar.get("h"), bar.get("l"), bar.get("v")
     except Exception:
         pass
-    if price is None:
-        return None
     return Quote(symbol, last=price, open=o, high=h, low=l, volume=v,
-                 source_ts=source_ts if source_ts else time.time(), provider=provider)
+                 source_ts=source_ts, provider=provider)
+
+
+def _bar_is_current(bar_t: Any, quote_ts: float) -> bool:
+    """True when the bar's calendar date is the quote's session date (ET or UTC)."""
+    if not bar_t:
+        return False
+    try:
+        from zoneinfo import ZoneInfo
+        moment = dt.datetime.fromtimestamp(quote_ts, dt.timezone.utc)
+        days = {moment.date().isoformat(),
+                moment.astimezone(ZoneInfo("America/New_York")).date().isoformat()}
+    except Exception:
+        return False
+    return str(bar_t)[:10] in days
+
+
+def _not_executed(signal_id: str, reason: str) -> None:
+    """Record WHY a journaled signal never reached the broker (audit trail)."""
+    db.audit("signal", signal_id, "not_executed", {"reason": reason})
 
 
 # ── Pre-market ────────────────────────────────────────────────────────────────
@@ -165,7 +193,7 @@ def premarket(session_date: Optional[str] = None, dry_run: bool = False) -> Dict
         try:
             canon = canonical_bridge.evaluate_canonical(
                 result, symbol=sym, direction=direction, sector=sector,
-                session_date=session_date)
+                session_date=session_date, quote=q)
         except Exception as e:
             db.audit("system", sym, "canonical_evaluate_failed", {"error": str(e)[:160]})
             continue
@@ -205,6 +233,7 @@ def premarket(session_date: Optional[str] = None, dry_run: bool = False) -> Dict
             evaluated.append({"symbol": sym, "action": result.get("decision"),
                               "signal_id": sid, "instrument": canon["instrument_label"],
                               "note": "dry-run" if dry_run else "daily order cap reached"})
+            _not_executed(sid, "dry-run" if dry_run else "daily order cap reached")
             continue
 
         if q is None:
@@ -215,6 +244,7 @@ def premarket(session_date: Optional[str] = None, dry_run: bool = False) -> Dict
             evaluated.append({"symbol": sym, "action": result.get("decision"),
                               "signal_id": sid, "instrument": canon["instrument_label"],
                               "note": "no executable quote"})
+            _not_executed(sid, "no executable quote")
             continue
 
         if not stock_ready:
@@ -233,6 +263,7 @@ def premarket(session_date: Optional[str] = None, dry_run: bool = False) -> Dict
                 "note": ("option preferred but shadow-only — no execution"
                         if canon["instrument_choice"].choice.value == "OPTION"
                         else "stock leg not canonically executable")})
+            _not_executed(sid, evaluated[-1]["note"])
             continue
 
         out = broker.submit_entry(result, q, strategy=f["strategy"],
