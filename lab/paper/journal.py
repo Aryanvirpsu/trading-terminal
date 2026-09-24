@@ -20,6 +20,12 @@ def _j(v: Any) -> Optional[str]:
     return json.dumps(v, default=str) if v is not None else None
 
 
+# Evidence-version boundary. Rows written before the 2026-09-24 execution-integrity fixes carry
+# "decision_engine/gates-v1" (v1.0). Same strategy + those fixes = v1.1: never pool executed-trade
+# evidence across the two. Deliberately NOT part of config_version (strategy unchanged).
+ENGINE_VERSION = "decision_engine/gates-v1.1"
+
+
 def record_signal(result: Dict[str, Any], *, strategy: str, sector: Optional[str] = None,
                   industry: Optional[str] = None, market_regime: Optional[str] = None,
                   scanner_rank: Optional[int] = None, quantity: Optional[float] = None,
@@ -57,7 +63,7 @@ def record_signal(result: Dict[str, Any], *, strategy: str, sector: Optional[str
          planned_risk, ev.get("ev_per_share"), ev.get("expected_r"),
          _j(result.get("supporting_signals")), _j(result.get("conflicting_signals")),
          _j(result.get("scenario_probabilities")), scanner_rank,
-         db.config_version(), result.get("engine_version", "decision_engine/gates-v1"),
+         db.config_version(), result.get("engine_version", ENGINE_VERSION),
          0, None, "open"))
     db.audit("signal", sid, "recorded",
              {"symbol": symbol, "action": result.get("decision"), "strategy": strategy,
