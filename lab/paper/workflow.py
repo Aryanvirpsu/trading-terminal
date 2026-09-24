@@ -15,6 +15,7 @@ _HERE = os.path.dirname(os.path.abspath(__file__))
 for _p in ("..", os.path.join("..", "..", "dashboard"), os.path.join("..", "..", "src")):
     sys.path.insert(0, os.path.join(_HERE, _p))
 
+from . import shadow_log
 from . import (broker, canonical_bridge, config as cfg, db, journal, options_shadow,
               risk as risk_mod, strategies)
 from .fills import Quote
@@ -153,6 +154,15 @@ def premarket(session_date: Optional[str] = None, dry_run: bool = False) -> Dict
     already_today = {s["symbol"] for s in db.query(
         "SELECT DISTINCT symbol FROM signals WHERE session_date=?", (session_date,))}
 
+    # Shadow telemetry (append-only, separate DB, read-only over the ledger; never affects trading).
+    shadow_rows: List[Dict[str, Any]] = []
+    shadow_cap = None
+    if not dry_run:
+        try:
+            shadow_cap = shadow_log.capacity_snapshot(session_date)
+        except Exception:
+            shadow_cap = None
+
     for f in scan["finalists"]:
         sym = f["symbol"]
         direction = f.get("direction", "LONG")
@@ -197,6 +207,12 @@ def premarket(session_date: Optional[str] = None, dry_run: bool = False) -> Dict
         except Exception as e:
             db.audit("system", sym, "canonical_evaluate_failed", {"error": str(e)[:160]})
             continue
+
+        if shadow_cap is not None:
+            try:
+                shadow_rows.append(shadow_log.candidate_row(f, result, canon, q))
+            except Exception:
+                pass
 
         # Options are recorded in SHADOW MODE only — never placed into the ledger.
         # The augmented result carries the SAME option/option_quality shape
@@ -281,6 +297,9 @@ def premarket(session_date: Optional[str] = None, dry_run: bool = False) -> Dict
             planned.append({"symbol": sym, "order_id": out["order"]["order_id"],
                             "strategy": f["strategy"]})
 
+    if shadow_cap is not None:
+        shadow_log.record_cycle(session_date, shadow_rows, evaluated, shadow_cap)
+
     broker.snapshot_equity(session_date)
     db.audit("system", session_date, "premarket_done",
              {"finalists": len(scan["finalists"]), "executed": len(planned)})
@@ -340,6 +359,9 @@ def market_hours(session_date: Optional[str] = None) -> Dict[str, Any]:
             continue
         journal.update_excursions(s["signal_id"], hi, lo)
         tracked_updates += 1
+
+    # 3b) raw daily + 5-minute bars for shadow candidates (append-only, separate DB, non-fatal)
+    shadow_log.update_bars(session_date)
 
     # 4) shadow-option evidence resolution — grades hypothetical observations
     # only; never places, modifies, or cancels an order. Same lifecycle stage
