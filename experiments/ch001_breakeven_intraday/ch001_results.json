@@ -1,0 +1,2354 @@
+{
+ "ALL 55 signals|5": [
+  {
+   "sym": "NEM",
+   "date": "2026-09-10",
+   "champion": {
+    "out": "open",
+    "R": -0.791358387482472,
+    "ambiguous": false,
+    "day": null,
+    "ts": null
+   },
+   "be": {
+    "out": "open",
+    "R": -0.791358387482472,
+    "ambiguous": false,
+    "day": null,
+    "ts": null
+   }
+  },
+  {
+   "sym": "COP",
+   "date": "2026-09-10",
+   "champion": {
+    "out": "stop",
+    "R": -1.0349160206718315,
+    "ambiguous": false,
+    "day": "2026-09-16",
+    "ts": "2026-09-16 19:10:00+00:00"
+   },
+   "be": {
+    "out": "be",
+    "R": -0.035416020671824935,
+    "ambiguous": false,
+    "day": "2026-09-16",
+    "ts": "2026-09-16 13:35:00+00:00"
+   }
+  },
+  {
+   "sym": "CVX",
+   "date": "2026-09-10",
+   "champion": {
+    "out": "stop",
+    "R": -1.0384049360146232,
+    "ambiguous": false,
+    "day": "2026-09-18",
+    "ts": "2026-09-18 19:50:00+00:00"
+   },
+   "be": {
+    "out": "stop",
+    "R": -1.0384049360146232,
+    "ambiguous": false,
+    "day": "2026-09-18",
+    "ts": "2026-09-18 19:50:00+00:00"
+   }
+  },
+  {
+   "sym": "META",
+   "date": "2026-09-10",
+   "champion": {
+    "out": "target",
+    "R": 2.1919497235659944,
+    "ambiguous": false,
+    "day": "2026-09-21",
+    "ts": "2026-09-21 14:00:00+00:00"
+   },
+   "be": {
+    "out": "target",
+    "R": 2.1919497235659944,
+    "ambiguous": false,
+    "day": "2026-09-21",
+    "ts": "2026-09-21 14:00:00+00:00"
+   }
+  },
+  {
+   "sym": "HAL",
+   "date": "2026-09-10",
+   "champion": {
+    "out": "stop",
+    "R": -1.0215429447852746,
+    "ambiguous": false,
+    "day": "2026-09-16",
+    "ts": "2026-09-16 19:15:00+00:00"
+   },
+   "be": {
+    "out": "stop",
+    "R": -1.0215429447852746,
+    "ambiguous": false,
+    "day": "2026-09-16",
+    "ts": "2026-09-16 19:15:00+00:00"
+   }
+  },
+  {
+   "sym": "COP",
+   "date": "2026-09-11",
+   "champion": {
+    "out": "stop",
+    "R": -1.3509789761700115,
+    "ambiguous": false,
+    "day": "2026-09-17",
+    "ts": "2026-09-17 13:30:00+00:00"
+   },
+   "be": {
+    "out": "be",
+    "R": -0.03449113924050279,
+    "ambiguous": false,
+    "day": "2026-09-16",
+    "ts": "2026-09-16 13:40:00+00:00"
+   }
+  },
+  {
+   "sym": "DE",
+   "date": "2026-09-11",
+   "champion": {
+    "out": "open",
+    "R": 0.5941745541515121,
+    "ambiguous": false,
+    "day": null,
+    "ts": null
+   },
+   "be": {
+    "out": "open",
+    "R": 0.5941745541515121,
+    "ambiguous": false,
+    "day": null,
+    "ts": null
+   }
+  },
+  {
+   "sym": "CVX",
+   "date": "2026-09-11",
+   "champion": {
+    "out": "stop",
+    "R": -1.0383415300546412,
+    "ambiguous": false,
+    "day": "2026-09-18",
+    "ts": "2026-09-18 19:50:00+00:00"
+   },
+   "be": {
+    "out": "stop",
+    "R": -1.0383415300546412,
+    "ambiguous": false,
+    "day": "2026-09-18",
+    "ts": "2026-09-18 19:50:00+00:00"
+   }
+  },
+  {
+   "sym": "META",
+   "date": "2026-09-11",
+   "champion": {
+    "out": "target",
+    "R": 2.183647303595201,
+    "ambiguous": false,
+    "day": "2026-09-21",
+    "ts": "2026-09-21 14:00:00+00:00"
+   },
+   "be": {
+    "out": "target",
+    "R": 2.183647303595201,
+    "ambiguous": false,
+    "day": "2026-09-21",
+    "ts": "2026-09-21 14:00:00+00:00"
+   }
+  },
+  {
+   "sym": "HAL",
+   "date": "2026-09-11",
+   "champion": {
+    "out": "stop",
+    "R": -1.0209969696969639,
+    "ambiguous": false,
+    "day": "2026-09-17",
+    "ts": "2026-09-17 15:05:00+00:00"
+   },
+   "be": {
+    "out": "stop",
+    "R": -1.0209969696969639,
+    "ambiguous": false,
+    "day": "2026-09-17",
+    "ts": "2026-09-17 15:05:00+00:00"
+   }
+  },
+  {
+   "sym": "META",
+   "date": "2026-09-14",
+   "champion": {
+    "out": "target",
+    "R": 2.185409061171079,
+    "ambiguous": false,
+    "day": "2026-09-21",
+    "ts": "2026-09-21 17:00:00+00:00"
+   },
+   "be": {
+    "out": "target",
+    "R": 2.185409061171079,
+    "ambiguous": false,
+    "day": "2026-09-21",
+    "ts": "2026-09-21 17:00:00+00:00"
+   }
+  },
+  {
+   "sym": "T",
+   "date": "2026-09-14",
+   "champion": {
+    "out": "stop",
+    "R": -1.0367112676056276,
+    "ambiguous": false,
+    "day": "2026-09-16",
+    "ts": "2026-09-16 19:35:00+00:00"
+   },
+   "be": {
+    "out": "stop",
+    "R": -1.0367112676056276,
+    "ambiguous": false,
+    "day": "2026-09-16",
+    "ts": "2026-09-16 19:35:00+00:00"
+   }
+  },
+  {
+   "sym": "VZ",
+   "date": "2026-09-14",
+   "champion": {
+    "out": "stop",
+    "R": -1.0452499999999934,
+    "ambiguous": false,
+    "day": "2026-09-16",
+    "ts": "2026-09-16 18:30:00+00:00"
+   },
+   "be": {
+    "out": "stop",
+    "R": -1.0452499999999934,
+    "ambiguous": false,
+    "day": "2026-09-16",
+    "ts": "2026-09-16 18:30:00+00:00"
+   }
+  },
+  {
+   "sym": "VRTX",
+   "date": "2026-09-14",
+   "champion": {
+    "out": "stop",
+    "R": -1.0332873450750115,
+    "ambiguous": false,
+    "day": "2026-09-21",
+    "ts": "2026-09-21 13:30:00+00:00"
+   },
+   "be": {
+    "out": "stop",
+    "R": -1.0332873450750115,
+    "ambiguous": false,
+    "day": "2026-09-21",
+    "ts": "2026-09-21 13:30:00+00:00"
+   }
+  },
+  {
+   "sym": "MRK",
+   "date": "2026-09-14",
+   "champion": {
+    "out": "open",
+    "R": 0.6475362318840565,
+    "ambiguous": false,
+    "day": null,
+    "ts": null
+   },
+   "be": {
+    "out": "open",
+    "R": 0.6475362318840565,
+    "ambiguous": false,
+    "day": null,
+    "ts": null
+   }
+  },
+  {
+   "sym": "META",
+   "date": "2026-09-15",
+   "champion": {
+    "out": "target",
+    "R": 2.1785649023314386,
+    "ambiguous": false,
+    "day": "2026-09-21",
+    "ts": "2026-09-21 17:05:00+00:00"
+   },
+   "be": {
+    "out": "target",
+    "R": 2.1785649023314386,
+    "ambiguous": false,
+    "day": "2026-09-21",
+    "ts": "2026-09-21 17:05:00+00:00"
+   }
+  },
+  {
+   "sym": "COP",
+   "date": "2026-09-15",
+   "champion": {
+    "out": "stop",
+    "R": -1.03253044496487,
+    "ambiguous": false,
+    "day": "2026-09-16",
+    "ts": "2026-09-16 13:35:00+00:00"
+   },
+   "be": {
+    "out": "stop",
+    "R": -1.03253044496487,
+    "ambiguous": false,
+    "day": "2026-09-16",
+    "ts": "2026-09-16 13:35:00+00:00"
+   }
+  },
+  {
+   "sym": "OXY",
+   "date": "2026-09-15",
+   "champion": {
+    "out": "stop",
+    "R": -1.0323652849740912,
+    "ambiguous": false,
+    "day": "2026-09-16",
+    "ts": "2026-09-16 13:35:00+00:00"
+   },
+   "be": {
+    "out": "stop",
+    "R": -1.0323652849740912,
+    "ambiguous": false,
+    "day": "2026-09-16",
+    "ts": "2026-09-16 13:35:00+00:00"
+   }
+  },
+  {
+   "sym": "CVX",
+   "date": "2026-09-15",
+   "champion": {
+    "out": "stop",
+    "R": -1.219059163802047,
+    "ambiguous": false,
+    "day": "2026-09-17",
+    "ts": "2026-09-17 13:30:00+00:00"
+   },
+   "be": {
+    "out": "stop",
+    "R": -1.219059163802047,
+    "ambiguous": false,
+    "day": "2026-09-17",
+    "ts": "2026-09-17 13:30:00+00:00"
+   }
+  },
+  {
+   "sym": "T",
+   "date": "2026-09-15",
+   "champion": {
+    "out": "stop",
+    "R": -1.0361438356164352,
+    "ambiguous": false,
+    "day": "2026-09-16",
+    "ts": "2026-09-16 18:40:00+00:00"
+   },
+   "be": {
+    "out": "stop",
+    "R": -1.0361438356164352,
+    "ambiguous": false,
+    "day": "2026-09-16",
+    "ts": "2026-09-16 18:40:00+00:00"
+   }
+  },
+  {
+   "sym": "META",
+   "date": "2026-09-16",
+   "champion": {
+    "out": "target",
+    "R": 2.192088480801341,
+    "ambiguous": false,
+    "day": "2026-09-21",
+    "ts": "2026-09-21 17:35:00+00:00"
+   },
+   "be": {
+    "out": "target",
+    "R": 2.192088480801341,
+    "ambiguous": false,
+    "day": "2026-09-21",
+    "ts": "2026-09-21 17:35:00+00:00"
+   }
+  },
+  {
+   "sym": "DE",
+   "date": "2026-09-16",
+   "champion": {
+    "out": "open",
+    "R": 1.0164105387092104,
+    "ambiguous": false,
+    "day": null,
+    "ts": null
+   },
+   "be": {
+    "out": "open",
+    "R": 1.0164105387092104,
+    "ambiguous": false,
+    "day": null,
+    "ts": null
+   }
+  },
+  {
+   "sym": "TMO",
+   "date": "2026-09-16",
+   "champion": {
+    "out": "open",
+    "R": 1.508397738244856,
+    "ambiguous": false,
+    "day": null,
+    "ts": null
+   },
+   "be": {
+    "out": "open",
+    "R": 1.508397738244856,
+    "ambiguous": false,
+    "day": null,
+    "ts": null
+   }
+  },
+  {
+   "sym": "VRTX",
+   "date": "2026-09-16",
+   "champion": {
+    "out": "open",
+    "R": 0.5592629076656872,
+    "ambiguous": false,
+    "day": null,
+    "ts": null
+   },
+   "be": {
+    "out": "open",
+    "R": 0.5592629076656872,
+    "ambiguous": false,
+    "day": null,
+    "ts": null
+   }
+  },
+  {
+   "sym": "MRK",
+   "date": "2026-09-16",
+   "champion": {
+    "out": "target",
+    "R": 2.297540640394093,
+    "ambiguous": false,
+    "day": "2026-09-22",
+    "ts": "2026-09-22 15:20:00+00:00"
+   },
+   "be": {
+    "out": "target",
+    "R": 2.297540640394093,
+    "ambiguous": false,
+    "day": "2026-09-22",
+    "ts": "2026-09-22 15:20:00+00:00"
+   }
+  },
+  {
+   "sym": "DELL",
+   "date": "2026-09-17",
+   "champion": {
+    "out": "stop",
+    "R": -1.0104800901577757,
+    "ambiguous": false,
+    "day": "2026-09-24",
+    "ts": "2026-09-24 14:50:00+00:00"
+   },
+   "be": {
+    "out": "stop",
+    "R": -1.0104800901577757,
+    "ambiguous": false,
+    "day": "2026-09-24",
+    "ts": "2026-09-24 14:50:00+00:00"
+   }
+  },
+  {
+   "sym": "CRM",
+   "date": "2026-09-17",
+   "champion": {
+    "out": "open",
+    "R": -0.3113143178867554,
+    "ambiguous": false,
+    "day": null,
+    "ts": null
+   },
+   "be": {
+    "out": "open",
+    "R": -0.3113143178867554,
+    "ambiguous": false,
+    "day": null,
+    "ts": null
+   }
+  },
+  {
+   "sym": "DE",
+   "date": "2026-09-17",
+   "champion": {
+    "out": "open",
+    "R": 0.5597893019100187,
+    "ambiguous": false,
+    "day": null,
+    "ts": null
+   },
+   "be": {
+    "out": "open",
+    "R": 0.5597893019100187,
+    "ambiguous": false,
+    "day": null,
+    "ts": null
+   }
+  },
+  {
+   "sym": "AMD",
+   "date": "2026-09-17",
+   "champion": {
+    "out": "target",
+    "R": 2.148706417624527,
+    "ambiguous": false,
+    "day": "2026-09-21",
+    "ts": "2026-09-21 14:15:00+00:00"
+   },
+   "be": {
+    "out": "target",
+    "R": 2.148706417624527,
+    "ambiguous": false,
+    "day": "2026-09-21",
+    "ts": "2026-09-21 14:15:00+00:00"
+   }
+  },
+  {
+   "sym": "VRTX",
+   "date": "2026-09-17",
+   "champion": {
+    "out": "open",
+    "R": 0.7136935856516776,
+    "ambiguous": false,
+    "day": null,
+    "ts": null
+   },
+   "be": {
+    "out": "open",
+    "R": 0.7136935856516776,
+    "ambiguous": false,
+    "day": null,
+    "ts": null
+   }
+  },
+  {
+   "sym": "DELL",
+   "date": "2026-09-18",
+   "champion": {
+    "out": "open",
+    "R": -0.8139048720600028,
+    "ambiguous": false,
+    "day": null,
+    "ts": null
+   },
+   "be": {
+    "out": "open",
+    "R": -0.8139048720600028,
+    "ambiguous": false,
+    "day": null,
+    "ts": null
+   }
+  },
+  {
+   "sym": "META",
+   "date": "2026-09-18",
+   "champion": {
+    "out": "target",
+    "R": 2.1908108877721935,
+    "ambiguous": false,
+    "day": "2026-09-21",
+    "ts": "2026-09-21 17:05:00+00:00"
+   },
+   "be": {
+    "out": "target",
+    "R": 2.1908108877721935,
+    "ambiguous": false,
+    "day": "2026-09-21",
+    "ts": "2026-09-21 17:05:00+00:00"
+   }
+  },
+  {
+   "sym": "CRM",
+   "date": "2026-09-18",
+   "champion": {
+    "out": "open",
+    "R": -0.010855494649475179,
+    "ambiguous": false,
+    "day": null,
+    "ts": null
+   },
+   "be": {
+    "out": "open",
+    "R": -0.010855494649475179,
+    "ambiguous": false,
+    "day": null,
+    "ts": null
+   }
+  },
+  {
+   "sym": "AMD",
+   "date": "2026-09-18",
+   "champion": {
+    "out": "target",
+    "R": 2.1490874316939883,
+    "ambiguous": false,
+    "day": "2026-09-21",
+    "ts": "2026-09-21 14:10:00+00:00"
+   },
+   "be": {
+    "out": "target",
+    "R": 2.1490874316939883,
+    "ambiguous": false,
+    "day": "2026-09-21",
+    "ts": "2026-09-21 14:10:00+00:00"
+   }
+  },
+  {
+   "sym": "AAPL",
+   "date": "2026-09-18",
+   "champion": {
+    "out": "open",
+    "R": 0.16236967935426572,
+    "ambiguous": false,
+    "day": null,
+    "ts": null
+   },
+   "be": {
+    "out": "open",
+    "R": 0.16236967935426572,
+    "ambiguous": false,
+    "day": null,
+    "ts": null
+   }
+  },
+  {
+   "sym": "DELL",
+   "date": "2026-09-21",
+   "champion": {
+    "out": "open",
+    "R": -0.7866568842751143,
+    "ambiguous": false,
+    "day": null,
+    "ts": null
+   },
+   "be": {
+    "out": "open",
+    "R": -0.7866568842751143,
+    "ambiguous": false,
+    "day": null,
+    "ts": null
+   }
+  },
+  {
+   "sym": "META",
+   "date": "2026-09-21",
+   "champion": {
+    "out": "open",
+    "R": 0.8618914415578605,
+    "ambiguous": false,
+    "day": null,
+    "ts": null
+   },
+   "be": {
+    "out": "open",
+    "R": 0.8618914415578605,
+    "ambiguous": false,
+    "day": null,
+    "ts": null
+   }
+  },
+  {
+   "sym": "AMD",
+   "date": "2026-09-21",
+   "champion": {
+    "out": "open",
+    "R": 0.6107934743404796,
+    "ambiguous": false,
+    "day": null,
+    "ts": null
+   },
+   "be": {
+    "out": "open",
+    "R": 0.6107934743404796,
+    "ambiguous": false,
+    "day": null,
+    "ts": null
+   }
+  },
+  {
+   "sym": "CRM",
+   "date": "2026-09-21",
+   "champion": {
+    "out": "open",
+    "R": 0.12691779386638102,
+    "ambiguous": false,
+    "day": null,
+    "ts": null
+   },
+   "be": {
+    "out": "open",
+    "R": 0.12691779386638102,
+    "ambiguous": false,
+    "day": null,
+    "ts": null
+   }
+  },
+  {
+   "sym": "AAPL",
+   "date": "2026-09-21",
+   "champion": {
+    "out": "open",
+    "R": -0.20203060085640975,
+    "ambiguous": false,
+    "day": null,
+    "ts": null
+   },
+   "be": {
+    "out": "open",
+    "R": -0.20203060085640975,
+    "ambiguous": false,
+    "day": null,
+    "ts": null
+   }
+  },
+  {
+   "sym": "AMD",
+   "date": "2026-09-22",
+   "champion": {
+    "out": "open",
+    "R": 0.35894160296762634,
+    "ambiguous": false,
+    "day": null,
+    "ts": null
+   },
+   "be": {
+    "out": "open",
+    "R": 0.35894160296762634,
+    "ambiguous": false,
+    "day": null,
+    "ts": null
+   }
+  },
+  {
+   "sym": "DELL",
+   "date": "2026-09-22",
+   "champion": {
+    "out": "open",
+    "R": -0.32434153238551194,
+    "ambiguous": false,
+    "day": null,
+    "ts": null
+   },
+   "be": {
+    "out": "open",
+    "R": -0.32434153238551194,
+    "ambiguous": false,
+    "day": null,
+    "ts": null
+   }
+  },
+  {
+   "sym": "CRM",
+   "date": "2026-09-22",
+   "champion": {
+    "out": "open",
+    "R": 0.5406737106996737,
+    "ambiguous": false,
+    "day": null,
+    "ts": null
+   },
+   "be": {
+    "out": "open",
+    "R": 0.5406737106996737,
+    "ambiguous": false,
+    "day": null,
+    "ts": null
+   }
+  },
+  {
+   "sym": "AAPL",
+   "date": "2026-09-22",
+   "champion": {
+    "out": "open",
+    "R": -0.4840247557082008,
+    "ambiguous": false,
+    "day": null,
+    "ts": null
+   },
+   "be": {
+    "out": "open",
+    "R": -0.4840247557082008,
+    "ambiguous": false,
+    "day": null,
+    "ts": null
+   }
+  },
+  {
+   "sym": "NVDA",
+   "date": "2026-09-22",
+   "champion": {
+    "out": "open",
+    "R": -0.47290143728431633,
+    "ambiguous": false,
+    "day": null,
+    "ts": null
+   },
+   "be": {
+    "out": "open",
+    "R": -0.47290143728431633,
+    "ambiguous": false,
+    "day": null,
+    "ts": null
+   }
+  },
+  {
+   "sym": "AMD",
+   "date": "2026-09-23",
+   "champion": {
+    "out": "open",
+    "R": 0.4436884008620711,
+    "ambiguous": false,
+    "day": null,
+    "ts": null
+   },
+   "be": {
+    "out": "open",
+    "R": 0.4436884008620711,
+    "ambiguous": false,
+    "day": null,
+    "ts": null
+   }
+  },
+  {
+   "sym": "DELL",
+   "date": "2026-09-23",
+   "champion": {
+    "out": "open",
+    "R": -0.23215788875833512,
+    "ambiguous": false,
+    "day": null,
+    "ts": null
+   },
+   "be": {
+    "out": "open",
+    "R": -0.23215788875833512,
+    "ambiguous": false,
+    "day": null,
+    "ts": null
+   }
+  },
+  {
+   "sym": "CRM",
+   "date": "2026-09-23",
+   "champion": {
+    "out": "open",
+    "R": -0.02711969955285885,
+    "ambiguous": false,
+    "day": null,
+    "ts": null
+   },
+   "be": {
+    "out": "open",
+    "R": -0.02711969955285885,
+    "ambiguous": false,
+    "day": null,
+    "ts": null
+   }
+  },
+  {
+   "sym": "AAPL",
+   "date": "2026-09-23",
+   "champion": {
+    "out": "open",
+    "R": -0.056918990946259115,
+    "ambiguous": false,
+    "day": null,
+    "ts": null
+   },
+   "be": {
+    "out": "open",
+    "R": -0.056918990946259115,
+    "ambiguous": false,
+    "day": null,
+    "ts": null
+   }
+  },
+  {
+   "sym": "NVDA",
+   "date": "2026-09-23",
+   "champion": {
+    "out": "open",
+    "R": -0.005083238732513196,
+    "ambiguous": false,
+    "day": null,
+    "ts": null
+   },
+   "be": {
+    "out": "open",
+    "R": -0.005083238732513196,
+    "ambiguous": false,
+    "day": null,
+    "ts": null
+   }
+  },
+  {
+   "sym": "META",
+   "date": "2026-09-24",
+   "champion": {
+    "out": "open",
+    "R": 0.25852526447330887,
+    "ambiguous": false,
+    "day": null,
+    "ts": null
+   },
+   "be": {
+    "out": "open",
+    "R": 0.25852526447330887,
+    "ambiguous": false,
+    "day": null,
+    "ts": null
+   }
+  },
+  {
+   "sym": "AMD",
+   "date": "2026-09-24",
+   "champion": {
+    "out": "open",
+    "R": 0.2833136157794923,
+    "ambiguous": false,
+    "day": null,
+    "ts": null
+   },
+   "be": {
+    "out": "open",
+    "R": 0.2833136157794923,
+    "ambiguous": false,
+    "day": null,
+    "ts": null
+   }
+  },
+  {
+   "sym": "DELL",
+   "date": "2026-09-24",
+   "champion": {
+    "out": "open",
+    "R": 0.08116727040180696,
+    "ambiguous": false,
+    "day": null,
+    "ts": null
+   },
+   "be": {
+    "out": "open",
+    "R": 0.08116727040180696,
+    "ambiguous": false,
+    "day": null,
+    "ts": null
+   }
+  },
+  {
+   "sym": "CRM",
+   "date": "2026-09-24",
+   "champion": {
+    "out": "open",
+    "R": -0.026873522003893157,
+    "ambiguous": false,
+    "day": null,
+    "ts": null
+   },
+   "be": {
+    "out": "open",
+    "R": -0.026873522003893157,
+    "ambiguous": false,
+    "day": null,
+    "ts": null
+   }
+  },
+  {
+   "sym": "AAPL",
+   "date": "2026-09-24",
+   "champion": {
+    "out": "open",
+    "R": -0.038218056366819124,
+    "ambiguous": false,
+    "day": null,
+    "ts": null
+   },
+   "be": {
+    "out": "open",
+    "R": -0.038218056366819124,
+    "ambiguous": false,
+    "day": null,
+    "ts": null
+   }
+  }
+ ],
+ "ALL 55 signals|15": [
+  {
+   "sym": "NEM",
+   "date": "2026-09-10",
+   "champion": {
+    "out": "open",
+    "R": -0.8115763362004228,
+    "ambiguous": false,
+    "day": null,
+    "ts": null
+   },
+   "be": {
+    "out": "open",
+    "R": -0.8115763362004228,
+    "ambiguous": false,
+    "day": null,
+    "ts": null
+   }
+  },
+  {
+   "sym": "COP",
+   "date": "2026-09-10",
+   "champion": {
+    "out": "stop",
+    "R": -1.1047480620155017,
+    "ambiguous": false,
+    "day": "2026-09-16",
+    "ts": "2026-09-16 19:10:00+00:00"
+   },
+   "be": {
+    "out": "be",
+    "R": -0.10624806201550419,
+    "ambiguous": false,
+    "day": "2026-09-16",
+    "ts": "2026-09-16 13:35:00+00:00"
+   }
+  },
+  {
+   "sym": "CVX",
+   "date": "2026-09-10",
+   "champion": {
+    "out": "stop",
+    "R": -1.1152148080438749,
+    "ambiguous": false,
+    "day": "2026-09-18",
+    "ts": "2026-09-18 19:50:00+00:00"
+   },
+   "be": {
+    "out": "stop",
+    "R": -1.1152148080438749,
+    "ambiguous": false,
+    "day": "2026-09-18",
+    "ts": "2026-09-18 19:50:00+00:00"
+   }
+  },
+  {
+   "sym": "META",
+   "date": "2026-09-10",
+   "champion": {
+    "out": "target",
+    "R": 2.169491188666202,
+    "ambiguous": false,
+    "day": "2026-09-21",
+    "ts": "2026-09-21 14:00:00+00:00"
+   },
+   "be": {
+    "out": "target",
+    "R": 2.169491188666202,
+    "ambiguous": false,
+    "day": "2026-09-21",
+    "ts": "2026-09-21 14:00:00+00:00"
+   }
+  },
+  {
+   "sym": "HAL",
+   "date": "2026-09-10",
+   "champion": {
+    "out": "stop",
+    "R": -1.064628834355828,
+    "ambiguous": false,
+    "day": "2026-09-16",
+    "ts": "2026-09-16 19:15:00+00:00"
+   },
+   "be": {
+    "out": "stop",
+    "R": -1.064628834355828,
+    "ambiguous": false,
+    "day": "2026-09-16",
+    "ts": "2026-09-16 19:15:00+00:00"
+   }
+  },
+  {
+   "sym": "COP",
+   "date": "2026-09-11",
+   "champion": {
+    "out": "stop",
+    "R": -1.3854701154105216,
+    "ambiguous": false,
+    "day": "2026-09-17",
+    "ts": "2026-09-17 13:30:00+00:00"
+   },
+   "be": {
+    "out": "be",
+    "R": -0.10347341772151555,
+    "ambiguous": false,
+    "day": "2026-09-16",
+    "ts": "2026-09-16 13:40:00+00:00"
+   }
+  },
+  {
+   "sym": "DE",
+   "date": "2026-09-11",
+   "champion": {
+    "out": "open",
+    "R": 0.5658934730704261,
+    "ambiguous": false,
+    "day": null,
+    "ts": null
+   },
+   "be": {
+    "out": "open",
+    "R": 0.5658934730704261,
+    "ambiguous": false,
+    "day": null,
+    "ts": null
+   }
+  },
+  {
+   "sym": "CVX",
+   "date": "2026-09-11",
+   "champion": {
+    "out": "stop",
+    "R": -1.1150245901639337,
+    "ambiguous": false,
+    "day": "2026-09-18",
+    "ts": "2026-09-18 19:50:00+00:00"
+   },
+   "be": {
+    "out": "stop",
+    "R": -1.1150245901639337,
+    "ambiguous": false,
+    "day": "2026-09-18",
+    "ts": "2026-09-18 19:50:00+00:00"
+   }
+  },
+  {
+   "sym": "META",
+   "date": "2026-09-11",
+   "champion": {
+    "out": "target",
+    "R": 2.162126997336874,
+    "ambiguous": false,
+    "day": "2026-09-21",
+    "ts": "2026-09-21 14:00:00+00:00"
+   },
+   "be": {
+    "out": "target",
+    "R": 2.162126997336874,
+    "ambiguous": false,
+    "day": "2026-09-21",
+    "ts": "2026-09-21 14:00:00+00:00"
+   }
+  },
+  {
+   "sym": "HAL",
+   "date": "2026-09-11",
+   "champion": {
+    "out": "stop",
+    "R": -1.0629909090909133,
+    "ambiguous": false,
+    "day": "2026-09-17",
+    "ts": "2026-09-17 15:05:00+00:00"
+   },
+   "be": {
+    "out": "stop",
+    "R": -1.0629909090909133,
+    "ambiguous": false,
+    "day": "2026-09-17",
+    "ts": "2026-09-17 15:05:00+00:00"
+   }
+  },
+  {
+   "sym": "META",
+   "date": "2026-09-14",
+   "champion": {
+    "out": "target",
+    "R": 2.163685475956817,
+    "ambiguous": false,
+    "day": "2026-09-21",
+    "ts": "2026-09-21 17:00:00+00:00"
+   },
+   "be": {
+    "out": "target",
+    "R": 2.163685475956817,
+    "ambiguous": false,
+    "day": "2026-09-21",
+    "ts": "2026-09-21 17:00:00+00:00"
+   }
+  },
+  {
+   "sym": "T",
+   "date": "2026-09-14",
+   "champion": {
+    "out": "stop",
+    "R": -1.1101338028169025,
+    "ambiguous": false,
+    "day": "2026-09-16",
+    "ts": "2026-09-16 19:35:00+00:00"
+   },
+   "be": {
+    "out": "stop",
+    "R": -1.1101338028169025,
+    "ambiguous": false,
+    "day": "2026-09-16",
+    "ts": "2026-09-16 19:35:00+00:00"
+   }
+  },
+  {
+   "sym": "VZ",
+   "date": "2026-09-14",
+   "champion": {
+    "out": "stop",
+    "R": -1.135749999999999,
+    "ambiguous": false,
+    "day": "2026-09-16",
+    "ts": "2026-09-16 18:30:00+00:00"
+   },
+   "be": {
+    "out": "stop",
+    "R": -1.135749999999999,
+    "ambiguous": false,
+    "day": "2026-09-16",
+    "ts": "2026-09-16 18:30:00+00:00"
+   }
+  },
+  {
+   "sym": "VRTX",
+   "date": "2026-09-14",
+   "champion": {
+    "out": "stop",
+    "R": -1.0998620352250532,
+    "ambiguous": false,
+    "day": "2026-09-21",
+    "ts": "2026-09-21 13:30:00+00:00"
+   },
+   "be": {
+    "out": "stop",
+    "R": -1.0998620352250532,
+    "ambiguous": false,
+    "day": "2026-09-21",
+    "ts": "2026-09-21 13:30:00+00:00"
+   }
+  },
+  {
+   "sym": "MRK",
+   "date": "2026-09-14",
+   "champion": {
+    "out": "open",
+    "R": 0.6175569358177974,
+    "ambiguous": false,
+    "day": null,
+    "ts": null
+   },
+   "be": {
+    "out": "open",
+    "R": 0.6175569358177974,
+    "ambiguous": false,
+    "day": null,
+    "ts": null
+   }
+  },
+  {
+   "sym": "META",
+   "date": "2026-09-15",
+   "champion": {
+    "out": "target",
+    "R": 2.15762287334593,
+    "ambiguous": false,
+    "day": "2026-09-21",
+    "ts": "2026-09-21 17:05:00+00:00"
+   },
+   "be": {
+    "out": "target",
+    "R": 2.15762287334593,
+    "ambiguous": false,
+    "day": "2026-09-21",
+    "ts": "2026-09-21 17:05:00+00:00"
+   }
+  },
+  {
+   "sym": "COP",
+   "date": "2026-09-15",
+   "champion": {
+    "out": "stop",
+    "R": -1.0975913348946165,
+    "ambiguous": false,
+    "day": "2026-09-16",
+    "ts": "2026-09-16 13:35:00+00:00"
+   },
+   "be": {
+    "out": "stop",
+    "R": -1.0975913348946165,
+    "ambiguous": false,
+    "day": "2026-09-16",
+    "ts": "2026-09-16 13:35:00+00:00"
+   }
+  },
+  {
+   "sym": "OXY",
+   "date": "2026-09-15",
+   "champion": {
+    "out": "stop",
+    "R": -1.097095854922281,
+    "ambiguous": false,
+    "day": "2026-09-16",
+    "ts": "2026-09-16 13:35:00+00:00"
+   },
+   "be": {
+    "out": "stop",
+    "R": -1.097095854922281,
+    "ambiguous": false,
+    "day": "2026-09-16",
+    "ts": "2026-09-16 13:35:00+00:00"
+   }
+  },
+  {
+   "sym": "CVX",
+   "date": "2026-09-15",
+   "champion": {
+    "out": "stop",
+    "R": -1.2551660085432843,
+    "ambiguous": false,
+    "day": "2026-09-17",
+    "ts": "2026-09-17 13:30:00+00:00"
+   },
+   "be": {
+    "out": "stop",
+    "R": -1.2551660085432843,
+    "ambiguous": false,
+    "day": "2026-09-17",
+    "ts": "2026-09-17 13:30:00+00:00"
+   }
+  },
+  {
+   "sym": "T",
+   "date": "2026-09-15",
+   "champion": {
+    "out": "stop",
+    "R": -1.10843150684932,
+    "ambiguous": false,
+    "day": "2026-09-16",
+    "ts": "2026-09-16 18:40:00+00:00"
+   },
+   "be": {
+    "out": "stop",
+    "R": -1.10843150684932,
+    "ambiguous": false,
+    "day": "2026-09-16",
+    "ts": "2026-09-16 18:40:00+00:00"
+   }
+  },
+  {
+   "sym": "META",
+   "date": "2026-09-16",
+   "champion": {
+    "out": "target",
+    "R": 2.1695876460767995,
+    "ambiguous": false,
+    "day": "2026-09-21",
+    "ts": "2026-09-21 17:35:00+00:00"
+   },
+   "be": {
+    "out": "target",
+    "R": 2.1695876460767995,
+    "ambiguous": false,
+    "day": "2026-09-21",
+    "ts": "2026-09-21 17:35:00+00:00"
+   }
+  },
+  {
+   "sym": "DE",
+   "date": "2026-09-16",
+   "champion": {
+    "out": "open",
+    "R": 0.987800043828661,
+    "ambiguous": false,
+    "day": null,
+    "ts": null
+   },
+   "be": {
+    "out": "open",
+    "R": 0.987800043828661,
+    "ambiguous": false,
+    "day": null,
+    "ts": null
+   }
+  },
+  {
+   "sym": "TMO",
+   "date": "2026-09-16",
+   "champion": {
+    "out": "open",
+    "R": 1.4766395234336671,
+    "ambiguous": false,
+    "day": null,
+    "ts": null
+   },
+   "be": {
+    "out": "open",
+    "R": 1.4766395234336671,
+    "ambiguous": false,
+    "day": null,
+    "ts": null
+   }
+  },
+  {
+   "sym": "VRTX",
+   "date": "2026-09-16",
+   "champion": {
+    "out": "open",
+    "R": 0.5247676056522604,
+    "ambiguous": false,
+    "day": null,
+    "ts": null
+   },
+   "be": {
+    "out": "open",
+    "R": 0.5247676056522604,
+    "ambiguous": false,
+    "day": null,
+    "ts": null
+   }
+  },
+  {
+   "sym": "MRK",
+   "date": "2026-09-16",
+   "champion": {
+    "out": "target",
+    "R": 2.262080049261082,
+    "ambiguous": false,
+    "day": "2026-09-22",
+    "ts": "2026-09-22 15:20:00+00:00"
+   },
+   "be": {
+    "out": "target",
+    "R": 2.262080049261082,
+    "ambiguous": false,
+    "day": "2026-09-22",
+    "ts": "2026-09-22 15:20:00+00:00"
+   }
+  },
+  {
+   "sym": "DELL",
+   "date": "2026-09-17",
+   "champion": {
+    "out": "stop",
+    "R": -1.0314402704733294,
+    "ambiguous": false,
+    "day": "2026-09-24",
+    "ts": "2026-09-24 14:50:00+00:00"
+   },
+   "be": {
+    "out": "stop",
+    "R": -1.0314402704733294,
+    "ambiguous": false,
+    "day": "2026-09-24",
+    "ts": "2026-09-24 14:50:00+00:00"
+   }
+  },
+  {
+   "sym": "CRM",
+   "date": "2026-09-17",
+   "champion": {
+    "out": "open",
+    "R": -0.3289863295485646,
+    "ambiguous": false,
+    "day": null,
+    "ts": null
+   },
+   "be": {
+    "out": "open",
+    "R": -0.3289863295485646,
+    "ambiguous": false,
+    "day": null,
+    "ts": null
+   }
+  },
+  {
+   "sym": "DE",
+   "date": "2026-09-17",
+   "champion": {
+    "out": "open",
+    "R": 0.5310967998038649,
+    "ambiguous": false,
+    "day": null,
+    "ts": null
+   },
+   "be": {
+    "out": "open",
+    "R": 0.5310967998038649,
+    "ambiguous": false,
+    "day": null,
+    "ts": null
+   }
+  },
+  {
+   "sym": "AMD",
+   "date": "2026-09-17",
+   "champion": {
+    "out": "target",
+    "R": 2.1313044380587547,
+    "ambiguous": false,
+    "day": "2026-09-21",
+    "ts": "2026-09-21 14:15:00+00:00"
+   },
+   "be": {
+    "out": "target",
+    "R": 2.1313044380587547,
+    "ambiguous": false,
+    "day": "2026-09-21",
+    "ts": "2026-09-21 14:15:00+00:00"
+   }
+  },
+  {
+   "sym": "VRTX",
+   "date": "2026-09-17",
+   "champion": {
+    "out": "open",
+    "R": 0.6790201439172573,
+    "ambiguous": false,
+    "day": null,
+    "ts": null
+   },
+   "be": {
+    "out": "open",
+    "R": 0.6790201439172573,
+    "ambiguous": false,
+    "day": null,
+    "ts": null
+   }
+  },
+  {
+   "sym": "DELL",
+   "date": "2026-09-18",
+   "champion": {
+    "out": "open",
+    "R": -0.8248207845788565,
+    "ambiguous": false,
+    "day": null,
+    "ts": null
+   },
+   "be": {
+    "out": "open",
+    "R": -0.8248207845788565,
+    "ambiguous": false,
+    "day": null,
+    "ts": null
+   }
+  },
+  {
+   "sym": "META",
+   "date": "2026-09-18",
+   "champion": {
+    "out": "target",
+    "R": 2.1684125628140696,
+    "ambiguous": false,
+    "day": "2026-09-21",
+    "ts": "2026-09-21 17:05:00+00:00"
+   },
+   "be": {
+    "out": "target",
+    "R": 2.1684125628140696,
+    "ambiguous": false,
+    "day": "2026-09-21",
+    "ts": "2026-09-21 17:05:00+00:00"
+   }
+  },
+  {
+   "sym": "CRM",
+   "date": "2026-09-18",
+   "champion": {
+    "out": "open",
+    "R": -0.029445978268821404,
+    "ambiguous": false,
+    "day": null,
+    "ts": null
+   },
+   "be": {
+    "out": "open",
+    "R": -0.029445978268821404,
+    "ambiguous": false,
+    "day": null,
+    "ts": null
+   }
+  },
+  {
+   "sym": "AMD",
+   "date": "2026-09-18",
+   "champion": {
+    "out": "target",
+    "R": 2.131608164577303,
+    "ambiguous": false,
+    "day": "2026-09-21",
+    "ts": "2026-09-21 14:10:00+00:00"
+   },
+   "be": {
+    "out": "target",
+    "R": 2.131608164577303,
+    "ambiguous": false,
+    "day": "2026-09-21",
+    "ts": "2026-09-21 14:10:00+00:00"
+   }
+  },
+  {
+   "sym": "AAPL",
+   "date": "2026-09-18",
+   "champion": {
+    "out": "open",
+    "R": 0.13071185944904978,
+    "ambiguous": false,
+    "day": null,
+    "ts": null
+   },
+   "be": {
+    "out": "open",
+    "R": 0.13071185944904978,
+    "ambiguous": false,
+    "day": null,
+    "ts": null
+   }
+  },
+  {
+   "sym": "DELL",
+   "date": "2026-09-21",
+   "champion": {
+    "out": "open",
+    "R": -0.7972300349600463,
+    "ambiguous": false,
+    "day": null,
+    "ts": null
+   },
+   "be": {
+    "out": "open",
+    "R": -0.7972300349600463,
+    "ambiguous": false,
+    "day": null,
+    "ts": null
+   }
+  },
+  {
+   "sym": "META",
+   "date": "2026-09-21",
+   "champion": {
+    "out": "open",
+    "R": 0.8425119156396504,
+    "ambiguous": false,
+    "day": null,
+    "ts": null
+   },
+   "be": {
+    "out": "open",
+    "R": 0.8425119156396504,
+    "ambiguous": false,
+    "day": null,
+    "ts": null
+   }
+  },
+  {
+   "sym": "AMD",
+   "date": "2026-09-21",
+   "champion": {
+    "out": "open",
+    "R": 0.594127082474579,
+    "ambiguous": false,
+    "day": null,
+    "ts": null
+   },
+   "be": {
+    "out": "open",
+    "R": 0.594127082474579,
+    "ambiguous": false,
+    "day": null,
+    "ts": null
+   }
+  },
+  {
+   "sym": "CRM",
+   "date": "2026-09-21",
+   "champion": {
+    "out": "open",
+    "R": 0.10817056724197253,
+    "ambiguous": false,
+    "day": null,
+    "ts": null
+   },
+   "be": {
+    "out": "open",
+    "R": 0.10817056724197253,
+    "ambiguous": false,
+    "day": null,
+    "ts": null
+   }
+  },
+  {
+   "sym": "AAPL",
+   "date": "2026-09-21",
+   "champion": {
+    "out": "open",
+    "R": -0.234856645560012,
+    "ambiguous": false,
+    "day": null,
+    "ts": null
+   },
+   "be": {
+    "out": "open",
+    "R": -0.234856645560012,
+    "ambiguous": false,
+    "day": null,
+    "ts": null
+   }
+  },
+  {
+   "sym": "AMD",
+   "date": "2026-09-22",
+   "champion": {
+    "out": "open",
+    "R": 0.3419039715343094,
+    "ambiguous": false,
+    "day": null,
+    "ts": null
+   },
+   "be": {
+    "out": "open",
+    "R": 0.3419039715343094,
+    "ambiguous": false,
+    "day": null,
+    "ts": null
+   }
+  },
+  {
+   "sym": "DELL",
+   "date": "2026-09-22",
+   "champion": {
+    "out": "open",
+    "R": -0.33470189949545737,
+    "ambiguous": false,
+    "day": null,
+    "ts": null
+   },
+   "be": {
+    "out": "open",
+    "R": -0.33470189949545737,
+    "ambiguous": false,
+    "day": null,
+    "ts": null
+   }
+  },
+  {
+   "sym": "CRM",
+   "date": "2026-09-22",
+   "champion": {
+    "out": "open",
+    "R": 0.5230869527088045,
+    "ambiguous": false,
+    "day": null,
+    "ts": null
+   },
+   "be": {
+    "out": "open",
+    "R": 0.5230869527088045,
+    "ambiguous": false,
+    "day": null,
+    "ts": null
+   }
+  },
+  {
+   "sym": "AAPL",
+   "date": "2026-09-22",
+   "champion": {
+    "out": "open",
+    "R": -0.5191527226844664,
+    "ambiguous": false,
+    "day": null,
+    "ts": null
+   },
+   "be": {
+    "out": "open",
+    "R": -0.5191527226844664,
+    "ambiguous": false,
+    "day": null,
+    "ts": null
+   }
+  },
+  {
+   "sym": "NVDA",
+   "date": "2026-09-22",
+   "champion": {
+    "out": "open",
+    "R": -0.500911253235238,
+    "ambiguous": false,
+    "day": null,
+    "ts": null
+   },
+   "be": {
+    "out": "open",
+    "R": -0.500911253235238,
+    "ambiguous": false,
+    "day": null,
+    "ts": null
+   }
+  },
+  {
+   "sym": "AMD",
+   "date": "2026-09-23",
+   "champion": {
+    "out": "open",
+    "R": 0.4267882629310344,
+    "ambiguous": false,
+    "day": null,
+    "ts": null
+   },
+   "be": {
+    "out": "open",
+    "R": 0.4267882629310344,
+    "ambiguous": false,
+    "day": null,
+    "ts": null
+   }
+  },
+  {
+   "sym": "DELL",
+   "date": "2026-09-23",
+   "champion": {
+    "out": "open",
+    "R": -0.24231458444272116,
+    "ambiguous": false,
+    "day": null,
+    "ts": null
+   },
+   "be": {
+    "out": "open",
+    "R": -0.24231458444272116,
+    "ambiguous": false,
+    "day": null,
+    "ts": null
+   }
+  },
+  {
+   "sym": "CRM",
+   "date": "2026-09-23",
+   "champion": {
+    "out": "open",
+    "R": -0.04618684583583454,
+    "ambiguous": false,
+    "day": null,
+    "ts": null
+   },
+   "be": {
+    "out": "open",
+    "R": -0.04618684583583454,
+    "ambiguous": false,
+    "day": null,
+    "ts": null
+   }
+  },
+  {
+   "sym": "AAPL",
+   "date": "2026-09-23",
+   "champion": {
+    "out": "open",
+    "R": -0.0918359172183322,
+    "ambiguous": false,
+    "day": null,
+    "ts": null
+   },
+   "be": {
+    "out": "open",
+    "R": -0.0918359172183322,
+    "ambiguous": false,
+    "day": null,
+    "ts": null
+   }
+  },
+  {
+   "sym": "NVDA",
+   "date": "2026-09-23",
+   "champion": {
+    "out": "open",
+    "R": -0.03209527242686037,
+    "ambiguous": false,
+    "day": null,
+    "ts": null
+   },
+   "be": {
+    "out": "open",
+    "R": -0.03209527242686037,
+    "ambiguous": false,
+    "day": null,
+    "ts": null
+   }
+  },
+  {
+   "sym": "META",
+   "date": "2026-09-24",
+   "champion": {
+    "out": "open",
+    "R": 0.23910150560805837,
+    "ambiguous": false,
+    "day": null,
+    "ts": null
+   },
+   "be": {
+    "out": "open",
+    "R": 0.23910150560805837,
+    "ambiguous": false,
+    "day": null,
+    "ts": null
+   }
+  },
+  {
+   "sym": "AMD",
+   "date": "2026-09-24",
+   "champion": {
+    "out": "open",
+    "R": 0.26715143947815795,
+    "ambiguous": false,
+    "day": null,
+    "ts": null
+   },
+   "be": {
+    "out": "open",
+    "R": 0.26715143947815795,
+    "ambiguous": false,
+    "day": null,
+    "ts": null
+   }
+  },
+  {
+   "sym": "DELL",
+   "date": "2026-09-24",
+   "champion": {
+    "out": "open",
+    "R": 0.0693779482928113,
+    "ambiguous": false,
+    "day": null,
+    "ts": null
+   },
+   "be": {
+    "out": "open",
+    "R": 0.0693779482928113,
+    "ambiguous": false,
+    "day": null,
+    "ts": null
+   }
+  },
+  {
+   "sym": "CRM",
+   "date": "2026-09-24",
+   "champion": {
+    "out": "open",
+    "R": -0.046950121330494116,
+    "ambiguous": false,
+    "day": null,
+    "ts": null
+   },
+   "be": {
+    "out": "open",
+    "R": -0.046950121330494116,
+    "ambiguous": false,
+    "day": null,
+    "ts": null
+   }
+  },
+  {
+   "sym": "AAPL",
+   "date": "2026-09-24",
+   "champion": {
+    "out": "open",
+    "R": -0.07311629105010714,
+    "ambiguous": false,
+    "day": null,
+    "ts": null
+   },
+   "be": {
+    "out": "open",
+    "R": -0.07311629105010714,
+    "ambiguous": false,
+    "day": null,
+    "ts": null
+   }
+  }
+ ],
+ "TRADEABLE (8)|5": [
+  {
+   "sym": "COP",
+   "date": "2026-09-11",
+   "champion": {
+    "out": "stop",
+    "R": -1.3509789761700115,
+    "ambiguous": false,
+    "day": "2026-09-17",
+    "ts": "2026-09-17 13:30:00+00:00"
+   },
+   "be": {
+    "out": "be",
+    "R": -0.03449113924050279,
+    "ambiguous": false,
+    "day": "2026-09-16",
+    "ts": "2026-09-16 13:40:00+00:00"
+   }
+  },
+  {
+   "sym": "CVX",
+   "date": "2026-09-11",
+   "champion": {
+    "out": "stop",
+    "R": -1.0383415300546412,
+    "ambiguous": false,
+    "day": "2026-09-18",
+    "ts": "2026-09-18 19:50:00+00:00"
+   },
+   "be": {
+    "out": "stop",
+    "R": -1.0383415300546412,
+    "ambiguous": false,
+    "day": "2026-09-18",
+    "ts": "2026-09-18 19:50:00+00:00"
+   }
+  },
+  {
+   "sym": "HAL",
+   "date": "2026-09-11",
+   "champion": {
+    "out": "stop",
+    "R": -1.0209969696969639,
+    "ambiguous": false,
+    "day": "2026-09-17",
+    "ts": "2026-09-17 15:05:00+00:00"
+   },
+   "be": {
+    "out": "stop",
+    "R": -1.0209969696969639,
+    "ambiguous": false,
+    "day": "2026-09-17",
+    "ts": "2026-09-17 15:05:00+00:00"
+   }
+  },
+  {
+   "sym": "TMO",
+   "date": "2026-09-16",
+   "champion": {
+    "out": "open",
+    "R": 1.508397738244856,
+    "ambiguous": false,
+    "day": null,
+    "ts": null
+   },
+   "be": {
+    "out": "open",
+    "R": 1.508397738244856,
+    "ambiguous": false,
+    "day": null,
+    "ts": null
+   }
+  },
+  {
+   "sym": "DE",
+   "date": "2026-09-17",
+   "champion": {
+    "out": "open",
+    "R": 0.5597893019100187,
+    "ambiguous": false,
+    "day": null,
+    "ts": null
+   },
+   "be": {
+    "out": "open",
+    "R": 0.5597893019100187,
+    "ambiguous": false,
+    "day": null,
+    "ts": null
+   }
+  },
+  {
+   "sym": "AMD",
+   "date": "2026-09-17",
+   "champion": {
+    "out": "target",
+    "R": 2.148706417624527,
+    "ambiguous": false,
+    "day": "2026-09-21",
+    "ts": "2026-09-21 14:15:00+00:00"
+   },
+   "be": {
+    "out": "target",
+    "R": 2.148706417624527,
+    "ambiguous": false,
+    "day": "2026-09-21",
+    "ts": "2026-09-21 14:15:00+00:00"
+   }
+  },
+  {
+   "sym": "AAPL",
+   "date": "2026-09-22",
+   "champion": {
+    "out": "open",
+    "R": -0.4840247557082008,
+    "ambiguous": false,
+    "day": null,
+    "ts": null
+   },
+   "be": {
+    "out": "open",
+    "R": -0.4840247557082008,
+    "ambiguous": false,
+    "day": null,
+    "ts": null
+   }
+  },
+  {
+   "sym": "NVDA",
+   "date": "2026-09-22",
+   "champion": {
+    "out": "open",
+    "R": -0.47290143728431633,
+    "ambiguous": false,
+    "day": null,
+    "ts": null
+   },
+   "be": {
+    "out": "open",
+    "R": -0.47290143728431633,
+    "ambiguous": false,
+    "day": null,
+    "ts": null
+   }
+  }
+ ],
+ "TRADEABLE (8)|15": [
+  {
+   "sym": "COP",
+   "date": "2026-09-11",
+   "champion": {
+    "out": "stop",
+    "R": -1.3854701154105216,
+    "ambiguous": false,
+    "day": "2026-09-17",
+    "ts": "2026-09-17 13:30:00+00:00"
+   },
+   "be": {
+    "out": "be",
+    "R": -0.10347341772151555,
+    "ambiguous": false,
+    "day": "2026-09-16",
+    "ts": "2026-09-16 13:40:00+00:00"
+   }
+  },
+  {
+   "sym": "CVX",
+   "date": "2026-09-11",
+   "champion": {
+    "out": "stop",
+    "R": -1.1150245901639337,
+    "ambiguous": false,
+    "day": "2026-09-18",
+    "ts": "2026-09-18 19:50:00+00:00"
+   },
+   "be": {
+    "out": "stop",
+    "R": -1.1150245901639337,
+    "ambiguous": false,
+    "day": "2026-09-18",
+    "ts": "2026-09-18 19:50:00+00:00"
+   }
+  },
+  {
+   "sym": "HAL",
+   "date": "2026-09-11",
+   "champion": {
+    "out": "stop",
+    "R": -1.0629909090909133,
+    "ambiguous": false,
+    "day": "2026-09-17",
+    "ts": "2026-09-17 15:05:00+00:00"
+   },
+   "be": {
+    "out": "stop",
+    "R": -1.0629909090909133,
+    "ambiguous": false,
+    "day": "2026-09-17",
+    "ts": "2026-09-17 15:05:00+00:00"
+   }
+  },
+  {
+   "sym": "TMO",
+   "date": "2026-09-16",
+   "champion": {
+    "out": "open",
+    "R": 1.4766395234336671,
+    "ambiguous": false,
+    "day": null,
+    "ts": null
+   },
+   "be": {
+    "out": "open",
+    "R": 1.4766395234336671,
+    "ambiguous": false,
+    "day": null,
+    "ts": null
+   }
+  },
+  {
+   "sym": "DE",
+   "date": "2026-09-17",
+   "champion": {
+    "out": "open",
+    "R": 0.5310967998038649,
+    "ambiguous": false,
+    "day": null,
+    "ts": null
+   },
+   "be": {
+    "out": "open",
+    "R": 0.5310967998038649,
+    "ambiguous": false,
+    "day": null,
+    "ts": null
+   }
+  },
+  {
+   "sym": "AMD",
+   "date": "2026-09-17",
+   "champion": {
+    "out": "target",
+    "R": 2.1313044380587547,
+    "ambiguous": false,
+    "day": "2026-09-21",
+    "ts": "2026-09-21 14:15:00+00:00"
+   },
+   "be": {
+    "out": "target",
+    "R": 2.1313044380587547,
+    "ambiguous": false,
+    "day": "2026-09-21",
+    "ts": "2026-09-21 14:15:00+00:00"
+   }
+  },
+  {
+   "sym": "AAPL",
+   "date": "2026-09-22",
+   "champion": {
+    "out": "open",
+    "R": -0.5191527226844664,
+    "ambiguous": false,
+    "day": null,
+    "ts": null
+   },
+   "be": {
+    "out": "open",
+    "R": -0.5191527226844664,
+    "ambiguous": false,
+    "day": null,
+    "ts": null
+   }
+  },
+  {
+   "sym": "NVDA",
+   "date": "2026-09-22",
+   "champion": {
+    "out": "open",
+    "R": -0.500911253235238,
+    "ambiguous": false,
+    "day": null,
+    "ts": null
+   },
+   "be": {
+    "out": "open",
+    "R": -0.500911253235238,
+    "ambiguous": false,
+    "day": null,
+    "ts": null
+   }
+  }
+ ],
+ "EXECUTED (2)|5": [
+  {
+   "sym": "HAL",
+   "date": "2026-09-11",
+   "champion": {
+    "out": "stop",
+    "R": -1.0209969696969639,
+    "ambiguous": false,
+    "day": "2026-09-17",
+    "ts": "2026-09-17 15:05:00+00:00"
+   },
+   "be": {
+    "out": "stop",
+    "R": -1.0209969696969639,
+    "ambiguous": false,
+    "day": "2026-09-17",
+    "ts": "2026-09-17 15:05:00+00:00"
+   }
+  },
+  {
+   "sym": "AMD",
+   "date": "2026-09-17",
+   "champion": {
+    "out": "target",
+    "R": 2.148706417624527,
+    "ambiguous": false,
+    "day": "2026-09-21",
+    "ts": "2026-09-21 14:15:00+00:00"
+   },
+   "be": {
+    "out": "target",
+    "R": 2.148706417624527,
+    "ambiguous": false,
+    "day": "2026-09-21",
+    "ts": "2026-09-21 14:15:00+00:00"
+   }
+  }
+ ],
+ "EXECUTED (2)|15": [
+  {
+   "sym": "HAL",
+   "date": "2026-09-11",
+   "champion": {
+    "out": "stop",
+    "R": -1.0629909090909133,
+    "ambiguous": false,
+    "day": "2026-09-17",
+    "ts": "2026-09-17 15:05:00+00:00"
+   },
+   "be": {
+    "out": "stop",
+    "R": -1.0629909090909133,
+    "ambiguous": false,
+    "day": "2026-09-17",
+    "ts": "2026-09-17 15:05:00+00:00"
+   }
+  },
+  {
+   "sym": "AMD",
+   "date": "2026-09-17",
+   "champion": {
+    "out": "target",
+    "R": 2.1313044380587547,
+    "ambiguous": false,
+    "day": "2026-09-21",
+    "ts": "2026-09-21 14:15:00+00:00"
+   },
+   "be": {
+    "out": "target",
+    "R": 2.1313044380587547,
+    "ambiguous": false,
+    "day": "2026-09-21",
+    "ts": "2026-09-21 14:15:00+00:00"
+   }
+  }
+ ]
+}
