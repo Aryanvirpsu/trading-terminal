@@ -98,7 +98,19 @@ def _decision_valid(result: Dict[str, Any], quote: Optional[Quote]) -> tuple:
             from .. import cache_policy as cp     # type: ignore
         except Exception:
             return True, "cache policy unavailable"
-    ts = quote.source_ts if (quote and quote.source_ts) else None
+    ts = quote.source_ts if quote else None
+    if quote is not None:
+        # A supplied quote must carry a real source time. An engine "fresh" label
+        # cannot vouch for a price whose observation time is unknown.
+        import math
+        try:
+            ok = ts is not None and math.isfinite(float(ts)) and float(ts) > 0
+        except (TypeError, ValueError):
+            ok = False
+        if not ok:
+            return False, "quote has no valid source timestamp"
+    elif not ts:
+        ts = None
     if ts is None:
         fresh = result.get("freshness") or {}
         if fresh.get("state") in ACCEPTABLE_FRESHNESS:
