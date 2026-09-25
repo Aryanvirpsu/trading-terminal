@@ -401,6 +401,7 @@ class Runtime:
                 if scope == "all":
                     self.state["next_full_ts"] = ts + self.c["tracker_full_s"]
         # 2) scheduled slots (at most once each; stale slots are skipped, never back-filled)
+        missed_now: List[str] = []
         for slot in build_slots(d, self.c):
             sid = f"{d.isoformat()}:{slot.id}"
             if sid in self.state["done"] or sid in self.state["missed"]:
@@ -411,9 +412,12 @@ class Runtime:
             if late > self.c["slot_grace_s"]:
                 self.state["missed"][sid] = {"late_s": int(late), "at": now.isoformat(timespec="seconds")}
                 events.append(f"missed:{sid}")
-                log("slot_missed", slot=sid, late_s=int(late))
+                missed_now.append(sid)
                 continue
             self._run_slot(d, slot, sid, events)
+        if missed_now:
+            log("slots_missed", count=len(missed_now), first=missed_now[0], last=missed_now[-1],
+                note="skipped, never back-filled")
         self._prune(d)
         self._save()
         return events

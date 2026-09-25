@@ -33,6 +33,7 @@ jobs:
         run: |
           sh -n deploy/ubuntu/deploy.sh
           sh -n deploy/ubuntu/seed_ledger.sh
+          python -m pip install pyyaml
           python -c "import yaml,glob; [yaml.safe_load(open(f)) for f in glob.glob('.github/workflows/*.yml')+['docker/compose.ubuntu.yml']]"
       - name: Unit suite (baseline-aware gate)
         run: python deploy/ci_gate.py tests/unit

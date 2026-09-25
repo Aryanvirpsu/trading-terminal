@@ -10,5 +10,5 @@ if docker run --rm -v avdi_runtime_ledger:/d alpine:3 sh -c 'ls /d/*.db >/dev/nu
   exit 1
 fi
 docker run --rm -v avdi_runtime_ledger:/d -v "$(dirname "$SRC")":/src:ro alpine:3 \
-  sh -c "cp /src/$(basename "$SRC") /d/ && chown -R 10001:10001 /d && ls -l /d"
+  sh -c "cp /src/$(basename "$SRC") /d/ && chmod 644 /d/*.db && chown -R 10001:10001 /d && ls -l /d"
 echo "seeded"
