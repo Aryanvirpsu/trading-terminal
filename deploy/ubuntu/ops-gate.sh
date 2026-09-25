@@ -14,7 +14,7 @@ echo "$(date -u +%FT%TZ) role=$ROLE cmd=$CMD" >> "$BASE/ops-gate.log"
 
 set -- $CMD
 OP="${1:-}"
-shift || true
+if [ "$#" -gt 0 ]; then shift; fi      # dash exits on a failing `shift`, even with `|| true`
 allowed() {
   case "$ROLE:$OP" in
     ops:status|ops:health|ops:evidence|ops:backup-now|ops:backup-list|ops:backup-pull) return 0 ;;
