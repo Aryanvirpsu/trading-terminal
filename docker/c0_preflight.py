@@ -120,9 +120,12 @@ def check_dangerous_env() -> None:
     for k in DANGEROUS_EXACT:
         if os.environ.get(k):
             fail(f"{k} is set — credentials/live-broker vars must never be set for C0")
-    for k, v in os.environ.items():
-        if k.endswith("_API_KEY") and v:
-            fail(f"{k} is set — provider keys are not used in this gate's smoke tests")
+    # Market-DATA provider keys (e.g. FINNHUB_API_KEY) are blocked by default; the Ubuntu paper runtime may
+    # opt in with AVDI_ALLOW_PROVIDER_KEYS=true. Broker/credential variables above stay forbidden either way.
+    if os.environ.get("AVDI_ALLOW_PROVIDER_KEYS", "").strip().lower() not in ("1", "true", "yes"):
+        for k, v in os.environ.items():
+            if k.endswith("_API_KEY") and v:
+                fail(f"{k} is set — provider keys are not used in this gate's smoke tests")
 
 
 def check_unhashed_tuning_env() -> None:

@@ -1,0 +1,38 @@
+name: CI
+
+# Continuous integration only - never trades, never deploys. Runs the unit suite (incl. the Profit Mode
+# integrity, canonical-invariant, runtime/calendar/singleton and compressed market-day tests) on the exact
+# frozen dependency set, judged per test id against the documented baseline (deploy/ci_gate.py).
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    env:
+      TZ: UTC
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install the frozen dependency set (hash-verified)
+        run: |
+          cd docker
+          for f in requirements-c0-case1 requirements-c0-dashboard-extra requirements-c0-tests-extra; do
+            sha256sum -c "$f.txt.sha256"
+            python -m pip install --no-deps -r "$f.txt"
+          done
+          cd ..
+          python -m pip install --no-deps -e .
+      - name: Shell scripts and workflows are well-formed
+        run: |
+          sh -n deploy/ubuntu/deploy.sh
+          sh -n deploy/ubuntu/seed_ledger.sh
+          python -c "import yaml,glob; [yaml.safe_load(open(f)) for f in glob.glob('.github/workflows/*.yml')+['docker/compose.ubuntu.yml']]"
+      - name: Unit suite (baseline-aware gate)
+        run: python deploy/ci_gate.py tests/unit

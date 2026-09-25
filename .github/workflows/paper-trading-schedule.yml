@@ -32,11 +32,16 @@ name: Paper Trading — Daily Automated Run
 # given day (external pinger + schedule backup + a manual run), the pipeline
 # runs for real exactly once.
 on:
-  schedule:
-    - cron: "30 13 * * 1-5"   # backup only — ~9:30am ET while EDT (UTC-4)
-    - cron: "30 14 * * 1-5"   # backup only — ~9:30am ET while EST (UTC-5)
+  # SCHEDULES REMOVED (2026-09-24): the Ubuntu runtime is now the PRIMARY market-hours runtime
+  # (see docs/UBUNTU_RUNTIME.md). This workflow is manual-only FALLBACK; it must never compete with it.
+  # An external cron service may still call workflow_dispatch — the `primary` guard below makes that a no-op
+  # while deploy/PRIMARY_RUNTIME says `ubuntu`.
   workflow_dispatch:
     inputs:
+      fallback:
+        description: "FALLBACK ONLY: allow this workflow to trade. Use only when the Ubuntu runtime is down AND stopped."
+        type: boolean
+        default: false
       force:
         description: "Bypass the holiday/day guard entirely (manual testing only)"
         type: boolean
@@ -55,8 +60,24 @@ jobs:
   run-paper-day:
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v4
+        with:
+          sparse-checkout: deploy
+      - name: Ubuntu is primary - refuse to act as a competing trading scheduler
+        id: primary
+        run: |
+          primary=$(cat deploy/PRIMARY_RUNTIME 2>/dev/null | tr -d '[:space:]' || true)
+          if [ "$primary" = "ubuntu" ] && [ "${{ github.event.inputs.fallback }}" != "true" ]; then
+            echo "allow=false" >> "$GITHUB_OUTPUT"
+            echo "PRIMARY RUNTIME is ubuntu - this workflow does not trade. Nothing to do."
+          else
+            echo "allow=true" >> "$GITHUB_OUTPUT"
+            echo "Proceeding (primary='$primary', fallback=${{ github.event.inputs.fallback }})."
+          fi
+
       - name: Only proceed on a trading day, same-day window (holiday guard)
         id: gate
+        if: steps.primary.outputs.allow == 'true'
         run: |
           if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ "${{ github.event.inputs.force }}" = "true" ]; then
             echo "run=true" >> "$GITHUB_OUTPUT"

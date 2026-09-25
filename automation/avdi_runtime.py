@@ -36,6 +36,15 @@ def _print(o) -> None:
     print(json.dumps(o, indent=2, default=str))
 
 
+def _fatal(code: int, why: str):
+    """Fatal, non-retryable start conditions exit non-zero after a delay so a supervisor restart policy
+    cannot spin (Docker also applies its own exponential restart back-off)."""
+    rt.log("fatal_exit", code=code, reason=why)
+    import time as _t
+    _t.sleep(float(os.environ.get("AVDI_FATAL_EXIT_DELAY_S", "30")))
+    raise SystemExit(code)
+
+
 def _locked_or_exit():
     lock = rt.runtime_lock()
     if not lock.acquire():
@@ -47,7 +56,7 @@ def _locked_or_exit():
         except Exception:
             pass
         rt.log("duplicate_runtime_refused", note="another AVDI runtime holds the singleton lock")
-        raise SystemExit(3)
+        _fatal(3, "duplicate runtime")
     return lock
 
 
@@ -72,7 +81,10 @@ def main(argv=None) -> int:
                            "entries": s.allow_entries} for s in rt.build_slots(d)]})
         return 0
 
-    rt.assert_paper_only()
+    try:
+        rt.assert_paper_only()
+    except rt.LiveExecutionRefused as e:
+        _fatal(4, str(e))
     if cmd == "run":
         lock = _locked_or_exit()
         try:

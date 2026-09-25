@@ -1,0 +1,46 @@
+# AVDI Ubuntu paper runtime - the primary market-hours runtime (paper execution only).
+# One supervised service running two logical loops (discovery ~15 min, tracker 60 s / 300 s).
+#
+#   AVDI_IMAGE=avdi-paper:<sha> AVDI_CODE_VERSION=<sha> \
+#     docker compose -f docker/compose.ubuntu.yml -p avdi-runtime up -d --no-build
+#
+# Persistence: the named volume below holds the paper ledger, shadow DB, runtime state, reports and
+# local backups - it survives container recreation, deploys and VM reboots. HOME state is tmpfs (as Case 1).
+# Restart: `unless-stopped` restarts after a crash and after a VM/Docker reboot; Docker applies its own
+# exponential back-off, and fatal configuration errors exit only after a 30 s delay (no tight loops).
+# Stop: SIGTERM + 120 s grace lets an in-flight cycle finish and state persist.
+services:
+  avdi-runtime:
+    image: ${AVDI_IMAGE:-avdi-paper:local}
+    build: {context: .., dockerfile: docker/Dockerfile.terminal, target: paper}
+    container_name: avdi-runtime
+    user: "10001:10001"
+    cap_drop: [ALL]
+    security_opt: ["no-new-privileges:true"]
+    restart: unless-stopped
+    stop_signal: SIGTERM
+    stop_grace_period: 120s
+    env_file: [env/case1.env, env/ubuntu-runtime.env]
+    environment:
+      - AVDI_CODE_VERSION=${AVDI_CODE_VERSION:-unknown}
+    volumes:
+      - avdi_runtime_ledger:/data/case1/paper
+      - type: tmpfs
+        target: /home/tv/.tradingview_mcp_data
+        tmpfs: {size: 134217728, mode: 0o1777}
+    command: ["python", "automation/avdi_runtime.py", "run"]
+    healthcheck:
+      test: ["CMD", "python", "automation/avdi_runtime.py", "health"]
+      interval: 60s
+      timeout: 30s
+      retries: 3
+      start_period: 90s
+    mem_limit: 2g
+    cpus: 0.9
+    logging:
+      driver: json-file
+      options: {max-size: "20m", max-file: "5"}
+
+volumes:
+  avdi_runtime_ledger:
+    name: avdi_runtime_ledger

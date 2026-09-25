@@ -227,7 +227,8 @@ def _cli():
     return m
 
 
-def test_cli_run_refuses_when_another_runtime_holds_the_lock(env):
+def test_cli_run_refuses_when_another_runtime_holds_the_lock(env, monkeypatch):
+    monkeypatch.setenv("AVDI_FATAL_EXIT_DELAY_S", "0")
     held = rt.runtime_lock()
     assert held.acquire()
     try:
@@ -242,10 +243,12 @@ def test_cli_run_refuses_when_another_runtime_holds_the_lock(env):
 @pytest.mark.parametrize("key,val", [("ROBINHOOD_TRADING_ENABLED", "true"), ("BROKER_PROVIDER", "robinhood")])
 def test_live_execution_is_refused(monkeypatch, key, val):
     monkeypatch.setenv(key, val)
+    monkeypatch.setenv("AVDI_FATAL_EXIT_DELAY_S", "0")
     with pytest.raises(rt.LiveExecutionRefused):
         rt.assert_paper_only()
-    with pytest.raises(rt.LiveExecutionRefused):
+    with pytest.raises(SystemExit) as e:                # the CLI refuses to start: exit 4, no runtime created
         _cli().main(["run"])
+    assert e.value.code == 4
 
 
 def test_paper_defaults_are_allowed(monkeypatch):

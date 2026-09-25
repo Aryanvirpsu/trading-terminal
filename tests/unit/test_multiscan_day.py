@@ -298,3 +298,28 @@ def test_shadow_failure_never_blocks_champion(world, monkeypatch):
     world.finalists, world.decision = ["NVDA"], {"NVDA": "TRADEABLE"}
     r = cycle("1335")
     assert [o["symbol"] for o in r["orders_placed"]] == ["NVDA"]
+
+
+def test_runtime_end_to_end_with_real_actions(world):
+    """Runtime -> PaperActions -> real workflow/ledger/shadow log through a fake clock."""
+    from paper import session_calendar as cal
+    world.finalists, world.decision = ["NVDA"], {"NVDA": "TRADEABLE"}
+    et = lambda h, m, s=0: dt.datetime(2026, 9, 25, h, m, s, tzinfo=cal.ET).astimezone(dt.timezone.utc)
+    now = [et(9, 35, 30)]
+    r = rt.Runtime(clock=lambda: now[0], state_path=str(Path(db._DATA_DIR) / "rs.json"))
+    r.startup()
+    ev = r.tick()
+    assert any(e.startswith("discovery:2026-09-25T0935") for e in ev) and "tracker:all" in ev
+    assert n("SELECT COUNT(*) n FROM positions WHERE status='open'") == 1            # paper entry at 09:35 slot
+    ld = r.state["last_discovery"]
+    assert ld["finalists"] == 1 and ld["entries"] == 1 and ld["account"]["open_positions"] == 1
+    now[0] = et(9, 36, 40)
+    ev = r.tick()
+    assert "tracker:positions" in ev and r.state["last_tracker"]["scope"] == "positions"
+    assert r.state["last_tracker"]["quote_age_s_max"] is not None                     # quote freshness is tracked
+    # 15:20 ET (after the entry cutoff): observation only, no new entry even for a fresh TRADEABLE
+    world.finalists, world.decision = ["NVDA", "XOM"], {"NVDA": "TRADEABLE", "XOM": "TRADEABLE"}
+    now[0] = et(15, 20, 10)
+    r.tick()
+    assert n("SELECT COUNT(*) n FROM orders WHERE intent='entry'") == 1
+    assert r.state["last_discovery"]["entries_allowed"] is False

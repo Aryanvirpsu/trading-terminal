@@ -1,0 +1,44 @@
+name: Ubuntu runtime ops (backup + health)
+
+# Off-host safety net for the Ubuntu paper runtime. This workflow NEVER trades and never modifies the
+# ledger: it only READS a health status and PULLS the runtime's local backup into a GitHub artifact.
+# Disabled until AVDI_OPS_ENABLED='true' and the SSH secrets exist (see deploy-ubuntu.yml).
+on:
+  schedule:
+    - cron: "40 21 * * 1-5"     # backup pull after the close-processing window (~17:40 ET)
+    - cron: "5,35 14-20 * * 1-5" # health probe during market hours (UTC)
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  issues: write
+
+jobs:
+  ops:
+    if: vars.AVDI_OPS_ENABLED == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Configure SSH
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "${{ secrets.AVDI_SSH_KEY }}" > ~/.ssh/k && chmod 600 ~/.ssh/k
+          printf '%s\n' "${{ secrets.AVDI_SSH_KNOWN_HOSTS }}" > ~/.ssh/known_hosts
+      - name: Health probe (read-only)
+        run: |
+          H="${{ secrets.AVDI_SSH_USER }}@${{ secrets.AVDI_SSH_HOST }}"
+          ssh -i ~/.ssh/k -o IdentitiesOnly=yes "$H" "docker exec avdi-runtime python automation/avdi_runtime.py status" | tee status.json
+          ssh -i ~/.ssh/k -o IdentitiesOnly=yes "$H" "docker exec avdi-runtime python automation/avdi_runtime.py health"
+      - name: Pull latest local backup (nightly run only)
+        if: github.event.schedule == '40 21 * * 1-5' || github.event_name == 'workflow_dispatch'
+        run: |
+          H="${{ secrets.AVDI_SSH_USER }}@${{ secrets.AVDI_SSH_HOST }}"
+          ssh -i ~/.ssh/k -o IdentitiesOnly=yes "$H" \
+            'docker run --rm -v avdi_runtime_ledger:/d:ro alpine:3 sh -c "cd /d/backups && d=\$(ls -1 | tail -1) && tar -C /d/backups -czf - \$d"' > backup.tgz
+          ls -l backup.tgz
+      - uses: actions/upload-artifact@v4
+        if: github.event.schedule == '40 21 * * 1-5' || github.event_name == 'workflow_dispatch'
+        with:
+          name: avdi-ubuntu-backup-${{ github.run_number }}
+          path: backup.tgz
+          retention-days: 90
+          if-no-files-found: error

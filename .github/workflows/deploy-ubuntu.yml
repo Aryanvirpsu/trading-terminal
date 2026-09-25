@@ -1,0 +1,62 @@
+name: Deploy to Ubuntu runtime
+
+# Deploys a specific commit of `main` to the Ubuntu paper runtime host. NOT a trading scheduler.
+#  - Manual (workflow_dispatch) only: strategy branches / experiments are never deployed by a push.
+#  - Refuses to run for a ref that is not `main`, and disabled until the repository variable
+#    AVDI_DEPLOY_ENABLED is 'true' AND the secrets below are configured by the repository owner.
+#  - The host-side script refuses to deploy during the market window unless `force` is set, stops the old
+#    runtime gracefully, snapshots the ledger, starts the new one, waits for health and ROLLS BACK on failure.
+# Required secrets: AVDI_SSH_HOST, AVDI_SSH_USER, AVDI_SSH_KEY (private key), AVDI_SSH_KNOWN_HOSTS.
+on:
+  workflow_dispatch:
+    inputs:
+      force:
+        description: "Deploy even during the market window (avoid; risks an in-session restart)"
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: avdi-deploy-ubuntu
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    if: vars.AVDI_DEPLOY_ENABLED == 'true' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment: production        # add required reviewers on this environment for an approval gate
+    env:
+      TZ: UTC
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Test gate (same as CI)
+        run: |
+          cd docker
+          for f in requirements-c0-case1 requirements-c0-dashboard-extra requirements-c0-tests-extra; do
+            sha256sum -c "$f.txt.sha256"; python -m pip install --no-deps -r "$f.txt"
+          done
+          cd .. && python -m pip install --no-deps -e . && python deploy/ci_gate.py tests/unit
+      - name: Package this exact commit
+        run: git archive --format=tar.gz -o "$RUNNER_TEMP/avdi-src.tgz" HEAD
+      - name: Configure SSH
+        run: |
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "${{ secrets.AVDI_SSH_KEY }}" > ~/.ssh/deploy_key && chmod 600 ~/.ssh/deploy_key
+          printf '%s\n' "${{ secrets.AVDI_SSH_KNOWN_HOSTS }}" > ~/.ssh/known_hosts
+      - name: Copy and deploy
+        run: |
+          H="${{ secrets.AVDI_SSH_USER }}@${{ secrets.AVDI_SSH_HOST }}"
+          SSH="ssh -i $HOME/.ssh/deploy_key -o IdentitiesOnly=yes"
+          scp -i ~/.ssh/deploy_key -o IdentitiesOnly=yes "$RUNNER_TEMP/avdi-src.tgz" "$H:/tmp/avdi-src-${GITHUB_SHA}.tgz"
+          scp -i ~/.ssh/deploy_key -o IdentitiesOnly=yes deploy/ubuntu/deploy.sh "$H:/tmp/avdi-deploy.sh"
+          FORCE=""; [ "${{ github.event.inputs.force }}" = "true" ] && FORCE="--force"
+          $SSH "$H" "sh /tmp/avdi-deploy.sh ${GITHUB_SHA} /tmp/avdi-src-${GITHUB_SHA}.tgz $FORCE"
+      - name: Post-deploy health
+        run: |
+          H="${{ secrets.AVDI_SSH_USER }}@${{ secrets.AVDI_SSH_HOST }}"
+          ssh -i ~/.ssh/deploy_key -o IdentitiesOnly=yes "$H" "docker exec avdi-runtime python automation/avdi_runtime.py status | head -40"

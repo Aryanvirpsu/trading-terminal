@@ -1,0 +1,5 @@
+# Shell scripts, compose files and the sha256-verified dependency freeze must keep LF endings
+# (core.autocrlf=true silently corrupted these on Windows checkouts during C1-PREP).
+docker/** text=auto eol=lf
+deploy/** text eol=lf
+*.sh text eol=lf
