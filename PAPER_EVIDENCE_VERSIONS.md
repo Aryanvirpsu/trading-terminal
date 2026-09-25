@@ -9,5 +9,15 @@ sample. Every journal row carries `signals.engine_version`; the strategy fingerp
 | v1.0 | `decision_engine/gates-v1` | up to `855bb72` | Case 1 runs 2026-09-10 .. 2026-09-24 | Pre-fix. Sizing used the reference price, so 6 of 8 TRADEABLEs were refused at the $125 cap; the reserve was netted twice on the canonical path; quotes could be relabelled fresh. Signals/decisions are valid; **executed-trade outcomes are biased**. Ledger: `paper-ledger-db-23`. |
 | v1.1 | `decision_engine/gates-v1.1` | this commit and later | first Case 1 run after `v1.1-paper-p0` | Same strategy + execution-integrity fixes (sizing at ask+slippage, reserve once, no stale-quote relabelling, refusal reasons kept). New forward sample starts here. |
 
+**Runtime change at the v1.1 boundary (2026-09-25):** v1.0 ran ONE scan per day at ~09:30 ET on GitHub Actions
+(one look at each finalist). v1.1 runs on the Ubuntu runtime (`docs/UBUNTU_RUNTIME.md`) with a discovery scan every
+~15 min (09:35-15:50 ET, entries until the 15:00 ET cutoff) and a 60 s / 300 s tracker. Same gates, same strategy,
+same `config_version`, but entry TIMING opportunities differ, so v1.0 and v1.1 executed trades must never be pooled.
+Within v1.1 the ledger journals a signal on the first observation or a decision-label change; independent evidence is
+counted by shadow-log `event_id`, never by observation. The Ubuntu ledger was seeded from Case 1 artifact
+`paper-ledger-db-23` (sha256 19506161d73965e8692e473fefdb421489061accb0f4ab1006e25f1b2c0ae128, cash $504.66, 0 open
+positions); rows before 2026-09-25 are v1.0. On-host smoke cycles are identifiable as `session_type='manual'`
+(cycle `2026-09-24T2033manual`) and must be excluded from evidence.
+
 Analysis baseline for v1.0: `docs/PROFIT_MODE_BASELINE_v1.md` (on branch `c1/cloud-runtime`).
 Any future strategy change (a promoted Challenger) starts a new version and a new sample.

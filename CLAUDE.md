@@ -74,6 +74,8 @@ those skills feed the automated pipeline; they're for conversation and ad hoc re
 | Stock research method | `STOCK_RESEARCH_PLAYBOOK.md` |
 | Imported finance skills | `CLAUDE_SKILLS_FINANCE.md`, `CLAUDE_TRADING_SKILLS.md` |
 | Graduating past paper trading | `PAPER_GRADUATION_CHECKLIST.md` |
+| Primary market-hours runtime (Ubuntu, paper only), deploy, health, shadow evidence | `docs/UBUNTU_RUNTIME.md` |
+| Which paper evidence may be pooled (v1.0 vs v1.1) | `PAPER_EVIDENCE_VERSIONS.md` |
 
 ## Repo/safety facts worth remembering
 
