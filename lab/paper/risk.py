@@ -11,6 +11,8 @@ limit, cash reserve, consecutive-loss cooldown, correlated-position cap.
 """
 from __future__ import annotations
 
+import math
+
 import datetime as dt
 from typing import Any, Dict, List, Optional
 
@@ -310,6 +312,12 @@ def position_size(equity: float, entry: float, stop: float,
     a = cfg.account()
     px = fill_price if fill_price else entry
     per_share = abs(entry - stop)
+    # Executable-risk invariant (see canonical/account_fit.py): risk per share is measured from the EXECUTABLE entry
+    # to the modelled stop fill, so the realised stop loss cannot exceed the configured budget.
+    per_share_risk = per_share
+    if fill_price and entry > stop:
+        ex = cfg.execution()
+        per_share_risk = max(per_share, (px - stop * (1.0 - ex.slippage_bps / 1e4)) + 2.0 * ex.fee_per_share)
     budget = round(min(r.max_loss_per_trade,
                        equity * (risk_fraction if risk_fraction is not None
                                  else r.risk_per_trade_pct)), 2)
@@ -321,7 +329,7 @@ def position_size(equity: float, entry: float, stop: float,
     bp = buying_power if buying_power is not None else max(
         0.0, account_state()["buying_power"])
 
-    q_risk = budget / per_share
+    q_risk = budget / per_share_risk
     q_notional = r.max_position_notional / px
     q_cash = bp / px
     qty = min(q_risk, q_notional, q_cash)
@@ -340,7 +348,7 @@ def position_size(equity: float, entry: float, stop: float,
                     "reason": f"cannot afford 1 whole share at ${round(px,2)} "
                               f"with ${round(bp,2)} buying power"}
     else:
-        qty = round(qty, 6)
+        qty = math.floor(qty * 1e6) / 1e6              # round DOWN: never exceed the risk budget
         if qty * px < a.fractional_min_notional:
             return {"quantity": 0.0, "risk_budget": budget,
                     "risk_per_share": round(per_share, 4), "planned_risk": 0.0,
@@ -351,8 +359,8 @@ def position_size(equity: float, entry: float, stop: float,
 
     notional = round(qty * px, 2)
     return {"quantity": qty, "risk_budget": budget,
-            "risk_per_share": round(per_share, 4),
-            "planned_risk": round(qty * per_share, 2),
+            "risk_per_share": round(per_share_risk, 4),
+            "planned_risk": round(qty * per_share_risk, 2),
             "notional": notional, "share_price": round(px, 2),
             "affordable": notional <= bp + 1e-9 and qty > 0,
             "binding_constraint": binding,

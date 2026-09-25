@@ -84,6 +84,8 @@ are all untouched.
 """
 from __future__ import annotations
 
+import math
+
 from dataclasses import dataclass
 from enum import Enum
 from typing import Optional, Tuple
@@ -214,6 +216,8 @@ def stock_account_fit(
     sector_exposure: float = 0.0,
     current_daily_loss: float = 0.0,
     current_drawdown: float = 0.0,
+    exit_slippage_bps: float = 0.0,
+    fee_per_share: float = 0.0,
 ) -> AccountFitResult:
     """Stock affordability/risk only — no Layer-A dependency.
 
@@ -249,6 +253,15 @@ def stock_account_fit(
 
     px = fill_price if fill_price is not None else entry
     per_share = abs(entry - stop)
+    # EXECUTABLE-RISK INVARIANT (post-acceptance fix): a position approved for a $X maximum planned loss must not
+    # lose more than $X when the protective stop fills under the SAME assumptions the paper broker uses. For a
+    # long, that per-share loss is (executable entry - stop fill) + round-trip fees, where the stop fills at
+    # stop*(1 - exit slippage). Sizing on the reference entry alone (the old convention) let the fill's spread and
+    # slippage push the realised stop loss above the budget. Gap-through-stop losses beyond the modelled
+    # slippage are unavoidable and remain outside this guarantee (documented).
+    per_share_risk = per_share
+    if entry > stop and px > 0:
+        per_share_risk = max(per_share, (px - stop * (1.0 - exit_slippage_bps / 1e4)) + 2.0 * fee_per_share)
 
     if entry <= 0 or px <= 0 or per_share <= 0:
         return AccountFitResult(
@@ -275,7 +288,7 @@ def stock_account_fit(
     notional_cap = effective_limit(absolute=policy.max_position_notional,
                                    percent=policy.max_position_notional_pct, equity=equity)
 
-    q_risk = (risk_cap.limit / per_share) if risk_cap.limit is not None else float("inf")
+    q_risk = (risk_cap.limit / per_share_risk) if risk_cap.limit is not None else float("inf")
     q_notional = (notional_cap.limit / px) if notional_cap.limit is not None else float("inf")
     q_cash = bp_eff / px
 
@@ -284,7 +297,8 @@ def stock_account_fit(
     qty, sizing_binder = min(candidates, key=lambda t: t[0])
 
     if policy.fractional_shares:
-        qty = round(qty, 6)
+        if qty != float("inf"):
+            qty = math.floor(qty * 1e6) / 1e6      # round DOWN: never exceed the risk budget
     else:
         qty = float(int(qty))  # always round down — never overspend
 
@@ -297,7 +311,7 @@ def stock_account_fit(
             basis=f"{sizing_binder} leaves zero affordable shares"))
 
     capital_required = round(qty * px, 2) if qty not in (float("inf"),) else 0.0
-    planned_risk = round(qty * per_share, 2) if qty not in (float("inf"),) else 0.0
+    planned_risk = round(qty * per_share_risk, 2) if qty not in (float("inf"),) else 0.0
 
     # ── account-level eligibility checks (all optional; None = unconstrained) ──
     def _check(name: str, actual: float, limit: Optional[float], ok: bool, basis: str) -> None:

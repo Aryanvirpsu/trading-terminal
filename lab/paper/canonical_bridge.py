@@ -78,6 +78,11 @@ _LEGACY_PREFERENCE = {
 }
 
 
+def _exec_cfg():
+    from . import config as cfg
+    return cfg.execution()
+
+
 def _executable_buy_price(quote: Any) -> Optional[float]:
     """Per-share cost of a simulated market BUY (ask + slippage) — the SAME price
     the paper broker will fill at — so sizing can never approve a quantity the
@@ -126,6 +131,7 @@ def evaluate_canonical(result: Dict[str, Any], *, symbol: str, direction: str,
         canon_stock_fit = stock_account_fit(
             policy=STRATEGY_500_POLICY, equity=st["equity"], entry=entry, stop=stop,
             fill_price=_executable_buy_price(quote),
+            exit_slippage_bps=_exec_cfg().slippage_bps, fee_per_share=_exec_cfg().fee_per_share,
             # RAW spendable cash: stock_account_fit nets out the policy reserve
             # itself, so st["buying_power"] (already net) would subtract it twice.
             buying_power=st["available_cash"], open_positions=st["open_positions"],
