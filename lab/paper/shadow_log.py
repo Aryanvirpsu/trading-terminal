@@ -220,13 +220,15 @@ def simulate_picks(cands: List[Dict[str, Any]], key: Callable, cap: Dict[str, An
 # ── event identity ────────────────────────────────────────────────────────────
 
 def _assign_event(conn: sqlite3.Connection, c: Dict[str, Any], session_date: str, scan_ts: str,
-                  obs_id: str, closed_signal_ids: set) -> str:
-    """Decision-time event assignment — uses ONLY observations made before this one (see module docstring)."""
+                  obs_id: str, closed_signal_ids: set, session_type: str = "regular") -> str:
+    """Decision-time event assignment — uses ONLY observations made before this one (see module docstring).
+    Manual/smoke-test cycles (session_type 'manual') neither join nor seed real events."""
     sym, direction = c["symbol"], c["direction"]
-    ev = conn.execute(
+    manual = session_type == "manual"
+    ev = None if manual else conn.execute(
         "SELECT e.*, (SELECT MAX(session_date) FROM shadow_candidates x WHERE x.event_id=e.event_id) last_sess "
-        "FROM shadow_events e WHERE e.symbol=? AND e.direction=? ORDER BY e.first_ts DESC LIMIT 1",
-        (sym, direction)).fetchone()
+        "FROM shadow_events e WHERE e.symbol=? AND e.direction=? AND e.first_obs_id NOT LIKE '%manual%' "
+        "ORDER BY e.first_ts DESC LIMIT 1", (sym, direction)).fetchone()
     last = c.get("quote_last") or c.get("entry")
     if ev is not None and last is not None and ev["stop"] is not None and ev["target"] is not None:
         try:
@@ -241,7 +243,7 @@ def _assign_event(conn: sqlite3.Connection, c: Dict[str, Any], session_date: str
                 % ",".join("?" * len(closed_signal_ids)), (ev["event_id"], *closed_signal_ids)).fetchone() is not None
         if gap <= EVENT_WINDOW_DAYS and lo < last < hi and not closed:
             return ev["event_id"]
-    event_id = f"evt_{sym}_{direction}_{scan_ts[:16].replace(':', '').replace('-', '')}"
+    event_id = f"evt{'m' if manual else ''}_{sym}_{direction}_{scan_ts[:16].replace(':', '').replace('-', '')}"
     conn.execute("INSERT OR IGNORE INTO shadow_events VALUES(?,?,?,?,?,?,?,?,?,?)",
                  (event_id, sym, direction, obs_id, session_date, scan_ts, c.get("entry"), c.get("stop"),
                   c.get("target"), c.get("strategy")))
@@ -333,7 +335,7 @@ def record_cycle(session_date: str, rows: List[Dict[str, Any]], evaluated: List[
                 return cycle_id                         # this cycle was already recorded — never duplicate
             for c in rows:
                 obs_id = f"{cycle_id}:{c['symbol']}"
-                event_id = _assign_event(conn, c, session_date, scan_ts, obs_id, closed)
+                event_id = _assign_event(conn, c, session_date, scan_ts, obs_id, closed, session_type)
                 conn.execute(
                     "INSERT OR IGNORE INTO shadow_candidates(cand_id,cycle_id,event_id,session_date,scan_ts,session_type,"
                     "symbol,sector,strategy,scanner_rank,signal_id,decision,failed_gates,quality,expected_r,ev_per_share,"

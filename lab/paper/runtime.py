@@ -147,6 +147,37 @@ def runtime_lock() -> FileLock:
     return FileLock(os.path.join(rt_dir(), "runtime.lock"))
 
 
+def _dup_path() -> str:
+    return os.path.join(rt_dir(), "duplicate_attempts.json")
+
+
+def note_duplicate_attempt() -> None:
+    """Record that a second runtime tried to start. Kept OUT of runtime_state.json, which the running
+    service rewrites every tick and would silently overwrite this."""
+    try:
+        try:
+            with open(_dup_path(), encoding="utf-8") as fh:
+                d = json.load(fh)
+        except (OSError, ValueError):
+            d = {"count": 0}
+        d["count"] = int(d.get("count", 0)) + 1
+        d["last"] = dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds")
+        save_state(d, _dup_path())
+    except Exception:
+        pass
+
+
+def recent_duplicate_attempt(now: dt.datetime, within_s: int = 86400) -> Optional[Dict[str, Any]]:
+    try:
+        with open(_dup_path(), encoding="utf-8") as fh:
+            d = json.load(fh)
+        if (now - dt.datetime.fromisoformat(d["last"])).total_seconds() <= within_s:
+            return d
+    except Exception:
+        pass
+    return None
+
+
 def discovery_lock() -> FileLock:
     return FileLock(os.path.join(rt_dir(), "discovery.lock"))
 
@@ -554,7 +585,8 @@ def health(now: Optional[dt.datetime] = None, state: Optional[Dict[str, Any]] = 
         bad.append("runtime_not_running")
     if state.get("restore_ok") is False:
         bad.append("persistence_restore_failed")
-    if state.get("duplicate_attempts"):
+    dup = recent_duplicate_attempt(now)
+    if dup:
         degraded.append("duplicate_runtime_attempted")
     led = ledger_status()
     if not led["ok"]:

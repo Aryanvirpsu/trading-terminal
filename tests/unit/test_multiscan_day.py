@@ -323,3 +323,15 @@ def test_runtime_end_to_end_with_real_actions(world):
     r.tick()
     assert n("SELECT COUNT(*) n FROM orders WHERE intent='entry'") == 1
     assert r.state["last_discovery"]["entries_allowed"] is False
+
+
+def test_manual_smoke_cycles_never_seed_or_join_real_events(world):
+    world.finalists, world.decision = ["NVDA"], {"NVDA": "MONITOR"}
+    workflow.premarket(DAY, cycle_id=f"{DAY}T2033manual", allow_entries=False, session_type="manual",
+                       scan_ts=f"{DAY}T20:33:00+00:00")
+    cycle("1335")                                        # first REAL observation of the same symbol
+    c = shadow()
+    ev = {r["cand_id"]: r["event_id"] for r in c.execute("SELECT cand_id, event_id FROM shadow_candidates")}
+    manual = [v for k, v in ev.items() if "manual" in k][0]
+    real = [v for k, v in ev.items() if "manual" not in k][0]
+    assert manual != real and manual.startswith("evtm_") and real.startswith("evt_")

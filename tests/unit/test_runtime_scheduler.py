@@ -235,7 +235,9 @@ def test_cli_run_refuses_when_another_runtime_holds_the_lock(env, monkeypatch):
         with pytest.raises(SystemExit) as e:
             _cli().main(["run"])
         assert e.value.code == 3
-        assert rt.load_state().get("duplicate_attempts") == 1                    # visible to health/status
+        assert rt.recent_duplicate_attempt(dt.datetime.now(UTC))["count"] == 1   # visible to health/status
+        h = rt.health(now=dt.datetime.now(UTC), state={"heartbeat": dt.datetime.now(UTC).isoformat()})
+        assert "duplicate_runtime_attempted" in h["degraded"]
     finally:
         held.release()
 

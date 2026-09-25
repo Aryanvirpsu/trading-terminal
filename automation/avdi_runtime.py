@@ -48,13 +48,7 @@ def _fatal(code: int, why: str):
 def _locked_or_exit():
     lock = rt.runtime_lock()
     if not lock.acquire():
-        try:                                   # make the attempt visible in health/status
-            st = rt.load_state()
-            st["duplicate_attempts"] = int(st.get("duplicate_attempts", 0)) + 1
-            st["last_duplicate_attempt"] = dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds")
-            rt.save_state(st)
-        except Exception:
-            pass
+        rt.note_duplicate_attempt()            # visible in health/status (separate file: the service never rewrites it)
         rt.log("duplicate_runtime_refused", note="another AVDI runtime holds the singleton lock")
         _fatal(3, "duplicate runtime")
     return lock
