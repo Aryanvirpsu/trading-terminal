@@ -278,7 +278,8 @@ def submit_entry(result: Dict[str, Any], quote: Quote, *, strategy: str,
                  session_date: Optional[str] = None,
                  canonical_quantity: Optional[float] = None,
                  canonical_planned_risk: Optional[float] = None,
-                 stock_executable: Optional[bool] = None) -> Dict[str, Any]:
+                 stock_executable: Optional[bool] = None,
+                 existing_signal_id: Optional[str] = None) -> Dict[str, Any]:
     """Journal the signal, then execute ONLY if every precondition and risk check
     passes. Returns what happened and why — a refusal is a first-class outcome.
 
@@ -302,6 +303,10 @@ def submit_entry(result: Dict[str, Any], quote: Quote, *, strategy: str,
     (Phase 13), enforced here even if a future caller forgets to check it
     upstream.
 
+    `existing_signal_id` (multi-scan discovery): re-attempting an ALREADY-journaled TRADEABLE signal
+    (e.g. it lost a slot earlier and capacity has since freed) reuses that journal row instead of
+    creating a duplicate; every refusal/fill is still audited against it.
+
     Backward compatible: when `canonical_quantity` is None (every EXISTING
     caller/test), behavior is 100% unchanged — this function still computes
     its own quantity via risk_mod.position_size() below, exactly as before
@@ -320,7 +325,7 @@ def submit_entry(result: Dict[str, Any], quote: Quote, *, strategy: str,
 
     if canonical_quantity is not None:
         if not stock_executable:
-            sid = journal.record_signal(
+            sid = existing_signal_id or journal.record_signal(
                 result, strategy=strategy, sector=sector, industry=industry,
                 market_regime=market_regime, scanner_rank=scanner_rank,
                 quantity=canonical_quantity, planned_risk=canonical_planned_risk,
@@ -346,7 +351,7 @@ def submit_entry(result: Dict[str, Any], quote: Quote, *, strategy: str,
                                             "binding_constraint": "invalid levels"})
         qty = sizing.get("quantity", 0.0)
 
-    sid = journal.record_signal(
+    sid = existing_signal_id or journal.record_signal(
         result, strategy=strategy, sector=sector, industry=industry,
         market_regime=market_regime, scanner_rank=scanner_rank,
         quantity=qty, planned_risk=sizing.get("planned_risk"), session_date=session_date)

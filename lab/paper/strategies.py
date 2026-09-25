@@ -167,6 +167,7 @@ def scan(max_finalists: Optional[int] = None,
 
     candidates: List[Dict[str, Any]] = []
     seen: set = set()
+    bars_ok = 0            # funnel observability only (additive; does not affect selection)
     for key, name, sscore, is_strong in focus:
         for sym in _members(key):
             if sym in seen:
@@ -175,6 +176,7 @@ def scan(max_finalists: Optional[int] = None,
             b = _bars(sym)
             if not b:
                 continue
+            bars_ok += 1
             for st in strategies:
                 c = None
                 if st == "liquid_momentum":
@@ -203,6 +205,7 @@ def scan(max_finalists: Optional[int] = None,
     return {"state": "ok", "sectors_considered": [f[1] for f in focus],
             "candidates": candidates, "finalists": finalists,
             "candidate_count": len(candidates), "finalist_count": len(finalists),
+            "universe_considered": len(seen), "bars_available": bars_ok,
             "sector_ranking": [{"name": s["name"], "score": s["sector_score"],
                                 "rs": s.get("rs_vs_spy_1m")} for s in sect["ranked"]],
             "freshness": sect.get("freshness")}

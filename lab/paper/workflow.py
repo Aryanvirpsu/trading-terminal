@@ -108,7 +108,21 @@ def _not_executed(signal_id: str, reason: str) -> None:
 
 # ── Pre-market ────────────────────────────────────────────────────────────────
 
-def premarket(session_date: Optional[str] = None, dry_run: bool = False) -> Dict[str, Any]:
+def premarket(session_date: Optional[str] = None, dry_run: bool = False, *,
+              cycle_id: Optional[str] = None, allow_entries: bool = True,
+              session_type: str = "regular", scan_ts: Optional[str] = None) -> Dict[str, Any]:
+    """One discovery scan.
+
+    Legacy mode (`cycle_id=None`): once per session; symbols already journalled today are skipped.
+    Multi-scan mode (`cycle_id` given, used by the Ubuntu runtime every ~15 minutes):
+      * every finalist is re-evaluated with a FRESH quote, sizing and account/risk checks each cycle;
+      * the ledger journals a signal only on the FIRST observation or when the decision label CHANGES
+        (e.g. MONITOR -> TRADEABLE); an unchanged observation is recorded in the shadow log only;
+      * an unexecuted TRADEABLE is re-attempted (reusing its journal row) when capacity frees up;
+      * a symbol with an open position/order, or already entered this session, is never entered again;
+      * the daily-entry cap counts entries already persisted in the ledger (survives restarts);
+      * `allow_entries=False` (prep / after the entry cutoff) records observations only.
+    """
     session_date = session_date or _today()
     started = db.utcnow()
     health = provider_health()
@@ -136,6 +150,17 @@ def premarket(session_date: Optional[str] = None, dry_run: bool = False) -> Dict
     planned: List[Dict[str, Any]] = []
     evaluated: List[Dict[str, Any]] = []
     max_orders = cfg.risk().max_entries_per_day
+    multi = cycle_id is not None
+    if multi:
+        try:
+            done_today = risk_mod.account_state(session_date)["entries_today"]
+            max_orders = max(0, max_orders - done_today)     # persisted entries already consumed today
+            if allow_entries and not broker.reconcile()["reconciled"]:
+                allow_entries = False                        # fail closed on ledger inconsistency
+                db.audit("system", session_date, "entries_disabled", {"reason": "ledger not reconciled"})
+        except Exception as e:
+            allow_entries = False
+            db.audit("system", session_date, "entries_disabled", {"reason": f"account state unavailable: {e}"[:160]})
 
     # Idempotency guard (evidence integrity): premarket() evaluates each
     # day's finalists exactly once by design (this function does not rescan
@@ -151,7 +176,7 @@ def premarket(session_date: Optional[str] = None, dry_run: bool = False) -> Dict
     # SECOND real position for a symbol already entered today. Symbols
     # already journalled today are skipped and reported as such, exactly
     # like any other "not evaluated" case below.
-    already_today = {s["symbol"] for s in db.query(
+    already_today = set() if multi else {s["symbol"] for s in db.query(
         "SELECT DISTINCT symbol FROM signals WHERE session_date=?", (session_date,))}
 
     # Shadow telemetry (append-only, separate DB, read-only over the ledger; never affects trading).
@@ -214,6 +239,29 @@ def premarket(session_date: Optional[str] = None, dry_run: bool = False) -> Dict
             except Exception:
                 pass
 
+        prev_sid = None
+        if multi:
+            label = result.get("decision")
+            prev = db.query_one("SELECT signal_id, action, executed FROM signals WHERE session_date=? AND symbol=? "
+                                "ORDER BY created_at DESC LIMIT 1", (session_date, sym))
+            held = (db.query_one("SELECT 1 x FROM positions WHERE symbol=? AND status='open'", (sym,))
+                    or db.query_one("SELECT 1 x FROM orders WHERE symbol=? AND status IN ('pending','partial')", (sym,)))
+            note = None
+            if not allow_entries:
+                note = f"entries disabled ({session_type}) - observation only"
+            elif held:
+                note = "existing position/open order - no duplicate entry"
+            elif prev and prev["executed"]:
+                note = "already entered this session - no duplicate entry"
+            elif prev and prev["action"] == label and label != "TRADEABLE":
+                note = "unchanged observation - not re-journaled"
+            if note:
+                evaluated.append({"symbol": sym, "action": label, "signal_id": prev["signal_id"] if prev else None,
+                                  "instrument": canon["instrument_label"], "note": note})
+                continue
+            if prev and prev["action"] == label and label == "TRADEABLE":
+                prev_sid = prev["signal_id"]              # re-attempt the same signal; never journal it twice
+
         # Options are recorded in SHADOW MODE only — never placed into the ledger.
         # The augmented result carries the SAME option/option_quality shape
         # options_shadow.record() has always read, now canonically sourced.
@@ -241,7 +289,7 @@ def premarket(session_date: Optional[str] = None, dry_run: bool = False) -> Dict
         canon_planned_risk = canon["stock_planned_risk"]
 
         if dry_run or len(planned) >= max_orders:
-            sid = journal.record_signal(
+            sid = prev_sid or journal.record_signal(
                 result, strategy=f["strategy"], sector=sector,
                 market_regime=regime, scanner_rank=f.get("scanner_rank"),
                 quantity=canon_qty, planned_risk=canon_planned_risk,
@@ -249,11 +297,12 @@ def premarket(session_date: Optional[str] = None, dry_run: bool = False) -> Dict
             evaluated.append({"symbol": sym, "action": result.get("decision"),
                               "signal_id": sid, "instrument": canon["instrument_label"],
                               "note": "dry-run" if dry_run else "daily order cap reached"})
-            _not_executed(sid, "dry-run" if dry_run else "daily order cap reached")
+            _not_executed(sid, "dry-run" if dry_run else (
+                f"daily entry cap reached ({cfg.risk().max_entries_per_day} per day, incl. persisted entries)"))
             continue
 
         if q is None:
-            sid = journal.record_signal(
+            sid = prev_sid or journal.record_signal(
                 result, strategy=f["strategy"], sector=sector, market_regime=regime,
                 scanner_rank=f.get("scanner_rank"), quantity=canon_qty,
                 planned_risk=canon_planned_risk, session_date=session_date)
@@ -269,7 +318,7 @@ def premarket(session_date: Optional[str] = None, dry_run: bool = False) -> Dict
             # canonical B/executable found the stock leg itself unsound.
             # No broker call: falling back to STOCK here would be a SECOND,
             # undocumented instrument-choice policy living outside D.
-            sid = journal.record_signal(
+            sid = prev_sid or journal.record_signal(
                 result, strategy=f["strategy"], sector=sector, market_regime=regime,
                 scanner_rank=f.get("scanner_rank"), quantity=canon_qty,
                 planned_risk=canon_planned_risk, session_date=session_date)
@@ -288,7 +337,8 @@ def premarket(session_date: Optional[str] = None, dry_run: bool = False) -> Dict
                                   session_date=session_date,
                                   canonical_quantity=canon_qty,
                                   canonical_planned_risk=canon_planned_risk,
-                                  stock_executable=canon["stock_executable"].executable)
+                                  stock_executable=canon["stock_executable"].executable,
+                                  existing_signal_id=prev_sid)
         evaluated.append({"symbol": sym, "action": result.get("decision"),
                           "executed": out["executed"], "signal_id": out["signal_id"],
                           "instrument": canon["instrument_label"],
@@ -298,12 +348,17 @@ def premarket(session_date: Optional[str] = None, dry_run: bool = False) -> Dict
                             "strategy": f["strategy"]})
 
     if shadow_cap is not None:
-        shadow_log.record_cycle(session_date, shadow_rows, evaluated, shadow_cap)
+        try:                                            # shadow telemetry must NEVER affect the Champion
+            shadow_log.record_cycle(session_date, shadow_rows, evaluated, shadow_cap,
+                                    cycle_id=cycle_id, scan_ts=scan_ts, session_type=session_type, scan=scan)
+        except Exception:
+            pass
 
     broker.snapshot_equity(session_date)
     db.audit("system", session_date, "premarket_done",
              {"finalists": len(scan["finalists"]), "executed": len(planned)})
-    return {"session_date": session_date, "state": "ok", "started_at": started,
+    return {"session_date": session_date, "state": "ok", "started_at": started, "cycle_id": cycle_id,
+            "entries_allowed": allow_entries,
             "provider_health": health, "market_regime": regime,
             "sectors_considered": scan.get("sectors_considered"),
             "sector_ranking": scan.get("sector_ranking"),
@@ -315,19 +370,31 @@ def premarket(session_date: Optional[str] = None, dry_run: bool = False) -> Dict
 
 # ── Market hours ──────────────────────────────────────────────────────────────
 
-def market_hours(session_date: Optional[str] = None) -> Dict[str, Any]:
+def _max_quote_age(quotes: Dict[str, Quote]) -> Optional[float]:
+    """Oldest provider timestamp among this pass's quotes (seconds) — feeds the stale-data health check."""
+    import time as _t
+    ages = [_t.time() - q.source_ts for q in quotes.values() if q.source_ts]
+    return round(max(ages), 1) if ages else None
+
+
+def market_hours(session_date: Optional[str] = None, scope: str = "all") -> Dict[str, Any]:
     """Process fills, stops and targets. Only touches symbols we already care about —
-    open positions, pending orders and tracked signals. No market-wide rescan."""
+    open positions, pending orders and tracked signals. No market-wide rescan.
+
+    scope="positions" (fast tracker, ~60 s): ONLY open positions and pending orders — fresh quotes,
+    fills, stop/target management. scope="all" (full tracker, ~5 min): also every tracked signal
+    (MFE/MAE), option-shadow resolution and raw bar collection for the shadow log."""
     session_date = session_date or _today()
     symbols = set()
     for p in db.query("SELECT symbol FROM positions WHERE status='open'"):
         symbols.add(p["symbol"])
     for o in db.query("SELECT symbol FROM orders WHERE status IN ('pending','partial')"):
         symbols.add(o["symbol"])
-    tracked = db.query("SELECT signal_id, symbol FROM signals WHERE outcome='open'")
+    full = scope != "positions"
+    tracked = db.query("SELECT signal_id, symbol FROM signals WHERE outcome='open'") if full else []
     for s in tracked:
         symbols.add(s["symbol"])
-    shadow_open = db.query("SELECT DISTINCT symbol FROM options_shadow WHERE outcome='open'")
+    shadow_open = db.query("SELECT DISTINCT symbol FROM options_shadow WHERE outcome='open'") if full else []
     for s in shadow_open:
         symbols.add(s["symbol"])
 
@@ -361,18 +428,20 @@ def market_hours(session_date: Optional[str] = None) -> Dict[str, Any]:
         tracked_updates += 1
 
     # 3b) raw daily + 5-minute bars for shadow candidates (append-only, separate DB, non-fatal)
-    shadow_log.update_bars(session_date)
+    if full:
+        shadow_log.update_bars(session_date)
 
     # 4) shadow-option evidence resolution — grades hypothetical observations
     # only; never places, modifies, or cancels an order. Same lifecycle stage
     # as (3) above, on purpose (Evidence & Graduation v1.2 phase 2).
-    shadow_resolved = options_shadow.resolve_outcomes(quotes, session_date)
+    shadow_resolved = options_shadow.resolve_outcomes(quotes, session_date) if full else 0
 
     broker.snapshot_equity(session_date)
     return {"session_date": session_date, "symbols_watched": sorted(symbols),
             "orders_processed": len(filled), "exits": managed["count"],
             "exit_actions": managed["actions"], "tracked_updated": tracked_updates,
-            "shadow_resolved": shadow_resolved,
+            "shadow_resolved": shadow_resolved, "scope": scope,
+            "quote_age_s_max": _max_quote_age(quotes),
             "quotes_missing": sorted(symbols - set(quotes))}
 
 

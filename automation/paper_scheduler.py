@@ -38,7 +38,7 @@ def _print(obj) -> None:
     print(json.dumps(obj, indent=2, default=str))
 
 
-def _write_daily_markdown(rep: dict) -> str:
+def _write_daily_markdown(rep: dict, path: str = None) -> str:
     """Render the day's report to PAPER_DAILY_REPORT.md (overwritten each session;
     the database remains the durable record)."""
     a = rep["account"]
@@ -89,7 +89,7 @@ def _write_daily_markdown(rep: dict) -> str:
               f"blocked setups (win rate {bw['blocked_win_rate']}%)",
               "- If this stays high across many sessions, the gates are too tight — "
               "that is the ONLY evidence that justifies loosening them.", ""]
-    path = os.path.join(_ROOT, "PAPER_DAILY_REPORT.md")
+    path = path or os.path.join(_ROOT, "PAPER_DAILY_REPORT.md")
     with open(path, "w", encoding="utf-8") as fh:
         fh.write("\n".join(lines))
     return path
