@@ -16,7 +16,7 @@ for folder in ("src", "dashboard", "lab"):
     sys.path.insert(0, str(ROOT / folder))
 
 import decision_engine as de
-from paper import db, report, risk, runtime as rt, shadow_log, workflow
+from paper import db, journal, report, risk, runtime as rt, shadow_log, workflow
 from paper.fills import Quote
 
 DAY = "2026-09-25"
@@ -241,11 +241,30 @@ def test_event_rule_new_event_on_stop_cross_gap_and_closed_trade(world):
 
 # ── CH-001 forward shadow ───────────────────────────────────────────────────────────────────────────
 
-def _pos(pid, sym, status, realized, exit_reason, opened, closed):
+BOUNDARY_AT = "2026-09-25T13:35:22+00:00"
+
+
+def _boundary(at=BOUNDARY_AT):
+    c = shadow_log._connect()
+    with c:
+        c.execute("INSERT OR IGNORE INTO shadow_evidence_boundary VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)",
+                  ("v1.1", at, "c", "2026-09-25", 504.66, 504.66, 0, 4.66, 0, 55, 4, 2, "test"))
+    c.close()
+
+
+def _sig(sym, engine_version=None):
+    res = {"symbol": sym, "decision": "TRADEABLE", "price": 40, "entry_range": [40, 40.1], "stop": 39.6,
+           "target": 42, "decision_gates": [], "failed_gates": []}
+    if engine_version:
+        res["engine_version"] = engine_version
+    return journal.record_signal(res, strategy="s", session_date="2026-09-25")
+
+
+def _pos(pid, sym, status, realized, exit_reason, opened, closed, signal_id=None):
     db.execute("""INSERT INTO positions(position_id, signal_id, symbol, strategy, sector, opened_at, closed_at, quantity,
                   avg_entry, avg_exit, stop, target, status, realized_pnl, fees, exit_reason, planned_risk, mfe, mae)
                   VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
-               (pid, None, sym, "s", "x", opened, closed, 10.0, 40.0, 39.6 if status == "closed" else None,
+               (pid, signal_id, sym, "s", "x", opened, closed, 10.0, 40.0, 39.6 if status == "closed" else None,
                 39.6, 42.0, status, realized, 0.0, exit_reason, 4.0, 0.0, 0.0))
 
 
@@ -258,7 +277,8 @@ def _bars(sym, rows):
 
 
 def test_ch001_forward_reversal_saved_by_breakeven(world):
-    _pos("p1", "AAA", "closed", -4.0, "exit_stop", "2026-09-25T14:00:00+00:00", "2026-09-25T18:00:00+00:00")
+    _boundary()
+    _pos("p1", "AAA", "closed", -4.0, "exit_stop", "2026-09-25T14:00:00+00:00", "2026-09-25T18:00:00+00:00", _sig("AAA"))
     _bars("AAA", [("2026-09-25T14:05:00+00:00", 40, 40.2, 39.9, 40.1),      # below +1R (40.4)
                   ("2026-09-25T14:10:00+00:00", 40.1, 40.5, 40.0, 40.4),    # +1R reached (high>=40.4), stop not touched
                   ("2026-09-25T14:15:00+00:00", 40.4, 40.5, 39.9, 40.0),    # next bar trades back through entry -> BE exit
@@ -274,7 +294,8 @@ def test_ch001_forward_reversal_saved_by_breakeven(world):
 
 
 def test_ch001_forward_ambiguous_bar_is_never_resolved_favourably(world):
-    _pos("p2", "BBB", "closed", -4.0, "exit_stop", "2026-09-25T14:00:00+00:00", "2026-09-25T18:00:00+00:00")
+    _boundary()
+    _pos("p2", "BBB", "closed", -4.0, "exit_stop", "2026-09-25T14:00:00+00:00", "2026-09-25T18:00:00+00:00", _sig("BBB"))
     _bars("BBB", [("2026-09-25T14:05:00+00:00", 40, 40.5, 39.5, 40.0)])              # trigger AND stop in one bar
     shadow_log.evaluate_ch001(now=dt.datetime(2026, 9, 25, 19, tzinfo=dt.timezone.utc))
     row = shadow().execute("SELECT * FROM shadow_ch001_results WHERE position_id='p2'").fetchone()
@@ -283,7 +304,8 @@ def test_ch001_forward_ambiguous_bar_is_never_resolved_favourably(world):
 
 
 def test_ch001_open_position_records_plus1r_observation_only(world):
-    _pos("p3", "CCC", "open", None, None, "2026-09-25T14:00:00+00:00", None)
+    _boundary()
+    _pos("p3", "CCC", "open", None, None, "2026-09-25T14:00:00+00:00", None, _sig("CCC"))
     _bars("CCC", [("2026-09-25T14:05:00+00:00", 40, 40.6, 40.0, 40.5)])
     out = shadow_log.evaluate_ch001(now=dt.datetime(2026, 9, 25, 15, tzinfo=dt.timezone.utc))
     assert out["obs"] == 1 and out["results"] == 0
@@ -365,3 +387,87 @@ def test_runtime_records_cycle_timing(world):
     r.tick()
     cl = r.state["cycle_log"]
     assert cl and cl[0]["cycle_id"] == "2026-09-25T0935" and cl[0]["late_s"] == 30.0 and cl[0]["state"] == "ok"
+
+
+# ── CH-001 version isolation (regression for the 2026-09-25 contamination: HAL/AMD v1.0 positions) ────────────
+
+REVERSAL_BARS = [("2026-09-11T14:05:00+00:00", 40, 40.2, 39.9, 40.1),
+                 ("2026-09-11T14:10:00+00:00", 40.1, 40.5, 40.0, 40.4),      # +1R (trigger 40.4)
+                 ("2026-09-11T14:15:00+00:00", 40.4, 40.5, 39.9, 40.0),      # back through entry
+                 ("2026-09-11T17:55:00+00:00", 40.0, 40.0, 39.5, 39.6)]
+
+
+def _v10_position(sym="HAL"):
+    """A genuine v1.0-era closed position: opened BEFORE the boundary, signal labelled gates-v1."""
+    sid = _sig(sym, engine_version="decision_engine/gates-v1")
+    _pos("v10_" + sym, sym, "closed", -4.0, "exit_stop", "2026-09-11T14:00:00+00:00", "2026-09-11T18:00:00+00:00", sid)
+    _bars(sym, REVERSAL_BARS)
+
+
+def test_a_v10_position_can_never_enter_ch001_forward_evidence(world):
+    _boundary()
+    _v10_position("HAL")
+    _v10_position("AMD")
+    out = shadow_log.evaluate_ch001(now=dt.datetime(2026, 9, 25, 19, tzinfo=dt.timezone.utc))
+    assert out["results"] == 0 and out["obs"] == 0 and out["skipped_pre_boundary"] == 2
+    assert shadow().execute("SELECT COUNT(*) n FROM shadow_ch001_results").fetchone()["n"] == 0
+    assert shadow().execute("SELECT COUNT(*) n FROM shadow_ch001_obs").fetchone()["n"] == 0
+
+
+def test_no_boundary_means_no_forward_evidence(world):
+    _v10_position("HAL")
+    _pos("p9", "ZZZ", "closed", -4.0, "exit_stop", "2026-09-25T14:00:00+00:00", "2026-09-25T18:00:00+00:00", _sig("ZZZ"))
+    out = shadow_log.evaluate_ch001(now=dt.datetime(2026, 9, 25, 19, tzinfo=dt.timezone.utc))
+    assert out["results"] == 0 and out["skipped_no_boundary"] == 2
+
+
+def test_post_boundary_position_with_old_engine_version_is_excluded(world):
+    _boundary()
+    sid = _sig("OLD", engine_version="decision_engine/gates-v1")            # opened after the boundary but v1.0 labelled
+    _pos("pv", "OLD", "closed", -4.0, "exit_stop", "2026-09-25T14:00:00+00:00", "2026-09-25T18:00:00+00:00", sid)
+    out = shadow_log.evaluate_ch001(now=dt.datetime(2026, 9, 25, 19, tzinfo=dt.timezone.utc))
+    assert out["results"] == 0 and out["skipped_version"] == 1
+
+
+def test_manual_cycle_position_is_excluded(world):
+    _boundary()
+    sid = _sig("MAN")
+    c = shadow_log._connect()
+    with c:
+        c.execute("INSERT INTO shadow_candidates(cand_id,cycle_id,event_id,session_date,scan_ts,session_type,symbol,signal_id)"
+                  " VALUES('m:MAN','m','evtm_x','2026-09-25','2026-09-25T14:00:00+00:00','manual','MAN',?)", (sid,))
+    c.close()
+    _pos("pm", "MAN", "closed", -4.0, "exit_stop", "2026-09-25T14:00:00+00:00", "2026-09-25T18:00:00+00:00", sid)
+    out = shadow_log.evaluate_ch001(now=dt.datetime(2026, 9, 25, 19, tzinfo=dt.timezone.utc))
+    assert out["results"] == 0 and out["skipped_manual"] == 1
+
+
+def test_rebuild_quarantines_contaminated_rows_and_rederives_deterministically(world):
+    _boundary()
+    _v10_position("HAL")
+    c = shadow_log._connect()                                      # contaminated derived rows, as the pre-fix code wrote them
+    with c:
+        c.execute("INSERT INTO shadow_ch001_results(position_id,symbol,plus1r_occurred,delta_R) VALUES('v10_HAL','HAL',0,0.0)")
+        c.execute("INSERT INTO shadow_ch001_obs(position_id,symbol,plus1r_ts) VALUES('v10_AMD','AMD','2026-09-21T09:30:00-04:00')")
+    c.close()
+    _pos("good", "GOOD", "closed", -4.0, "exit_stop", "2026-09-25T14:00:00+00:00", "2026-09-25T18:00:00+00:00", _sig("GOOD"))
+    _bars("GOOD", [("2026-09-25T14:05:00+00:00", 40, 40.2, 39.9, 40.1), ("2026-09-25T14:10:00+00:00", 40.1, 40.5, 40.0, 40.4),
+                   ("2026-09-25T14:15:00+00:00", 40.4, 40.5, 39.9, 40.0), ("2026-09-25T17:55:00+00:00", 40.0, 40.0, 39.5, 39.6)])
+    ledger_before = (n("SELECT COUNT(*) n FROM positions"), n("SELECT COUNT(*) n FROM signals"))
+    now = dt.datetime(2026, 9, 25, 19, tzinfo=dt.timezone.utc)
+    rep = shadow_log.rebuild_ch001(now=now)
+    assert rep["quarantined"] == {"shadow_ch001_obs": 1, "shadow_ch001_results": 1}
+    sc = shadow()
+    assert sc.execute("SELECT COUNT(*) n FROM shadow_ch001_quarantine").fetchone()["n"] == 2      # nothing silently lost
+    assert [r["position_id"] for r in sc.execute("SELECT position_id FROM shadow_ch001_results")] == ["good"]
+    assert sc.execute("SELECT COUNT(*) n FROM shadow_maintenance_log").fetchone()["n"] == 1
+    assert (n("SELECT COUNT(*) n FROM positions"), n("SELECT COUNT(*) n FROM signals")) == ledger_before   # ledger untouched
+    c2 = shadow()
+    with pytest.raises(sqlite3.DatabaseError, match="append-only"):                                # protection restored
+        c2.execute("DELETE FROM shadow_ch001_results")
+    c2.rollback()
+    c2.close()
+    q = "SELECT position_id, plus1r_ts, be_exit_ts, delta_R FROM shadow_ch001_results"
+    first = [tuple(r) for r in shadow().execute(q)]
+    shadow_log.rebuild_ch001(now=now)                                                              # deterministic
+    assert [tuple(r) for r in shadow().execute(q)] == first

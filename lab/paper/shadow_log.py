@@ -78,6 +78,10 @@ CREATE TABLE IF NOT EXISTS shadow_evidence_boundary (
     version TEXT PRIMARY KEY, at TEXT NOT NULL, cycle_id TEXT, session_date TEXT,
     equity REAL, cash REAL, open_positions INTEGER, realized_pnl REAL, entries_today INTEGER,
     ledger_signals INTEGER, ledger_orders INTEGER, ledger_positions INTEGER, note TEXT);
+CREATE TABLE IF NOT EXISTS shadow_ch001_quarantine (
+    source_table TEXT NOT NULL, row_json TEXT NOT NULL, reason TEXT NOT NULL, quarantined_at TEXT NOT NULL);
+CREATE TABLE IF NOT EXISTS shadow_maintenance_log (
+    at TEXT NOT NULL, action TEXT NOT NULL, detail_json TEXT);
 CREATE TABLE IF NOT EXISTS shadow_ch001_obs (
     position_id TEXT PRIMARY KEY, event_id TEXT, symbol TEXT, plus1r_ts TEXT, plus1r_price REAL,
     observed_at TEXT);
@@ -89,7 +93,8 @@ CREATE TABLE IF NOT EXISTS shadow_ch001_results (
     ambiguous INTEGER, ambiguity_note TEXT, bars_used INTEGER, computed_at TEXT);
 """
 _APPEND_ONLY = ("shadow_cycles", "shadow_events", "shadow_candidates", "shadow_picks", "shadow_bars_d",
-                "shadow_bars_5m", "shadow_ch001_obs", "shadow_ch001_results", "shadow_evidence_boundary")
+                "shadow_bars_5m", "shadow_ch001_obs", "shadow_ch001_results", "shadow_evidence_boundary",
+                "shadow_ch001_quarantine", "shadow_maintenance_log")
 
 
 def path() -> str:
@@ -446,18 +451,81 @@ def _parse_ts(x: Any) -> Optional[dt.datetime]:
         return None
 
 
+def _ch001_eligible(conn: sqlite3.Connection, p: Dict[str, Any], b_at: Optional[dt.datetime],
+                    counters: Dict[str, int]) -> bool:
+    """CH-001 FORWARD evidence rule (uses durable fields only — never symbol names):
+      1. a v1.1 evidence boundary exists (no boundary -> no forward evidence);
+      2. the position was opened at/after that boundary;
+      3. its originating signal carries the v1.1 engine version (`decision_engine/gates-v1.1…`);
+      4. it did not originate from a manual/smoke cycle (shadow candidate `session_type='manual'`)."""
+    if b_at is None:
+        counters["skipped_no_boundary"] += 1
+        return False
+    opened = _parse_ts(p.get("opened_at"))
+    if opened is None or opened < b_at:
+        counters["skipped_pre_boundary"] += 1
+        return False
+    sig = db.query_one("SELECT engine_version FROM signals WHERE signal_id=?", (p.get("signal_id"),))         if p.get("signal_id") else None
+    if not sig or not str(sig.get("engine_version") or "").startswith("decision_engine/gates-v1.1"):
+        counters["skipped_version"] += 1
+        return False
+    cand = conn.execute("SELECT session_type FROM shadow_candidates WHERE signal_id=? LIMIT 1",
+                        (p.get("signal_id"),)).fetchone()
+    if cand is not None and cand["session_type"] == "manual":
+        counters["skipped_manual"] += 1
+        return False
+    return True
+
+
+def rebuild_ch001(now: Optional[dt.datetime] = None) -> Dict[str, Any]:
+    """Deterministic rebuild of the CH-001 DERIVED tables from authoritative data (ledger + raw bars + boundary).
+    Existing rows are first copied to `shadow_ch001_quarantine` (reason recorded) and the action is logged in the
+    append-only `shadow_maintenance_log`; then the derived tables are emptied and re-derived under the eligibility
+    rule. The ledger is never touched. The triggers are dropped and recreated inside this ONE explicit maintenance
+    path only."""
+    report: Dict[str, Any] = {"quarantined": {}, "before": {}, "after": {}}
+    conn = _connect()
+    with conn:
+        for t in ("shadow_ch001_obs", "shadow_ch001_results"):
+            rows = [dict(r) for r in conn.execute(f"SELECT * FROM {t}")]
+            report["before"][t] = len(rows)
+            for r in rows:
+                conn.execute("INSERT INTO shadow_ch001_quarantine VALUES(?,?,?,?)",
+                             (t, json.dumps(r, default=str), "rebuild: derived table re-derived under the v1.1 "
+                              "eligibility rule (boundary + engine version + non-manual)", db.utcnow()))
+            report["quarantined"][t] = len(rows)
+            for op in ("delete", "update"):
+                conn.execute(f"DROP TRIGGER IF EXISTS {t}_no_{op}")
+            conn.execute(f"DELETE FROM {t}")
+        conn.execute("INSERT INTO shadow_maintenance_log VALUES(?,?,?)",
+                     (db.utcnow(), "rebuild_ch001", json.dumps(report, default=str)))
+    conn.close()
+    _connect().close()                                  # recreates the append-only triggers
+    report["evaluation"] = evaluate_ch001(now)
+    conn = _connect()
+    for t in ("shadow_ch001_obs", "shadow_ch001_results"):
+        report["after"][t] = conn.execute(f"SELECT COUNT(*) n FROM {t}").fetchone()["n"]
+    conn.close()
+    return report
+
+
 def evaluate_ch001(now: Optional[dt.datetime] = None) -> Dict[str, int]:
     """For every Champion position: record when +1R was genuinely observed (first complete 5-minute bar whose
     HIGH >= entry + 1R, starting at/after the entry) and, for CLOSED positions, what the hypothetical
     breakeven stop (moved effective the bar AFTER the trigger) would have done versus the original exit.
     Ambiguity is never resolved favourably: a bar holding both the trigger and the original stop, or the
     breakeven level and the target, is flagged AMBIGUOUS. Append-only; final rows only once closed."""
-    out = {"obs": 0, "results": 0, "ambiguous": 0}
+    out = {"obs": 0, "results": 0, "ambiguous": 0, "skipped_pre_boundary": 0, "skipped_version": 0,
+           "skipped_manual": 0, "skipped_no_boundary": 0}
     try:
         conn = _connect()
         bps = cfg.execution().slippage_bps
+        b = conn.execute("SELECT at FROM shadow_evidence_boundary WHERE version='v1.1'").fetchone()
+        b_at = _parse_ts(b["at"]) if b else None
         for p in db.query("SELECT * FROM positions"):
             pid = p["position_id"]
+            if not _ch001_eligible(conn, p, b_at, out):
+                continue
             opened, closed_at = _parse_ts(p.get("opened_at")), _parse_ts(p.get("closed_at"))
             entry, stop, target = p.get("avg_entry"), p.get("stop"), p.get("target")
             if not opened or entry is None or stop is None or entry <= stop:

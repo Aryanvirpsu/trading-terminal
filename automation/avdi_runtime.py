@@ -9,6 +9,7 @@
     python automation/avdi_runtime.py close-once          # postmarket + report + CH-001 + backup
     python automation/avdi_runtime.py backup              # consistent snapshot of ledger + shadow DB + state
     python automation/avdi_runtime.py backup-live         # same, safe while the service runs (used by the ops gate)
+    python automation/avdi_runtime.py rebuild-ch001       # quarantine + deterministically re-derive the CH-001 tables
     python automation/avdi_runtime.py evidence [v1.1]     # evidence boundary + v1.1 P&L + v1.0/v1.1 row counts
 
 Every command that can touch the ledger takes the SAME exclusive runtime lock as `run`, so it cannot
@@ -73,6 +74,11 @@ def main(argv=None) -> int:
     if cmd == "evidence":
         from paper import shadow_log
         _print(shadow_log.evidence_summary(args[0] if args else "v1.1"))
+        return 0
+
+    if cmd == "rebuild-ch001":     # deterministic re-derivation of the CH-001 tables (quarantines old rows, logged)
+        from paper import shadow_log
+        _print(shadow_log.rebuild_ch001())
         return 0
 
     if cmd == "backup-live":       # read-only online sqlite backup; safe while the service runs (no lock needed)
