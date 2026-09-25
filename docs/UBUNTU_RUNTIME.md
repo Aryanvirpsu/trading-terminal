@@ -93,6 +93,26 @@ CI/deploy workflows: `.github/workflows/ci.yml` (every push/PR), `deploy-ubuntu.
 `AVDI_DEPLOY_ENABLED` and SSH secrets exist), `ubuntu-ops.yml` (read-only health + backup pull, disabled until
 `AVDI_OPS_ENABLED`).
 
+## Restricted remote access (GitHub ops/deploy)
+
+GitHub never gets a shell. Two dedicated ed25519 keys are installed in `~ubuntu/.ssh/authorized_keys` as
+`restrict,command="/home/ubuntu/avdi-runtime/ops-gate.sh <role>"`, so every connection runs the gate (`deploy/ubuntu/ops-gate.sh`)
+which allows only: role **ops** — `status | health | evidence | backup-now | backup-list | backup-pull` (read-only + a
+consistent sqlite snapshot); role **deploy** — `status | health | deploy <40-hex-sha> [--simulate-failure]` (tarball on stdin,
+max 100 MB). Every call is logged to `~/avdi-runtime/ops-gate.log`. The gate and `deploy.sh` are host-resident and are
+updated only by the owner. Residual risk: a deploy-key holder can ship code that runs in the runtime container, and the
+`ubuntu` account is in the `docker` group (root-equivalent) — the restriction removes interactive access, not the
+ability to deploy. Deployment during the market window is refused by the host (there is no force option in the workflow).
+
+## v1.1 evidence boundary (account continuity without mixing evidence)
+
+The paper account continues from the Case 1 ledger (cash/equity $504.66, 0 open positions). Immediately BEFORE the first real
+in-session (`regular`, entries-allowed) discovery cycle the runtime records, once and append-only, a starting snapshot in
+`shadow_evidence_boundary` (`version='v1.1'`: equity, cash, open positions, realized P&L, ledger row counts).
+**v1.1 P&L = current equity − boundary equity**; v1.0 gains/losses are never used. v1.0 and v1.1 rows stay separately
+queryable: `signals.engine_version` (`decision_engine/gates-v1` vs `…gates-v1.1`) in the ledger, and
+`python automation/avdi_runtime.py evidence` prints the boundary, v1.1 P&L and per-version counts.
+
 ## Preventing a competing scheduler
 
 `paper-trading-schedule.yml` had its cron triggers removed and now begins with a `primary` guard reading

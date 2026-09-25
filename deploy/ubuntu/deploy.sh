@@ -1,13 +1,22 @@
 #!/bin/sh
 # Deploy a specific commit of `main` to THIS host (run on the Ubuntu host).
-#   deploy.sh <git-sha> <source-tarball> [--force]
+#   deploy.sh <git-sha> <source-tarball> [--force] [--simulate-failure]
+# --simulate-failure starts the new release with AVDI_FORCE_UNHEALTHY=1 to PROVE the automatic rollback.
 # Safe cutover: build (no downtime) -> refuse during the market window (unless --force) -> graceful stop ->
 # consistent backup -> start new -> wait healthy -> on failure ROLL BACK to the previous image.
 # State lives in the named volume `avdi_runtime_ledger`, so the new runtime resumes the true account.
 set -eu
 SHA="${1:?usage: deploy.sh <git-sha> <source-tarball> [--force]}"
 TARBALL="${2:?source tarball}"
-FORCE="${3:-}"
+shift 2
+FORCE=""
+SIMFAIL=""
+for a in "$@"; do
+  case "$a" in
+    --force) FORCE="--force" ;;
+    --simulate-failure) SIMFAIL="1" ;;
+  esac
+done
 BASE="$HOME/avdi-runtime"
 REL="$BASE/releases/$SHA"
 IMG="avdi-paper:$SHA"
@@ -46,6 +55,14 @@ if docker inspect avdi-runtime >/dev/null 2>&1; then
 fi
 echo "previous image: ${PREV_IMG:-none}"
 
+snapshot() {   # account/evidence state as the running service sees it
+  docker exec avdi-runtime python automation/avdi_runtime.py evidence 2>/dev/null \
+    | python3 -c 'import sys,json; d=json.load(sys.stdin); b=d.get("boundary") or {}; print("  equity=%s v11_boundary_equity=%s signals=%s" % (d.get("current_equity"), b.get("equity"), d.get("ledger_signals_by_engine_version")))' \
+    2>/dev/null || echo "  (state snapshot unavailable)"
+}
+echo "== state BEFORE"
+snapshot
+
 echo "== graceful stop (state persists in the volume)"
 if docker inspect avdi-runtime >/dev/null 2>&1; then
   docker stop -t 120 avdi-runtime >/dev/null
@@ -63,7 +80,7 @@ docker run --rm --user 10001:10001 \
 
 echo "== start new runtime"
 docker rm -f avdi-runtime >/dev/null 2>&1 || true
-AVDI_IMAGE="$IMG" AVDI_CODE_VERSION="$SHA" \
+AVDI_IMAGE="$IMG" AVDI_CODE_VERSION="$SHA" AVDI_FORCE_UNHEALTHY="${SIMFAIL:+1}" \
   docker compose -f "$REL/docker/compose.ubuntu.yml" -p avdi-runtime up -d --no-build
 
 echo "== wait healthy (max 240 s)"
@@ -84,13 +101,25 @@ if [ "$ok" != "1" ]; then
   docker logs --tail 40 avdi-runtime 2>&1 | tail -40 || true
   docker rm -f avdi-runtime >/dev/null 2>&1 || true
   if [ -n "$PREV_IMG" ]; then
-    AVDI_IMAGE="$PREV_IMG" docker compose -f "$REL/docker/compose.ubuntu.yml" -p avdi-runtime up -d --no-build
+    AVDI_IMAGE="$PREV_IMG" AVDI_CODE_VERSION="${PREV_IMG##*:}" AVDI_FORCE_UNHEALTHY="" \
+      docker compose -f "$REL/docker/compose.ubuntu.yml" -p avdi-runtime up -d --no-build
     echo "rolled back to $PREV_IMG"
+    for i in $(seq 1 30); do
+      [ "$(docker inspect -f '{{.State.Health.Status}}' avdi-runtime 2>/dev/null)" = "healthy" ] && break
+      sleep 5
+    done
+    echo "post-rollback health: $(docker inspect -f '{{.State.Health.Status}}' avdi-runtime 2>/dev/null)"
+    echo "== state AFTER rollback"
+    snapshot
   else
     echo "no previous image to roll back to"
   fi
+  echo "$(date -u +%FT%TZ) $SHA ROLLED_BACK prev=${PREV_IMG:-none}" >> "$BASE/deploy-history.log"
   exit 1
 fi
+echo "== state AFTER"
+snapshot
+echo "$(date -u +%FT%TZ) $SHA DEPLOYED prev=${PREV_IMG:-none}" >> "$BASE/deploy-history.log"
 
 echo "$SHA" > "$BASE/current_sha"
 docker tag "$IMG" avdi-paper:current

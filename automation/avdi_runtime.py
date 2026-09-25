@@ -8,6 +8,8 @@
     python automation/avdi_runtime.py tracker-once [--scope positions|all]
     python automation/avdi_runtime.py close-once          # postmarket + report + CH-001 + backup
     python automation/avdi_runtime.py backup              # consistent snapshot of ledger + shadow DB + state
+    python automation/avdi_runtime.py backup-live         # same, safe while the service runs (used by the ops gate)
+    python automation/avdi_runtime.py evidence [v1.1]     # evidence boundary + v1.1 P&L + v1.0/v1.1 row counts
 
 Every command that can touch the ledger takes the SAME exclusive runtime lock as `run`, so it cannot
 run beside the service (stop the service first). PAPER ONLY: refuses to start if live execution or a
@@ -67,6 +69,15 @@ def main(argv=None) -> int:
         else:
             print("healthy" if h["healthy"] else "UNHEALTHY: " + ",".join(h["unhealthy"]))
         return 0 if h["healthy"] else 1
+
+    if cmd == "evidence":
+        from paper import shadow_log
+        _print(shadow_log.evidence_summary(args[0] if args else "v1.1"))
+        return 0
+
+    if cmd == "backup-live":       # read-only online sqlite backup; safe while the service runs (no lock needed)
+        _print(rt.backup_now("ops"))
+        return 0
 
     if cmd == "schedule":
         d = dt.date.fromisoformat(args[0]) if args else dt.datetime.now(cal.ET).date()

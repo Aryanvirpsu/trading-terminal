@@ -506,6 +506,15 @@ class Runtime:
         try:
             allow = slot.allow_entries and self.state.get("restore_ok", True)
             cycle_id = f"{d.isoformat()}T{slot.when:%H%M}"
+            if slot.session_type == "regular" and allow:
+                try:                      # v1.1 starting snapshot: taken ONCE, before the first real in-session cycle
+                    from . import shadow_log
+                    b = shadow_log.ensure_boundary("v1.1", cycle_id, d.isoformat())
+                    if b and b.get("created_now"):
+                        log("evidence_boundary", version="v1.1", cycle_id=cycle_id, equity=b["equity"],
+                            cash=b["cash"], open_positions=b["open_positions"])
+                except Exception as e:
+                    self._err("boundary", e)
             out = self.actions.discovery(d, cycle_id, allow, slot.session_type)
             ev = out.get("evaluated") or []
             self.state["counters"]["discovery_runs"] += 1
@@ -583,6 +592,8 @@ def health(now: Optional[dt.datetime] = None, state: Optional[Dict[str, Any]] = 
     if lock.acquire():                 # we got it => nobody is running the runtime
         lock.release()
         bad.append("runtime_not_running")
+    if os.environ.get("AVDI_FORCE_UNHEALTHY", "").strip().lower() in ("1", "true", "yes"):
+        bad.append("forced_unhealthy_test")       # deliberate hook to prove deploy rollback; never set in normal runs
     if state.get("restore_ok") is False:
         bad.append("persistence_restore_failed")
     dup = recent_duplicate_attempt(now)
@@ -630,4 +641,5 @@ def health(now: Optional[dt.datetime] = None, state: Optional[Dict[str, Any]] = 
             "heartbeat_age_s": hb_age, "last_discovery": state.get("last_discovery"),
             "last_tracker": state.get("last_tracker"), "last_backup": state.get("last_backup"),
             "last_exception": state.get("last_exception"), "counters": ctr, "disk": dsk,
-            "shadow": sh, "restore_ok": state.get("restore_ok"), "started_at": state.get("started_at")}
+            "shadow": sh, "restore_ok": state.get("restore_ok"), "started_at": state.get("started_at"),
+            "code_version": os.environ.get("AVDI_CODE_VERSION", "unknown")}

@@ -1,17 +1,19 @@
 name: Deploy to Ubuntu runtime
 
 # Deploys a specific commit of `main` to the Ubuntu paper runtime host. NOT a trading scheduler.
-#  - Manual (workflow_dispatch) only: strategy branches / experiments are never deployed by a push.
-#  - Refuses to run for a ref that is not `main`, and disabled until the repository variable
-#    AVDI_DEPLOY_ENABLED is 'true' AND the secrets below are configured by the repository owner.
-#  - The host-side script refuses to deploy during the market window unless `force` is set, stops the old
-#    runtime gracefully, snapshots the ledger, starts the new one, waits for health and ROLLS BACK on failure.
-# Required secrets: AVDI_SSH_HOST, AVDI_SSH_USER, AVDI_SSH_KEY (private key), AVDI_SSH_KNOWN_HOSTS.
+#  - Manual (workflow_dispatch) only; refuses any ref other than `main`; strategy branches are never deployed.
+#  - Disabled until repository variable AVDI_DEPLOY_ENABLED == 'true'.
+#  - Uses a DEDICATED restricted SSH key (AVDI_DEPLOY_SSH_KEY): the host forces every connection through
+#    deploy/ubuntu/ops-gate.sh with role `deploy` (status | health | deploy <sha>). No shell.
+#  - There is deliberately NO `force` input: the host script REFUSES to deploy during the market window
+#    (-10 min ... +20 min around the session), so unattended market-hours deployment is impossible.
+#  - Host script: build (no downtime) -> graceful stop -> verified backup -> start -> wait healthy ->
+#    automatic rollback to the previous image on failure. `simulate_failure` proves the rollback.
 on:
   workflow_dispatch:
     inputs:
-      force:
-        description: "Deploy even during the market window (avoid; risks an in-session restart)"
+      simulate_failure:
+        description: "Start the new release deliberately unhealthy to PROVE automatic rollback (safe test)"
         type: boolean
         default: false
 
@@ -26,7 +28,7 @@ jobs:
   deploy:
     if: vars.AVDI_DEPLOY_ENABLED == 'true' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
-    environment: production        # add required reviewers on this environment for an approval gate
+    environment: production
     env:
       TZ: UTC
     steps:
@@ -43,20 +45,32 @@ jobs:
           cd .. && python -m pip install --no-deps -e . && python deploy/ci_gate.py tests/unit
       - name: Package this exact commit
         run: git archive --format=tar.gz -o "$RUNNER_TEMP/avdi-src.tgz" HEAD
-      - name: Configure SSH
+      - name: Configure restricted SSH (deploy role)
         run: |
           install -m 700 -d ~/.ssh
-          printf '%s\n' "${{ secrets.AVDI_SSH_KEY }}" > ~/.ssh/deploy_key && chmod 600 ~/.ssh/deploy_key
+          printf '%s\n' "${{ secrets.AVDI_DEPLOY_SSH_KEY }}" > ~/.ssh/k && chmod 600 ~/.ssh/k
           printf '%s\n' "${{ secrets.AVDI_SSH_KNOWN_HOSTS }}" > ~/.ssh/known_hosts
-      - name: Copy and deploy
+      - name: Deploy (tarball streamed to the gate on stdin)
         run: |
-          H="${{ secrets.AVDI_SSH_USER }}@${{ secrets.AVDI_SSH_HOST }}"
-          SSH="ssh -i $HOME/.ssh/deploy_key -o IdentitiesOnly=yes"
-          scp -i ~/.ssh/deploy_key -o IdentitiesOnly=yes "$RUNNER_TEMP/avdi-src.tgz" "$H:/tmp/avdi-src-${GITHUB_SHA}.tgz"
-          scp -i ~/.ssh/deploy_key -o IdentitiesOnly=yes deploy/ubuntu/deploy.sh "$H:/tmp/avdi-deploy.sh"
-          FORCE=""; [ "${{ github.event.inputs.force }}" = "true" ] && FORCE="--force"
-          $SSH "$H" "sh /tmp/avdi-deploy.sh ${GITHUB_SHA} /tmp/avdi-src-${GITHUB_SHA}.tgz $FORCE"
+          SSH="ssh -i $HOME/.ssh/k -o IdentitiesOnly=yes -o BatchMode=yes ${{ secrets.AVDI_SSH_USER }}@${{ secrets.AVDI_SSH_HOST }}"
+          SIM=""; [ "${{ github.event.inputs.simulate_failure }}" = "true" ] && SIM="--simulate-failure"
+          set +e
+          $SSH "deploy ${GITHUB_SHA} $SIM" < "$RUNNER_TEMP/avdi-src.tgz" | tee deploy.log
+          rc=${PIPESTATUS[0]}
+          set -e
+          echo "deploy exit code: $rc"
+          if [ -n "$SIM" ]; then
+            # the SAFE FAILURE test passes only if the host reported a rollback and a healthy service afterwards
+            if grep -q "ROLLING BACK" deploy.log && grep -q "post-rollback health: healthy" deploy.log && [ "$rc" != "0" ]; then
+              echo "ROLLBACK PROVEN"
+            else
+              echo "rollback was NOT proven"; exit 1
+            fi
+          else
+            exit $rc
+          fi
       - name: Post-deploy health
         run: |
-          H="${{ secrets.AVDI_SSH_USER }}@${{ secrets.AVDI_SSH_HOST }}"
-          ssh -i ~/.ssh/deploy_key -o IdentitiesOnly=yes "$H" "docker exec avdi-runtime python automation/avdi_runtime.py status | head -40"
+          SSH="ssh -i $HOME/.ssh/k -o IdentitiesOnly=yes -o BatchMode=yes ${{ secrets.AVDI_SSH_USER }}@${{ secrets.AVDI_SSH_HOST }}"
+          $SSH health
+          $SSH status | head -30

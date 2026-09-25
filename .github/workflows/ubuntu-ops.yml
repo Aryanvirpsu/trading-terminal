@@ -1,42 +1,76 @@
-name: Ubuntu runtime ops (backup + health)
+name: Ubuntu runtime ops (health + off-host backup)
 
-# Off-host safety net for the Ubuntu paper runtime. This workflow NEVER trades and never modifies the
-# ledger: it only READS a health status and PULLS the runtime's local backup into a GitHub artifact.
-# Disabled until AVDI_OPS_ENABLED='true' and the SSH secrets exist (see deploy-ubuntu.yml).
+# Off-host safety net for the Ubuntu paper runtime. NEVER trades, NEVER deploys, never modifies the ledger:
+# it only READS status and PULLS a consistent backup into a GitHub artifact, then verifies it.
+# Uses a DEDICATED restricted SSH key (secret AVDI_OPS_SSH_KEY): the host forces every connection through
+# deploy/ubuntu/ops-gate.sh with role `ops` (status | health | evidence | backup-now | backup-list | backup-pull).
+# No shell, no port forwarding. Disabled until repository variable AVDI_OPS_ENABLED == 'true'.
 on:
   schedule:
-    - cron: "40 21 * * 1-5"     # backup pull after the close-processing window (~17:40 ET)
-    - cron: "5,35 14-20 * * 1-5" # health probe during market hours (UTC)
+    - cron: "5,35 13-20 * * 1-5"    # read-only health probe during market hours (UTC)
+    - cron: "40 21 * * 1-5"         # nightly off-host backup pull (~17:40 ET, after close processing)
   workflow_dispatch:
 
 permissions:
   contents: read
-  issues: write
+
+concurrency:
+  group: avdi-ubuntu-ops
+  cancel-in-progress: false
 
 jobs:
-  ops:
+  probe:
     if: vars.AVDI_OPS_ENABLED == 'true'
     runs-on: ubuntu-latest
     steps:
-      - name: Configure SSH
+      - name: Configure restricted SSH (ops role)
         run: |
           install -m 700 -d ~/.ssh
-          printf '%s\n' "${{ secrets.AVDI_SSH_KEY }}" > ~/.ssh/k && chmod 600 ~/.ssh/k
+          printf '%s\n' "${{ secrets.AVDI_OPS_SSH_KEY }}" > ~/.ssh/k && chmod 600 ~/.ssh/k
           printf '%s\n' "${{ secrets.AVDI_SSH_KNOWN_HOSTS }}" > ~/.ssh/known_hosts
-      - name: Health probe (read-only)
+          echo "SSH=ssh -i $HOME/.ssh/k -o IdentitiesOnly=yes -o BatchMode=yes ${{ secrets.AVDI_SSH_USER }}@${{ secrets.AVDI_SSH_HOST }}" >> "$GITHUB_ENV"
+      - name: Status (read-only)
+        run: $SSH status | tee status.json
+      - name: Health (fails the job when the runtime is unhealthy)
+        run: $SSH health
+      - name: Evidence boundary and v1.1 P&L (read-only)
+        run: $SSH evidence
+
+  backup:
+    needs: probe
+    if: vars.AVDI_OPS_ENABLED == 'true' && (github.event_name == 'workflow_dispatch' || github.event.schedule == '40 21 * * 1-5')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Configure restricted SSH (ops role)
         run: |
-          H="${{ secrets.AVDI_SSH_USER }}@${{ secrets.AVDI_SSH_HOST }}"
-          ssh -i ~/.ssh/k -o IdentitiesOnly=yes "$H" "docker exec avdi-runtime python automation/avdi_runtime.py status" | tee status.json
-          ssh -i ~/.ssh/k -o IdentitiesOnly=yes "$H" "docker exec avdi-runtime python automation/avdi_runtime.py health"
-      - name: Pull latest local backup (nightly run only)
-        if: github.event.schedule == '40 21 * * 1-5' || github.event_name == 'workflow_dispatch'
+          install -m 700 -d ~/.ssh
+          printf '%s\n' "${{ secrets.AVDI_OPS_SSH_KEY }}" > ~/.ssh/k && chmod 600 ~/.ssh/k
+          printf '%s\n' "${{ secrets.AVDI_SSH_KNOWN_HOSTS }}" > ~/.ssh/known_hosts
+          echo "SSH=ssh -i $HOME/.ssh/k -o IdentitiesOnly=yes -o BatchMode=yes ${{ secrets.AVDI_SSH_USER }}@${{ secrets.AVDI_SSH_HOST }}" >> "$GITHUB_ENV"
+      - name: Take a fresh consistent snapshot on the host (sqlite online backup, safe while running)
+        run: $SSH backup-now | tee backup-now.json
+      - name: Pull the latest backup
+        run: $SSH backup-pull > backup.tgz && ls -l backup.tgz
+      - name: Verify integrity and contents off-host
         run: |
-          H="${{ secrets.AVDI_SSH_USER }}@${{ secrets.AVDI_SSH_HOST }}"
-          ssh -i ~/.ssh/k -o IdentitiesOnly=yes "$H" \
-            'docker run --rm -v avdi_runtime_ledger:/d:ro alpine:3 sh -c "cd /d/backups && d=\$(ls -1 | tail -1) && tar -C /d/backups -czf - \$d"' > backup.tgz
-          ls -l backup.tgz
+          mkdir verify && tar -xzf backup.tgz -C verify
+          d=$(ls verify | head -1)
+          python3 - "verify/$d" <<'PY'
+          import hashlib, json, os, sqlite3, sys
+          d = sys.argv[1]
+          m = json.load(open(os.path.join(d, "MANIFEST.json")))
+          assert m["ok"], "host-side manifest not ok"
+          names = sorted(m["files"])
+          assert any(n.startswith("shadow__") for n in names), "shadow DB missing from backup"
+          assert any(not n.startswith("shadow__") for n in names), "ledger missing from backup"
+          for n, meta in m["files"].items():
+              p = os.path.join(d, n)
+              assert hashlib.sha256(open(p, "rb").read()).hexdigest() == meta["sha256"], f"sha mismatch {n}"
+              assert sqlite3.connect(p).execute("PRAGMA integrity_check").fetchone()[0] == "ok", f"integrity {n}"
+              print("verified", n, os.path.getsize(p), "bytes")
+          print("backup", os.path.basename(d), "verified off-host")
+          PY
       - uses: actions/upload-artifact@v4
-        if: github.event.schedule == '40 21 * * 1-5' || github.event_name == 'workflow_dispatch'
         with:
           name: avdi-ubuntu-backup-${{ github.run_number }}
           path: backup.tgz

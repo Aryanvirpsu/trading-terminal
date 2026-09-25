@@ -74,6 +74,10 @@ CREATE TABLE IF NOT EXISTS shadow_bars_d (
 CREATE TABLE IF NOT EXISTS shadow_bars_5m (
     symbol TEXT NOT NULL, ts TEXT NOT NULL, o REAL, h REAL, l REAL, c REAL, v REAL,
     fetched_at TEXT, PRIMARY KEY (symbol, ts));
+CREATE TABLE IF NOT EXISTS shadow_evidence_boundary (
+    version TEXT PRIMARY KEY, at TEXT NOT NULL, cycle_id TEXT, session_date TEXT,
+    equity REAL, cash REAL, open_positions INTEGER, realized_pnl REAL, entries_today INTEGER,
+    ledger_signals INTEGER, ledger_orders INTEGER, ledger_positions INTEGER, note TEXT);
 CREATE TABLE IF NOT EXISTS shadow_ch001_obs (
     position_id TEXT PRIMARY KEY, event_id TEXT, symbol TEXT, plus1r_ts TEXT, plus1r_price REAL,
     observed_at TEXT);
@@ -85,7 +89,7 @@ CREATE TABLE IF NOT EXISTS shadow_ch001_results (
     ambiguous INTEGER, ambiguity_note TEXT, bars_used INTEGER, computed_at TEXT);
 """
 _APPEND_ONLY = ("shadow_cycles", "shadow_events", "shadow_candidates", "shadow_picks", "shadow_bars_d",
-                "shadow_bars_5m", "shadow_ch001_obs", "shadow_ch001_results")
+                "shadow_bars_5m", "shadow_ch001_obs", "shadow_ch001_results", "shadow_evidence_boundary")
 
 
 def path() -> str:
@@ -537,3 +541,63 @@ def status() -> Dict[str, Any]:
         return {"ok": True, "last_cycle": dict(last) if last else None, "counts": n, "path": path()}
     except Exception as e:
         return {"ok": False, "error": str(e)[:160]}
+
+
+# ── evidence boundary (v1.0 | v1.1): account continuity WITHOUT mixing evidence ──────────────────────
+
+def ensure_boundary(version: str, cycle_id: str, session_date: str) -> Optional[Dict[str, Any]]:
+    """Record, exactly once, the account snapshot at the START of the first real in-session cycle of `version`.
+    v1.1 P&L is then `current equity - boundary equity` (never the v1.0 gains/losses). Append-only; non-fatal."""
+    try:
+        conn = _connect()
+        row = conn.execute("SELECT * FROM shadow_evidence_boundary WHERE version=?", (version,)).fetchone()
+        if row is None:
+            from . import risk as risk_mod
+            st = risk_mod.account_state(session_date)
+            n = lambda t: db.query_one(f"SELECT COUNT(*) n FROM {t}")["n"]
+            with conn:
+                conn.execute("INSERT OR IGNORE INTO shadow_evidence_boundary VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)",
+                             (version, db.utcnow(), cycle_id, session_date, st["equity"], st["cash"],
+                              st["open_positions"], st["realized_pnl"], st["entries_today"],
+                              n("signals"), n("orders"), n("positions"),
+                              "starting snapshot taken before the first real in-session cycle of this version"))
+            row = conn.execute("SELECT * FROM shadow_evidence_boundary WHERE version=?", (version,)).fetchone()
+            created = True
+        else:
+            created = False
+        out = dict(row)
+        out["created_now"] = created
+        conn.close()
+        return out
+    except Exception as e:
+        try:
+            db.audit("system", session_date, "shadow_boundary_failed", {"error": str(e)[:200]})
+        except Exception:
+            pass
+        return None
+
+
+def evidence_summary(version: str = "v1.1") -> Dict[str, Any]:
+    """Boundary + v1.1 P&L + v1.0/v1.1 row counts, kept separately queryable."""
+    out: Dict[str, Any] = {"version": version, "boundary": None}
+    try:
+        conn = _connect()
+        b = conn.execute("SELECT * FROM shadow_evidence_boundary WHERE version=?", (version,)).fetchone()
+        conn.close()
+        from . import risk as risk_mod
+        eq = risk_mod.account_state(db.utcnow()[:10])["equity"]
+        out["current_equity"] = eq
+        if b is not None:
+            out["boundary"] = dict(b)
+            out["v11_pnl"] = round(eq - b["equity"], 2)
+        out["ledger_signals_by_engine_version"] = {
+            r["engine_version"]: r["n"] for r in db.query(
+                "SELECT engine_version, COUNT(*) n FROM signals GROUP BY engine_version")}
+        if b is not None:
+            out["v11_positions_opened"] = db.query_one(
+                "SELECT COUNT(*) n FROM positions WHERE opened_at >= ?", (b["at"],))["n"]
+            out["v11_positions_closed"] = db.query_one(
+                "SELECT COUNT(*) n FROM positions WHERE status='closed' AND opened_at >= ?", (b["at"],))["n"]
+    except Exception as e:
+        out["error"] = str(e)[:160]
+    return out

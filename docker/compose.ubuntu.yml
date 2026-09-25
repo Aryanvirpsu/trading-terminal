@@ -23,6 +23,7 @@ services:
     env_file: [env/case1.env, env/ubuntu-runtime.env]
     environment:
       - AVDI_CODE_VERSION=${AVDI_CODE_VERSION:-unknown}
+      - AVDI_FORCE_UNHEALTHY=${AVDI_FORCE_UNHEALTHY:-}
     volumes:
       - avdi_runtime_ledger:/data/case1/paper
       - type: tmpfs
