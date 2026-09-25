@@ -127,3 +127,11 @@ separate, so a simultaneous run would fork the account.
 * One vCPU: scans run serially; a slow scan delays the tracker (no overlap by design).
 * No provider API keys on the host by default (Yahoo-only market data); keys may be supplied via a root-owned env
   file with `AVDI_ALLOW_PROVIDER_KEYS=true`.
+
+## Staged enablement log (2026-09-24/25)
+
+* A/B — `ubuntu-ops.yml` (restricted `ops` key): remote status/health/evidence, fresh snapshot, pull and **off-host
+  verification** passed (run 36079370474). The artifact was re-downloaded and re-verified independently: both DBs
+  `integrity_check ok`, sha256 match the manifest, contents = ledger + shadow DB + runtime state.
+* Key restrictions verified against the real host: no shell (`id` denied), no PTY, ops key cannot deploy, deploy key
+  cannot read backups, malformed shas rejected.
