@@ -515,8 +515,16 @@ class Runtime:
                             cash=b["cash"], open_positions=b["open_positions"])
                 except Exception as e:
                     self._err("boundary", e)
+            t_start = self.clock()
             out = self.actions.discovery(d, cycle_id, allow, slot.session_type)
+            t_end = self.clock()
             ev = out.get("evaluated") or []
+            self.state["cycle_log"] = (self.state.get("cycle_log", []) + [{
+                "cycle_id": cycle_id, "slot_et": f"{slot.when:%H:%M}", "session_type": slot.session_type,
+                "started_at": t_start.isoformat(timespec="seconds"), "ended_at": t_end.isoformat(timespec="seconds"),
+                "seconds": round((t_end - t_start).total_seconds(), 1),
+                "late_s": round((t_start - slot.when.astimezone(t_start.tzinfo)).total_seconds(), 1),
+                "state": out.get("state")}])[-400:]
             self.state["counters"]["discovery_runs"] += 1
             st = out.get("state")
             if st != "ok":

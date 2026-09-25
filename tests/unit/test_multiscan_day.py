@@ -335,3 +335,33 @@ def test_manual_smoke_cycles_never_seed_or_join_real_events(world):
     manual = [v for k, v in ev.items() if "manual" in k][0]
     real = [v for k, v in ev.items() if "manual" not in k][0]
     assert manual != real and manual.startswith("evtm_") and real.startswith("evt_")
+
+
+def test_acceptance_extraction_reports_a_session(world, capsys):
+    import importlib.util
+    world.finalists, world.decision = ["NVDA"], {"NVDA": "MONITOR"}
+    cycle("1335")
+    cycle("1350")
+    world.decision["NVDA"] = "TRADEABLE"
+    cycle("1405")
+    spec = importlib.util.spec_from_file_location("avdi_acc", ROOT / "automation" / "avdi_acceptance.py")
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    assert mod.main([DAY]) == 0
+    out = json.loads(capsys.readouterr().out)
+    ec = out["evidence_counts"]
+    assert ec["raw_observations"] == 3 and ec["unique_events"] == 1 and ec["by_decision"]["TRADEABLE"] == 1
+    assert out["state_transitions"]["NVDA"] == ["13:35:MONITOR", "13:50:MONITOR", "14:05:TRADEABLE"]
+    assert len(out["shadow_cycles"]) == 3 and out["shadow_cycles"][0]["funnel"]["finalists"] == 1
+    assert len(out["ledger"]["orders_today"]) == 1 and out["ledger"]["duplicate_entries"] == []
+    assert out["schedule"]["expected_discovery_cycles"] == 26 and out["schedule"]["expected_entry_cycles"] == 22
+    assert out["provider_freshness"]["max_quote_age_s_at_scan"] is not None
+
+
+def test_runtime_records_cycle_timing(world):
+    r = rt.Runtime(clock=lambda: dt.datetime(2026, 9, 25, 13, 35, 30, tzinfo=dt.timezone.utc),
+                   state_path=str(Path(db._DATA_DIR) / "rs2.json"))
+    world.finalists, world.decision = [], {}
+    r.tick()
+    cl = r.state["cycle_log"]
+    assert cl and cl[0]["cycle_id"] == "2026-09-25T0935" and cl[0]["late_s"] == 30.0 and cl[0]["state"] == "ok"
