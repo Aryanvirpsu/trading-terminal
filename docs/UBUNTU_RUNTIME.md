@@ -135,3 +135,7 @@ separate, so a simultaneous run would fork the account.
   `integrity_check ok`, sha256 match the manifest, contents = ledger + shadow DB + runtime state.
 * Key restrictions verified against the real host: no shell (`id` denied), no PTY, ops key cannot deploy, deploy key
   cannot read backups, malformed shas rejected.
+* C — `deploy-ubuntu.yml` (restricted `deploy` key, no force option): real deploy `49a608d` → `64ed47a` succeeded
+  (run 36079624782): old service stopped gracefully, pre-deploy snapshot, new release healthy in ~15 s, account/ledger
+  state identical before and after (equity $504.66, 55 v1.0 signals). The workflow's own test gate had first caught a real
+  bug in the gate script (dash `shift`), fixed before the deploy.
