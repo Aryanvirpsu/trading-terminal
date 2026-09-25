@@ -20,7 +20,7 @@ echo "== market-window guard"
 if python3 - "$REL" <<'PY'
 import datetime as dt, sys
 sys.path.insert(0, sys.argv[1] + "/lab/paper")
-import session_calendar as cal
+import market_calendar as cal
 now = dt.datetime.now(cal.ET)
 s = cal.session(now.date())
 busy = s is not None and (s[0] - dt.timedelta(minutes=10)) <= now <= (s[1] + dt.timedelta(minutes=20))

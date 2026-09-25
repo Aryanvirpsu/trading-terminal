@@ -302,7 +302,7 @@ def test_shadow_failure_never_blocks_champion(world, monkeypatch):
 
 def test_runtime_end_to_end_with_real_actions(world):
     """Runtime -> PaperActions -> real workflow/ledger/shadow log through a fake clock."""
-    from paper import session_calendar as cal
+    from paper import market_calendar as cal
     world.finalists, world.decision = ["NVDA"], {"NVDA": "TRADEABLE"}
     et = lambda h, m, s=0: dt.datetime(2026, 9, 25, h, m, s, tzinfo=cal.ET).astimezone(dt.timezone.utc)
     now = [et(9, 35, 30)]

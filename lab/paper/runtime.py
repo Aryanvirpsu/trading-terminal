@@ -35,7 +35,7 @@ import traceback
 from typing import Any, Callable, Dict, List, Optional
 
 from . import db
-from . import session_calendar as cal
+from . import market_calendar as cal
 
 # ── configuration (env-overridable; defaults are operating choices, NOT Champion gates) ─────────────
 

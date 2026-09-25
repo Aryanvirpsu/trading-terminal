@@ -22,7 +22,7 @@ Python 3.11.16 + the 60 frozen Case 1 pins) running `python automation/avdi_runt
 | Idle | nights/weekends/holidays | heartbeat only (every ~5 s tick, state written) |
 
 Early closes (13:00 ET) shift the tail: last observation 12:50, entry cutoff 11:50 slot, close processing 13:10.
-Holidays/early closes come from `lab/paper/session_calendar.py` (computed; extra ad-hoc closures via
+Holidays/early closes come from `lab/paper/market_calendar.py` (computed; extra ad-hoc closures via
 `AVDI_EXTRA_CLOSED_DATES`). Cadence/cutoff are operating choices (env, `docker/env/ubuntu-runtime.env`), **not
 Champion gates**; changing the entry window is a Challenger decision.
 

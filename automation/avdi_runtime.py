@@ -29,7 +29,7 @@ except Exception:
     pass
 
 from paper import runtime as rt  # noqa: E402
-from paper import session_calendar as cal  # noqa: E402
+from paper import market_calendar as cal  # noqa: E402
 
 
 def _print(o) -> None:

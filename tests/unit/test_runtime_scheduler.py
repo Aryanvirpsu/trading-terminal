@@ -11,7 +11,7 @@ for folder in ("src", "dashboard", "lab"):
     sys.path.insert(0, str(ROOT / folder))
 
 from paper import db, runtime as rt
-from paper import session_calendar as cal
+from paper import market_calendar as cal
 
 UTC = dt.timezone.utc
 
