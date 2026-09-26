@@ -21,3 +21,9 @@ positions); rows before 2026-09-25 are v1.0. On-host smoke cycles are identifiab
 
 Analysis baseline for v1.0: `docs/PROFIT_MODE_BASELINE_v1.md` (on branch `c1/cloud-runtime`).
 Any future strategy change (a promoted Challenger) starts a new version and a new sample.
+
+**Sizing caveat within v1.1 (2026-09-26).** DELL and META (2026-09-25) were sized on the *reference-entry* risk distance and so carry a
+realised stop loss of $5.277 / $5.296 against the $5.00 budget. Builds from `main` at/after commit `322e325` size on the *executable* entry and
+modelled stop fill (`docs/POST_ACCEPTANCE_FIXES_01.md`). Both remain valid executed v1.1 evidence; the build is identifiable per shadow cycle
+(`shadow_cycles.code_version`) and per backup manifest (`runtime_version`). Forward CH-001 evidence includes only positions opened at/after the
+v1.1 boundary with a v1.1 engine label (HAL/AMD rows were quarantined in `shadow_ch001_quarantine`).

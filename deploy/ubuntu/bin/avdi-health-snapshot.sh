@@ -24,7 +24,7 @@ except Exception:
     print(ts, "healthy=False unhealthy=status_unparseable"); sys.exit(0)
 ld = (d.get("last_discovery") or {}).get("at")
 lt = (d.get("last_tracker") or {}).get("at")
-print(ts, "healthy=%s" % d.get("healthy"), "unhealthy=%s" % ",".join(d.get("unhealthy") or []) or "-",
+print(ts, "healthy=%s" % d.get("healthy"), "unhealthy=%s" % (",".join(d.get("unhealthy") or []) or "-"),
       "degraded=%s" % (",".join(d.get("degraded") or []) or "-"), "in_session=%s" % d.get("in_session"),
       "last_discovery=%s" % ld, "last_tracker=%s" % lt, "code=%s" % (d.get("code_version") or "?")[:12])
 ' "$TS")"

@@ -1,0 +1,65 @@
+{
+ "note": "COUNTERFACTUAL ONLY - what the corrected executable-risk sizing would have approved. The historical ledger, orders and fills of 2026-09-25 are NOT rewritten.",
+ "assumptions": {
+  "risk_budget_usd": 5.0,
+  "entry": "ask * (1 + 5.0 bps)",
+  "stop_fill": "stop * (1 - 5.0 bps) (paper broker intrabar-stop model)",
+  "fees_per_share": 0.0
+ },
+ "trades": [
+  {
+   "symbol": "DELL",
+   "reference_entry": 563.42,
+   "stop": 517.79,
+   "ask": 565.4026,
+   "executable_entry": 565.6853,
+   "modelled_stop_fill": 517.5311,
+   "risk_per_share_reference": 45.63,
+   "risk_per_share_executable": 48.1542,
+   "actual": {
+    "quantity": 0.109577,
+    "fill": 565.6853,
+    "planned_risk_recorded_in_ledger": 5.0,
+    "notional": 61.99,
+    "realised_stop_loss_usd": 5.277,
+    "excess_over_budget_usd": 0.277,
+    "excess_pct": 5.5
+   },
+   "corrected": {
+    "quantity": 0.103833,
+    "notional": 58.74,
+    "binding": "per_trade_risk",
+    "planned_risk": 5.0,
+    "realised_stop_loss_usd": 5.0,
+    "quantity_change_pct": -5.24
+   }
+  },
+  {
+   "symbol": "META",
+   "reference_entry": 748.36,
+   "stop": 706.2,
+   "ask": 750.1249,
+   "executable_entry": 750.5,
+   "modelled_stop_fill": 705.8469,
+   "risk_per_share_reference": 42.16,
+   "risk_per_share_executable": 44.6531,
+   "actual": {
+    "quantity": 0.118596,
+    "fill": 750.5,
+    "planned_risk_recorded_in_ledger": 5.0,
+    "notional": 89.01,
+    "realised_stop_loss_usd": 5.296,
+    "excess_over_budget_usd": 0.296,
+    "excess_pct": 5.9
+   },
+   "corrected": {
+    "quantity": 0.111974,
+    "notional": 84.04,
+    "binding": "per_trade_risk",
+    "planned_risk": 5.0,
+    "realised_stop_loss_usd": 5.0,
+    "quantity_change_pct": -5.58
+   }
+  }
+ ]
+}

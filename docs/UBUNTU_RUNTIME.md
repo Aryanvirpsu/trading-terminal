@@ -139,3 +139,12 @@ separate, so a simultaneous run would fork the account.
   (run 36079624782): old service stopped gracefully, pre-deploy snapshot, new release healthy in ~15 s, account/ledger
   state identical before and after (equity $504.66, 55 v1.0 signals). The workflow's own test gate had first caught a real
   bug in the gate script (dash `shift`), fixed before the deploy.
+
+## Host timers, backups and reboot (post-acceptance)
+
+Timing of operational jobs is owned by the HOST, not GitHub (see `docs/POST_ACCEPTANCE_FIXES_01.md`): `avdi-health.timer` (15 min),
+`avdi-close-backup.timer` (Mon-Fri 16:25 America/New_York), `avdi-verify.timer` (22:15 America/New_York), installed with
+`sh deploy/ubuntu/install-timers.sh` (owner-managed, like `ops-gate.sh`). Backups are verified (sha256 + integrity + ledger and shadow
+DB), read-only, retained 7 days in full / 60 days daily / 2 GB cap, and a backup failure never touches trading. The ops gate gained
+`verify-backup`, `health-log` and `offhost-ack <name>`. A VM reboot was accepted 2026-09-25 (29/29 checks, recovery 73 s).
+CLI additions: `verify-backup`, `offhost-ack`, `rebuild-ch001`. Sizing now respects the executable-price risk invariant.
