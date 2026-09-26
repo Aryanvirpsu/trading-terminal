@@ -1,0 +1,13 @@
+[Unit]
+Description=AVDI close backup (verified local snapshot + best-effort off-host trigger)
+After=docker.service
+Wants=docker.service
+
+[Service]
+Type=oneshot
+User=ubuntu
+ExecStart=/home/ubuntu/avdi-runtime/bin/avdi-close-backup.sh
+Nice=10
+IOSchedulingClass=idle
+CPUQuota=40%
+TimeoutStartSec=2400

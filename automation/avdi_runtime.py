@@ -8,6 +8,8 @@
     python automation/avdi_runtime.py tracker-once [--scope positions|all]
     python automation/avdi_runtime.py close-once          # postmarket + report + CH-001 + backup
     python automation/avdi_runtime.py backup              # consistent snapshot of ledger + shadow DB + state
+    python automation/avdi_runtime.py verify-backup [latest|NAME] [--max-age-hours N]   # sha256 + integrity + contents
+    python automation/avdi_runtime.py offhost-ack NAME    # record a verified off-host copy (ops gate)
     python automation/avdi_runtime.py backup-live         # same, safe while the service runs (used by the ops gate)
     python automation/avdi_runtime.py rebuild-ch001       # quarantine + deterministically re-derive the CH-001 tables
     python automation/avdi_runtime.py evidence [v1.1]     # evidence boundary + v1.1 P&L + v1.0/v1.1 row counts
@@ -79,6 +81,19 @@ def main(argv=None) -> int:
     if cmd == "rebuild-ch001":     # deterministic re-derivation of the CH-001 tables (quarantines old rows, logged)
         from paper import shadow_log
         _print(shadow_log.rebuild_ch001())
+        return 0
+
+    if cmd == "verify-backup":     # independent verification; exit 1 when anything is wrong
+        mh = None
+        for i, x in enumerate(a):
+            if x == "--max-age-hours" and i + 1 < len(a):
+                mh = float(a[i + 1])
+        res = rt.verify_backup(args[0] if args and not args[0].replace(".", "").isdigit() else None, mh)
+        _print(res)
+        return 0 if res["ok"] else 1
+
+    if cmd == "offhost-ack":       # called through the ops gate after an off-host pull was verified
+        _print(rt.record_offhost_ack(args[0] if args else ""))
         return 0
 
     if cmd == "backup-live":       # read-only online sqlite backup; safe while the service runs (no lock needed)

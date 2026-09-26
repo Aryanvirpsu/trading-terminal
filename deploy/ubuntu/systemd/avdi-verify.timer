@@ -1,0 +1,10 @@
+[Unit]
+Description=AVDI nightly backup verification, 22:15 America/New_York
+
+[Timer]
+OnCalendar=*-*-* 22:15 America/New_York
+Persistent=true
+AccuracySec=1s
+
+[Install]
+WantedBy=timers.target

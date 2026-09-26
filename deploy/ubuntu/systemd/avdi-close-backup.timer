@@ -1,0 +1,10 @@
+[Unit]
+Description=AVDI close backup, weekdays 16:25 America/New_York (after the 16:10 close processing)
+
+[Timer]
+OnCalendar=Mon..Fri 16:25 America/New_York
+Persistent=true
+AccuracySec=1s
+
+[Install]
+WantedBy=timers.target

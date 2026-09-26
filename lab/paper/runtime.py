@@ -26,6 +26,7 @@ import datetime as dt
 import hashlib
 import json
 import os
+import re
 import shutil
 import signal
 import sqlite3
@@ -280,7 +281,11 @@ class PaperActions:
             out["report_error"] = str(e)[:160]
         out["shadow_bars"] = shadow_log.update_bars(d.isoformat(), intraday_every_min=1)
         out["ch001"] = shadow_log.evaluate_ch001()
-        out["backup"] = backup_now("close")
+        try:
+            out["backup"] = backup_now("close")
+        except Exception as e:                       # a backup failure must never interrupt paper trading
+            out["backup"] = {"ok": False, "error": str(e)[:200]}
+            log("backup_failed", error=str(e)[:200])
         return out
 
 
@@ -313,9 +318,22 @@ def account_snapshot(session_date: Optional[str] = None) -> Dict[str, Any]:
             "sector_positions": st["sector_positions"], "equity": st["equity"]}
 
 
+def _sha256(path: str) -> str:
+    h = hashlib.sha256()
+    with open(path, "rb") as fh:
+        for chunk in iter(lambda: fh.read(1 << 20), b""):
+            h.update(chunk)
+    return h.hexdigest()
+
+
 def backup_now(reason: str = "manual") -> Dict[str, Any]:
-    """Consistent snapshot (sqlite online-backup API) of the ledger, shadow DB, state and reports."""
+    """Consistent snapshot (sqlite online-backup API) of the ledger, shadow DB, runtime state and reports.
+
+    The MANIFEST records timestamp, reason, runtime/engine version, the v1.1 evidence boundary, ledger summary and,
+    per database, size, SHA-256 and the PRAGMA integrity_check result. Files are made read-only (0444) once written
+    so a finished backup is never modified in place. Retention: see `_prune_backups`."""
     from . import shadow_log
+    from .journal import ENGINE_VERSION
     stamp = dt.datetime.now(dt.timezone.utc).strftime("%Y%m%dT%H%M%SZ")
     dest = os.path.join(backup_dir(), stamp)
     os.makedirs(dest, exist_ok=True)
@@ -332,22 +350,164 @@ def backup_now(reason: str = "manual") -> Dict[str, Any]:
         ok = d.execute("PRAGMA integrity_check").fetchone()[0] == "ok"
         d.close()
         s.close()
-        files[os.path.basename(out)] = {"bytes": os.path.getsize(out), "integrity_ok": ok,
-                                        "sha256": hashlib.sha256(open(out, "rb").read()).hexdigest()}
+        files[os.path.basename(out)] = {"bytes": os.path.getsize(out), "integrity_ok": ok, "sha256": _sha256(out)}
     for extra in (_state_path(),):
         if os.path.exists(extra):
             shutil.copy2(extra, dest)
     if os.path.isdir(report_dir()):
         shutil.copytree(report_dir(), os.path.join(dest, "reports"), dirs_exist_ok=True)
     ok_all = bool(files) and all(f["integrity_ok"] for f in files.values())
-    with open(os.path.join(dest, "MANIFEST.json"), "w", encoding="utf-8") as fh:
-        json.dump({"created": stamp, "reason": reason, "files": files, "ok": ok_all}, fh, indent=1)
-    # retention
-    keep = rcfg()["backup_keep"]
-    old = sorted(p for p in os.listdir(backup_dir()) if os.path.isdir(os.path.join(backup_dir(), p)))
-    for p in old[:-keep]:
-        shutil.rmtree(os.path.join(backup_dir(), p), ignore_errors=True)
-    return {"path": dest, "ok": ok_all, "files": len(files), "at": stamp}
+    boundary = None
+    ledger_summary: Dict[str, Any] = {}
+    try:
+        boundary = shadow_log.evidence_summary("v1.1")
+        ledger_summary = {t: db.query_one(f"SELECT COUNT(*) n FROM {t}")["n"]
+                          for t in ("signals", "orders", "fills", "positions")}
+    except Exception:
+        pass
+    manifest = {"created": stamp, "created_iso": dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds"),
+                "reason": reason, "runtime_version": os.environ.get("AVDI_CODE_VERSION", "unknown"),
+                "engine_version": ENGINE_VERSION, "config_version": db.config_version(),
+                "evidence": boundary, "ledger_summary": ledger_summary, "files": files, "ok": ok_all}
+    mpath = os.path.join(dest, "MANIFEST.json")
+    with open(mpath, "w", encoding="utf-8") as fh:
+        json.dump(manifest, fh, indent=1, default=str)
+    for base, _dirs, names in os.walk(dest):          # a finished backup is never modified in place
+        for n in names:
+            try:
+                os.chmod(os.path.join(base, n), 0o444)
+            except OSError:
+                pass
+    pruned = _prune_backups()
+    return {"path": dest, "ok": ok_all, "files": len(files), "at": stamp, "pruned": pruned,
+            "runtime_version": manifest["runtime_version"]}
+
+
+def _rm_readonly(func, path, _exc):
+    os.chmod(path, 0o700)
+    func(path)
+
+
+def _prune_backups(now: Optional[dt.datetime] = None) -> List[str]:
+    """Retention: keep EVERY backup from the last 7 days; beyond that keep only the newest backup of each day up to
+    60 days; drop anything older; and cap the whole directory at ~2 GB (oldest first). Never removes the newest."""
+    root = backup_dir()
+    if not os.path.isdir(root):
+        return []
+    now = now or dt.datetime.now(dt.timezone.utc)
+    names = sorted(n for n in os.listdir(root) if re.fullmatch(r"\d{8}T\d{6}Z", n))
+    keep, drop = set(), []
+    seen_days = set()
+    for n in reversed(names):                                   # newest first
+        t = dt.datetime.strptime(n, "%Y%m%dT%H%M%SZ").replace(tzinfo=dt.timezone.utc)
+        age_days = (now - t).days
+        day = n[:8]
+        if n == names[-1] or age_days < 7:
+            keep.add(n)
+            seen_days.add(day)
+        elif age_days < 60 and day not in seen_days:
+            keep.add(n)
+            seen_days.add(day)
+    size = lambda n: sum(os.path.getsize(os.path.join(b, f)) for b, _d, fs in os.walk(os.path.join(root, n)) for f in fs)
+    total = 0
+    for n in reversed(names):                                   # size cap, oldest dropped first
+        if n in keep:
+            total += size(n)
+    for n in names:
+        if n in keep and total > 2 * 1024 ** 3 and n != names[-1]:
+            keep.discard(n)
+            total -= size(n)
+    for n in names:
+        if n not in keep:
+            shutil.rmtree(os.path.join(root, n), onerror=_rm_readonly)
+            drop.append(n)
+    return drop
+
+
+def latest_backup() -> Optional[str]:
+    root = backup_dir()
+    if not os.path.isdir(root):
+        return None
+    names = sorted(n for n in os.listdir(root) if re.fullmatch(r"\d{8}T\d{6}Z", n))
+    return names[-1] if names else None
+
+
+def verify_backup(name: Optional[str] = None, max_age_hours: Optional[float] = None,
+                  now: Optional[dt.datetime] = None) -> Dict[str, Any]:
+    """Independent verification of a finished backup: manifest present, every file present, SHA-256 equal to the
+    manifest, PRAGMA integrity_check ok (read-only, immutable open), ledger AND shadow DB present, and (optionally)
+    the backup is not older than `max_age_hours`."""
+    name = name if name and name != "latest" else latest_backup()
+    out: Dict[str, Any] = {"backup": name, "ok": False, "problems": []}
+    if not name:
+        out["problems"].append("no backup exists")
+        return out
+    d = os.path.join(backup_dir(), name)
+    try:
+        m = json.load(open(os.path.join(d, "MANIFEST.json"), encoding="utf-8"))
+    except Exception as e:
+        out["problems"].append(f"manifest unreadable: {e}")
+        return out
+    out["manifest"] = {k: m.get(k) for k in ("created_iso", "reason", "runtime_version", "engine_version", "ok")}
+    names = sorted(m.get("files", {}))
+    if not any(n.startswith("shadow__") for n in names):
+        out["problems"].append("shadow DB missing from backup")
+    if not any(not n.startswith("shadow__") for n in names):
+        out["problems"].append("ledger missing from backup")
+    checked = {}
+    for n, meta in m.get("files", {}).items():
+        p = os.path.join(d, n)
+        if not os.path.exists(p):
+            out["problems"].append(f"{n} missing")
+            continue
+        sha_ok = _sha256(p) == meta.get("sha256")
+        try:
+            c = sqlite3.connect(f"file:{p}?mode=ro&immutable=1", uri=True)
+            integ = c.execute("PRAGMA integrity_check").fetchone()[0]
+            c.close()
+        except Exception as e:
+            integ = f"error: {e}"
+        checked[n] = {"sha256_match": sha_ok, "integrity": integ, "bytes": os.path.getsize(p)}
+        if not sha_ok:
+            out["problems"].append(f"{n} sha256 mismatch")
+        if integ != "ok":
+            out["problems"].append(f"{n} integrity_check {integ}")
+    out["files"] = checked
+    if max_age_hours is not None:
+        try:
+            age = ((now or dt.datetime.now(dt.timezone.utc))
+                   - dt.datetime.fromisoformat(m["created_iso"])).total_seconds() / 3600
+            out["age_hours"] = round(age, 2)
+            if age > max_age_hours:
+                out["problems"].append(f"backup is {age:.1f} h old (limit {max_age_hours} h)")
+        except Exception:
+            out["problems"].append("backup age unknown")
+    out["ok"] = not out["problems"]
+    return out
+
+
+def _ack_path() -> str:
+    return os.path.join(rt_dir(), "offhost_ack.json")
+
+
+def record_offhost_ack(backup_name: str) -> Dict[str, Any]:
+    """Written by the (verified) off-host pull so the host knows the off-host copy really exists."""
+    if not re.fullmatch(r"\d{8}T\d{6}Z", backup_name or ""):
+        raise ValueError("bad backup name")
+    rec = {"backup": backup_name, "at": dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds")}
+    save_state(rec, _ack_path())
+    return rec
+
+
+def offhost_status(now: Optional[dt.datetime] = None) -> Dict[str, Any]:
+    try:
+        with open(_ack_path(), encoding="utf-8") as fh:
+            rec = json.load(fh)
+        rec["age_hours"] = round(((now or dt.datetime.now(dt.timezone.utc))
+                                  - dt.datetime.fromisoformat(rec["at"])).total_seconds() / 3600, 1)
+        return rec
+    except Exception:
+        return {"backup": None, "at": None, "age_hours": None}
 
 
 # ── the supervisor ───────────────────────────────────────────────────────────────────────────────────
@@ -641,6 +801,9 @@ def health(now: Optional[dt.datetime] = None, state: Optional[Dict[str, Any]] = 
             qa = (state.get("last_tracker") or {}).get("quote_age_s_max")
             if qa is not None and qa > 900:
                 degraded.append("stale_market_data")
+    oh = offhost_status(now)
+    if cal.is_trading_day(d) and (oh["age_hours"] is None or oh["age_hours"] > 30):
+        degraded.append("offhost_backup_stale")
     bk_age = age((state.get("last_backup") or {}).get("at"))
     if bk_age is not None and bk_age > 30 * 3600 and cal.is_trading_day(d):
         degraded.append("backup_stale")
@@ -650,4 +813,5 @@ def health(now: Optional[dt.datetime] = None, state: Optional[Dict[str, Any]] = 
             "last_tracker": state.get("last_tracker"), "last_backup": state.get("last_backup"),
             "last_exception": state.get("last_exception"), "counters": ctr, "disk": dsk,
             "shadow": sh, "restore_ok": state.get("restore_ok"), "started_at": state.get("started_at"),
-            "code_version": os.environ.get("AVDI_CODE_VERSION", "unknown")}
+            "code_version": os.environ.get("AVDI_CODE_VERSION", "unknown"), "offhost": oh,
+            "latest_backup": latest_backup()}

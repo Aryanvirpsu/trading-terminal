@@ -1,0 +1,11 @@
+[Unit]
+Description=AVDI runtime health snapshot every 15 minutes (24/7)
+
+[Timer]
+OnCalendar=*:0/15
+OnBootSec=2min
+Persistent=true
+AccuracySec=10s
+
+[Install]
+WantedBy=timers.target

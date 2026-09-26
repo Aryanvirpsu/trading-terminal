@@ -34,6 +34,9 @@ jobs:
           sh -n deploy/ubuntu/deploy.sh
           sh -n deploy/ubuntu/seed_ledger.sh
           sh -n deploy/ubuntu/ops-gate.sh
+          sh -n deploy/ubuntu/install-timers.sh
+          for f in deploy/ubuntu/bin/*.sh; do sh -n "$f"; done
+          for u in deploy/ubuntu/systemd/*.timer; do grep -q '^OnCalendar=' "$u"; done
           python -m pip install pyyaml
           python -c "import yaml,glob; [yaml.safe_load(open(f)) for f in glob.glob('.github/workflows/*.yml')+['docker/compose.ubuntu.yml']]"
       - name: Unit suite (baseline-aware gate)

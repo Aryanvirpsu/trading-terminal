@@ -127,6 +127,11 @@ GATE = ROOT / "deploy" / "ubuntu" / "ops-gate.sh"
     ("deploy", "deploy abc123", 2),              # sha must be 40 hex chars
     ("nobody", "status", 126),                   # unknown role
     ("ops", "", 126),                            # no command
+    ("ops", "offhost-ack notaname", 2),          # backup name must match the timestamp pattern
+    ("ops", "offhost-ack ../../etc", 2),
+    ("deploy", "offhost-ack 20260925T232307Z", 126),   # the deploy key cannot acknowledge backups
+    ("deploy", "verify-backup", 126),
+    ("deploy", "health-log", 126),
 ])
 def test_ops_gate_denies_everything_outside_the_role(tmp_path, role, cmd, code):
     env = dict(os.environ, HOME=str(tmp_path), SSH_ORIGINAL_COMMAND=cmd)

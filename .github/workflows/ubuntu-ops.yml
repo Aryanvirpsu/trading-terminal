@@ -6,9 +6,11 @@ name: Ubuntu runtime ops (health + off-host backup)
 # deploy/ubuntu/ops-gate.sh with role `ops` (status | health | evidence | backup-now | backup-list | backup-pull).
 # No shell, no port forwarding. Disabled until repository variable AVDI_OPS_ENABLED == 'true'.
 on:
+  # TIMING IS OWNED BY THE HOST (systemd timers: 15-min health snapshot, 16:25 ET close backup that then dispatches this
+  # workflow). GitHub-scheduled runs proved unreliable (2 of ~16 probes fired), so the only cron left is ONE nightly
+  # backstop pull; it is idempotent (it pulls the latest already-prepared, host-verified backup).
   schedule:
-    - cron: "5,35 13-20 * * 1-5"    # read-only health probe during market hours (UTC)
-    - cron: "40 21 * * 1-5"         # nightly off-host backup pull (~17:40 ET, after close processing)
+    - cron: "40 21 * * 1-5"
   workflow_dispatch:
 
 permissions:
@@ -38,7 +40,7 @@ jobs:
 
   backup:
     needs: probe
-    if: vars.AVDI_OPS_ENABLED == 'true' && (github.event_name == 'workflow_dispatch' || github.event.schedule == '40 21 * * 1-5')
+    if: vars.AVDI_OPS_ENABLED == 'true'
     runs-on: ubuntu-latest
     steps:
       - name: Configure restricted SSH (ops role)
@@ -47,8 +49,8 @@ jobs:
           printf '%s\n' "${{ secrets.AVDI_OPS_SSH_KEY }}" > ~/.ssh/k && chmod 600 ~/.ssh/k
           printf '%s\n' "${{ secrets.AVDI_SSH_KNOWN_HOSTS }}" > ~/.ssh/known_hosts
           echo "SSH=ssh -i $HOME/.ssh/k -o IdentitiesOnly=yes -o BatchMode=yes ${{ secrets.AVDI_SSH_USER }}@${{ secrets.AVDI_SSH_HOST }}" >> "$GITHUB_ENV"
-      - name: Take a fresh consistent snapshot on the host (sqlite online backup, safe while running)
-        run: $SSH backup-now | tee backup-now.json
+      - name: Host-side verification of the latest prepared backup (sha256 + integrity + contents)
+        run: $SSH verify-backup | tee host-verify.json
       - name: Pull the latest backup
         run: $SSH backup-pull > backup.tgz && ls -l backup.tgz
       - name: Verify integrity and contents off-host
@@ -70,9 +72,12 @@ jobs:
               print("verified", n, os.path.getsize(p), "bytes")
           print("backup", os.path.basename(d), "verified off-host")
           PY
+          echo "BACKUP_NAME=$d" >> "$GITHUB_ENV"
       - uses: actions/upload-artifact@v4
         with:
           name: avdi-ubuntu-backup-${{ github.run_number }}
           path: backup.tgz
           retention-days: 90
           if-no-files-found: error
+      - name: Acknowledge the verified off-host copy to the host (health reports it)
+        run: $SSH "offhost-ack $BACKUP_NAME"
