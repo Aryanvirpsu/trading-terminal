@@ -41,3 +41,22 @@ jobs:
           python -c "import yaml,glob; [yaml.safe_load(open(f)) for f in glob.glob('.github/workflows/*.yml')+['docker/compose.ubuntu.yml']]"
       - name: Unit suite (baseline-aware gate)
         run: python deploy/ci_gate.py tests/unit
+
+  historical-lab:
+    # Separate job, separate (unpinned) dependency set — never touches docker/requirements-c0-*.txt and
+    # never affects the production gate above or the deploy workflow. Historical Lab has zero known
+    # baseline failures: any failure here is real and must not be waived.
+    runs-on: ubuntu-latest
+    env:
+      TZ: UTC
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install Historical Lab's own dependencies
+        run: python -m pip install -r research/historical/requirements.txt pytest
+      - name: Historical Lab tests (production isolation, dataset foundation, replay clock)
+        # -m "not network": excludes the one live-Yahoo acceptance pull, so CI is not hostage to a
+        # third-party vendor's availability/rate limits; that test is run and verified manually instead.
+        run: python -m pytest tests/historical -q -m "not network"

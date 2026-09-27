@@ -1,5 +1,14 @@
 # CLAUDE.md — project instructions
 
+## Standing rule: Historical Lab (`research/historical/`, branch `h1/historical-lab`)
+
+Historical Lab exists to accelerate evidence, not to maximize backtest performance. Any architecture or
+experiment that makes historical results less causally representative of the forward Ubuntu runtime is a
+regression, even if reported P&L increases. It reuses the real scanner, canonical A/B/C/D/E stack,
+Champion/Challenger sizing and risk code — it never duplicates that logic — and it must never write to the
+production paper ledger or `paper/shadow`, and never run on the Ubuntu production host (enforced by
+`research/historical/guards.py`, tested in `tests/historical/`). See `research/historical/README.md`.
+
 ## Active policy: PROFIT MODE (supersedes the earlier build freeze)
 
 The strategy/build freeze on the paper pipeline (`lab/paper/`, `lab/decision_engine.py`,

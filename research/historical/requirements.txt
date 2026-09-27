@@ -1,0 +1,15 @@
+# AVDI Historical Lab — RESEARCH/DEV dependencies only.
+#
+# Deliberately SEPARATE from docker/requirements-c0-*.txt (the sha256-verified, frozen set that builds the
+# Ubuntu production image, avdi-paper). Nothing in this file may be added to those, and nothing here is
+# installed inside docker/Dockerfile.terminal's `paper`/`dashboard` targets — Historical Lab never runs on
+# the Ubuntu production host (see research/historical/guards.py) and must never bloat or destabilize the
+# production image's pinned dependency closure.
+#
+# Not sha256-pinned like the production set (research code changes faster and isn't a live-trading
+# surface); pin exact versions here once the lab's dependency set stabilizes.
+duckdb>=1.5,<2
+pyarrow>=20,<26
+pandera[pandas]>=0.24,<1
+datasets>=3,<6
+huggingface_hub>=0.25
