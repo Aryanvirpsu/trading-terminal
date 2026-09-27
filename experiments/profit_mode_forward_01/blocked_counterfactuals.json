@@ -1,0 +1,58 @@
+[
+ {
+  "symbol": "AAPL",
+  "event_id": "evt_AAPL_LONG_20260925T1350",
+  "reason": "sector",
+  "entry": 338.93,
+  "stop": 329.88,
+  "target": 360.08,
+  "outcome": "open",
+  "R": 0.2144247010963385,
+  "exit_ts": null,
+  "plus1r_ts": null,
+  "mfe_R": 0.3,
+  "mae_R": 0.0
+ },
+ {
+  "symbol": "TMO",
+  "event_id": "evt_TMO_LONG_20260925T1405",
+  "reason": "entries_per_day",
+  "entry": 670.39,
+  "stop": 649.26,
+  "target": 718.71,
+  "outcome": "open",
+  "R": 0.18101243696018768,
+  "exit_ts": null,
+  "plus1r_ts": null,
+  "mfe_R": 0.23,
+  "mae_R": 0.05
+ },
+ {
+  "symbol": "MSFT",
+  "event_id": "evt_MSFT_LONG_20260925T1835",
+  "reason": "entries_per_day",
+  "entry": 516.68,
+  "stop": 501.82,
+  "target": 551.06,
+  "outcome": "open",
+  "R": -0.056417524499490446,
+  "exit_ts": null,
+  "plus1r_ts": null,
+  "mfe_R": 0.1,
+  "mae_R": 0.09
+ },
+ {
+  "symbol": "TSLA",
+  "event_id": "evt_TSLA_LONG_20260925T1905",
+  "reason": "entries_per_day",
+  "entry": 370.75,
+  "stop": 355.06,
+  "target": 405.5,
+  "outcome": "open",
+  "R": 0.07295166171227917,
+  "exit_ts": null,
+  "plus1r_ts": null,
+  "mfe_R": 0.14,
+  "mae_R": -0.02
+ }
+]
