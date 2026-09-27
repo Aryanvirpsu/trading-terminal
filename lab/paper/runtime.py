@@ -490,11 +490,11 @@ def _ack_path() -> str:
     return os.path.join(rt_dir(), "offhost_ack.json")
 
 
-def record_offhost_ack(backup_name: str) -> Dict[str, Any]:
+def record_offhost_ack(backup_name: str, now: Optional[dt.datetime] = None) -> Dict[str, Any]:
     """Written by the (verified) off-host pull so the host knows the off-host copy really exists."""
     if not re.fullmatch(r"\d{8}T\d{6}Z", backup_name or ""):
         raise ValueError("bad backup name")
-    rec = {"backup": backup_name, "at": dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds")}
+    rec = {"backup": backup_name, "at": (now or dt.datetime.now(dt.timezone.utc)).isoformat(timespec="seconds")}
     save_state(rec, _ack_path())
     return rec
 

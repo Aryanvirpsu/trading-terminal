@@ -113,19 +113,23 @@ def test_backup_failure_never_breaks_the_close_job(env, monkeypatch):
 
 
 def test_offhost_ack_roundtrip_and_health_degradation(env):
+    # ack_at/now are both FIXED, explicit instants passed to record_offhost_ack/health — no dependency on
+    # real wall-clock time. (A version of this test that let record_offhost_ack stamp itself with
+    # time.now() flaked whenever the suite happened to run close in real time to a hardcoded `now`.)
     assert rt.offhost_status()["backup"] is None
     with pytest.raises(ValueError):
         rt.record_offhost_ack("../../etc/passwd")
-    rec = rt.record_offhost_ack("20260925T232307Z")
+    ack_at = dt.datetime(2026, 9, 26, 0, tzinfo=UTC)                                   # Saturday — arbitrary
+    rec = rt.record_offhost_ack("20260925T232307Z", now=ack_at)
     assert rt.offhost_status()["backup"] == "20260925T232307Z"
     lock = rt.runtime_lock()
     assert lock.acquire()
     try:
-        now = dt.datetime(2026, 9, 28, 23, tzinfo=UTC)                                # Monday evening, market closed
+        now = dt.datetime(2026, 9, 28, 23, tzinfo=UTC)          # Monday evening ET, market closed, 71h after the ack
         st = {"heartbeat": now.isoformat(), "restore_ok": True, "counters": {}}
         stale = rt.health(now=now, state=st)
         assert "offhost_backup_stale" in stale["degraded"] and stale["healthy"] is True   # degraded, never unhealthy
-        rt.save_state({"backup": "x", "at": now.isoformat(timespec="seconds")}, rt._ack_path())
+        rt.record_offhost_ack("20260926T000000Z", now=now)                             # a fresh ack clears it
         assert "offhost_backup_stale" not in rt.health(now=now, state=st)["degraded"]
     finally:
         lock.release()
