@@ -53,15 +53,57 @@ def _bars_dict(points: List[Dict[str, Any]]) -> Optional[Dict[str, Any]]:
             "as_of": points[-1]["t"]}
 
 
-def historical_analysis(provider: HistoricalMarketProvider, symbol: str, as_of: Optional[dt.datetime]):
+def _synthesize_todays_daily_bar(intraday_provider: Optional[HistoricalMarketProvider], symbol: str,
+                                 as_of: dt.datetime, last_daily_et_date) -> Optional[Dict[str, Any]]:
+    """H5 finding: a LIVE `fallback_ta.analysis()` call, made intraday, benefits from yfinance's own
+    behaviour of including TODAY's still-forming daily candle as `h.index[-1]` -- continuously updated as
+    the session progresses. A historical bulk daily-bar fetch made AFTER the fact can only ever return
+    complete, closed sessions; it has no way to reconstruct "what today's in-progress candle looked like at
+    this exact intraday instant" -- a genuine, structural CAPABILITY_DIFFERENCE (not a replay bug), because
+    no historical vendor can answer that question after the fact for daily-resolution data.
+
+    Where a genuinely finer intraday feed IS available (H5 blocker #5's execution_provider), this is not a
+    capability gap at all: today's in-progress daily bar can be honestly reconstructed by aggregating the
+    intraday bars already visible as of `as_of` -- open of the first, running high/low, close of the most
+    recent, summed volume -- using ONLY information legally available at the clock's current instant. This
+    is real, not fabricated: every input bar is itself a real historical bar filtered through the same
+    lookahead-safe `_visible()` the rest of Historical Lab already trusts."""
+    if intraday_provider is None:
+        return None
+    from zoneinfo import ZoneInfo
+    et = ZoneInfo("America/New_York")
+    as_of_et_date = as_of.astimezone(et).date()
+    if last_daily_et_date is not None and last_daily_et_date >= as_of_et_date:
+        return None                                       # today's daily bar already exists -- no synthesis needed
+    todays = [p for p in intraday_provider.bars(symbol, timeframe="5m", end=as_of)
+             if dt.datetime.fromisoformat(p["t"]).astimezone(et).date() == as_of_et_date]
+    if not todays:
+        return None
+    return {"o": todays[0]["o"], "h": max(p["h"] for p in todays), "l": min(p["l"] for p in todays),
+           "c": todays[-1]["c"], "v": sum(p.get("v") or 0 for p in todays), "t": todays[-1]["t"]}
+
+
+def historical_analysis(provider: HistoricalMarketProvider, symbol: str, as_of: Optional[dt.datetime],
+                        *, intraday_provider: Optional[HistoricalMarketProvider] = None):
     """`decision_engine._load_analysis`'s PRIMARY (yfinance-fallback) branch, reimplemented against the
     historical provider instead of a live `yf.Ticker(...).history()` call. Reuses `lab.fallback_ta`'s pure
     `_rsi`/`_atr` helpers (the exact formulas the live path uses) — only the data FETCH is substituted,
     because `fallback_ta.analysis()` has no injection seam of its own (it calls yfinance directly) and must
-    not be modified: it is production code the forward Ubuntu runtime depends on."""
+    not be modified: it is production code the forward Ubuntu runtime depends on.
+
+    `intraday_provider`, if given, lets today's still-forming daily bar be honestly reconstructed from real
+    intraday bars already visible (see `_synthesize_todays_daily_bar`) rather than leaving the analysis
+    stuck on yesterday's close (and therefore critically_stale) for the entire length of today's session."""
     import fallback_ta
 
     points = provider.bars(symbol, timeframe="1d", end=as_of)
+    last_et_date = None
+    if points:
+        from zoneinfo import ZoneInfo
+        last_et_date = dt.datetime.fromisoformat(points[-1]["t"]).astimezone(ZoneInfo("America/New_York")).date()
+    synth = _synthesize_todays_daily_bar(intraday_provider, symbol, as_of, last_et_date)
+    if synth is not None:
+        points = points + [synth]
     if len(points) < 55:
         return None, "unavailable", "unavailable"
     closes = [p["c"] for p in points]
@@ -144,7 +186,66 @@ class HistoricalAVDIContext:
     def _patched_load_analysis(self, symbol: str, exchange: str):
         self.calls.append({"fn": "decision_engine._load_analysis", "symbol": symbol,
                            "clock_now": self.clock.now.isoformat()})
-        return historical_analysis(self.provider, symbol, self.clock.now)
+        # execution_provider defaults to provider itself (H3/H4 single-feed callers) -- in that degenerate
+        # case today's bar (if any) is almost always already present in the daily data, so synthesis is a
+        # harmless no-op; a genuinely finer execution_provider (H5) lets today's still-forming session
+        # contribute real, already-visible information instead of leaving the analysis on yesterday's close.
+        return historical_analysis(self.provider, symbol, self.clock.now, intraday_provider=self.execution_provider)
+
+    def _patched_bar_age_seconds(self, as_of, session_close_hour: int = 16):
+        # H5 finding #1: lab/freshness.py's REAL bar_age_seconds() ages a bar against datetime.now(UTC) --
+        # the actual wall clock, correct for the live forward runtime, but with no historical-clock
+        # awareness at all. Left unpatched, a historical replay judges every bar's freshness against
+        # however many real days have passed since THIS SESSION was run (not the replay's own simulated
+        # instant), so a bar dated exactly the replay's own "today" reads as critically_stale/"market
+        # closed" purely because real wall-clock time has moved on -- found via H5's DELL/META
+        # reproduction: `failed_gates=['data_quality','freshness']` was the smoking gun.
+        #
+        # H5 finding #2, found fixing #1: the ORIGINAL's own "midnight -> session close" adjustment
+        # (`dt + timedelta(hours=session_close_hour)`) adds hours in UTC-space to a UTC-midnight
+        # timestamp, landing at `session_close_hour` UTC (16:00 UTC = 12:00 ET in EDT), NOT
+        # `session_close_hour` ET (16:00 ET = 20:00 UTC in EDT) -- it silently ages a bar from noon
+        # instead of the actual 4pm ET close whenever the stored timestamp is genuine UTC midnight (which
+        # is exactly what this adapter's daily bars are). This looks like a latent defect in the SAME
+        # production function this replaces, not something introduced by patching it -- worth its own
+        # look outside Historical Lab; fixed HERE, correctly, using real ET-aware arithmetic, because this
+        # function already needs full replacement for clock-awareness regardless.
+        self.calls.append({"fn": "freshness.bar_age_seconds", "as_of": as_of, "clock_now": self.clock.now.isoformat()})
+        if not as_of:
+            return None
+        try:
+            from zoneinfo import ZoneInfo
+            dt_val = dt.datetime.fromisoformat(str(as_of).replace("Z", "+00:00"))
+            if dt_val.tzinfo is None:
+                dt_val = dt_val.replace(tzinfo=dt.timezone.utc)
+            dt_utc = dt_val.astimezone(dt.timezone.utc)
+            if (dt_utc.hour, dt_utc.minute, dt_utc.second) == (0, 0, 0):
+                # The midnight stamp's UTC DATE component is the trading day being labelled (this matches
+                # how the bar was written: yahoo_bootstrap.py's OWN daily-bar convention takes yfinance's
+                # naive index date directly, not a date re-derived by projecting into ET first -- doing
+                # that projection here instead would shift the date backward by one calendar day, since ET
+                # is behind UTC, and land on the WRONG day's close entirely.
+                trading_day = dt_utc.date()
+                dt_val = dt.datetime(trading_day.year, trading_day.month, trading_day.day, session_close_hour,
+                                     0, 0, tzinfo=ZoneInfo("America/New_York"))
+            age = (self.clock.now - dt_val.astimezone(dt.timezone.utc)).total_seconds()
+            return max(0.0, age)
+        except Exception:
+            return None
+
+    def _patched_session_state(self, now=None):
+        # H5 finding, same family as _patched_bar_age_seconds: market_regime.session_state() is a pure,
+        # already-parameterized calendar function ("what is the market doing at `now`") -- it already
+        # accepts an explicit `now`, but decision_engine._engine_freshness() always calls it with none,
+        # so it silently defaults to datetime.now(UTC), the REAL wall clock. A historical replay run for
+        # real on a real later date would then classify a perfectly ordinary Friday regular-session
+        # instant as whatever the market happens to be doing RIGHT NOW (a weekend, after-hours, etc.),
+        # degrading freshness for no causal reason. Only the "no explicit now given" default is
+        # overridden; an explicit `now=` from any other caller is passed through unchanged.
+        import market_regime as _mr
+        self.calls.append({"fn": "market_regime.session_state", "clock_now": self.clock.now.isoformat(),
+                           "explicit_now_given": now is not None})
+        return self._real_session_state(now if now is not None else self.clock.now)
 
     def _patched_safe_regime(self):
         self.calls.append({"fn": "decision_engine._safe_regime", "clock_now": self.clock.now.isoformat()})
@@ -164,18 +265,23 @@ class HistoricalAVDIContext:
 
     def __enter__(self) -> "HistoricalAVDIContext":
         import decision_engine as de
+        import freshness
         import halts
+        import market_regime
         from paper import config as cfg
         from paper import strategies
 
         self._stack = ExitStack()
         p = self._stack.enter_context
         self._real_enabled_strategies = cfg.enabled_strategies
+        self._real_session_state = market_regime.session_state
         p(mock.patch.object(strategies, "_bars", self._patched_bars))
         p(mock.patch.object(strategies, "rank_sectors", self._patched_rank_sectors))
         p(mock.patch.object(cfg, "enabled_strategies", self._patched_enabled_strategies))
         p(mock.patch.object(de, "_load_analysis", self._patched_load_analysis))
         p(mock.patch.object(de, "_safe_regime", self._patched_safe_regime))
+        p(mock.patch.object(freshness, "bar_age_seconds", self._patched_bar_age_seconds))
+        p(mock.patch.object(market_regime, "session_state", self._patched_session_state))
         for name in FAMILIES_WITHOUT_HISTORICAL_REPLAY:
             p(mock.patch.object(de, name, (lambda n: lambda *a, **k: de._fam_stub(n))(name)))
         p(mock.patch.object(de.ss, "_pick_option_idea", lambda *a, **k: None))

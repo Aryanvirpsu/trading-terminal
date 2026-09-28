@@ -60,7 +60,8 @@ class DatasetAdapter(abc.ABC):
             upstream_files=list(getattr(self, "upstream_files", []) or []),
             upstream_sha256=dict(getattr(self, "upstream_sha256", {}) or {}),
             selected_columns=list(getattr(self, "selected_columns", []) or []),
-            adapter_version=getattr(self, "adapter_version", None))
+            adapter_version=getattr(self, "adapter_version", None),
+            volume_trust=getattr(self, "volume_trust", None))
         save_manifest(manifest)
         return manifest
 

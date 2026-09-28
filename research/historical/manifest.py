@@ -42,6 +42,11 @@ class DatasetManifest:
     # (see research/historical/capability.py). None only for a raw dataset import that hasn't yet been
     # run through an AVDI replay -- never populate this speculatively.
     capability_fingerprint: Optional[str] = None
+    # H5 blocker #6 (see research/historical/volume_trust.py): what this dataset's volume figures may
+    # honestly be used for -- "ABSOLUTE" (consolidated/near-consolidated tape), "RELATIVE_ONLY" (same-
+    # symbol ratios only, e.g. fabhaus per FABHAUS_AUDIT_REPORT.md sec 6), or None/unset (treated exactly
+    # like RELATIVE_ONLY by HistoricalMarketProvider -- never assumed ABSOLUTE by omission).
+    volume_trust: Optional[str] = None
 
     def to_dict(self) -> Dict[str, Any]:
         return dataclasses.asdict(self)
