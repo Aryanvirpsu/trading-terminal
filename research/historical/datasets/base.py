@@ -34,7 +34,10 @@ class DatasetAdapter(abc.ABC):
     def import_and_store(self, symbols: Sequence[str], start: str, end: str, timeframe: str,
                          *, notes: Optional[str] = None) -> DatasetManifest:
         """Fetch -> validate -> write Parquet -> write the manifest. This is the ONE path every adapter's
-        output goes through, so every dataset in the lab is validated and hashed identically."""
+        output goes through, so every dataset in the lab is validated and hashed identically. Extended
+        provenance (hf_repository/hf_revision/upstream_files/upstream_sha256/selected_columns/
+        adapter_version) is read from instance attributes an adapter subclass may set — every attribute
+        has a safe empty default, so plain adapters (e.g. the fixture/Yahoo ones) are unaffected."""
         df = self.fetch(symbols, start, end, timeframe)
         report = validate_bars(df)                    # raises BarValidationError on any failure
         content_hash = dataframe_sha256(df)
@@ -52,7 +55,12 @@ class DatasetAdapter(abc.ABC):
             symbols=sorted(df["symbol"].unique().tolist()), start=start, end=end, timeframe=timeframe,
             rows=len(df), sha256=content_hash, parquet_path=str(rel_path), parquet_sha256=file_sha256(out_path),
             validation=report.to_dict(), created_at=dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds"),
-            notes=notes)
+            notes=notes, hf_repository=getattr(self, "hf_dataset_id", None),
+            hf_revision=(getattr(self, "revision", None) if getattr(self, "hf_dataset_id", None) else None),
+            upstream_files=list(getattr(self, "upstream_files", []) or []),
+            upstream_sha256=dict(getattr(self, "upstream_sha256", {}) or {}),
+            selected_columns=list(getattr(self, "selected_columns", []) or []),
+            adapter_version=getattr(self, "adapter_version", None))
         save_manifest(manifest)
         return manifest
 

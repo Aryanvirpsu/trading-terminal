@@ -75,3 +75,25 @@ short interest, filings, options flow, social, analyst, macro) have no historica
 neutralised to zero confidence for every historical run — only the price-derived trend/momentum family and
 the risk/regime family (itself neutral when no regime is supplied) carry real signal today. A historical
 decision label should be read with that in mind until more evidence families are wired.
+
+## Dataset audit (done): `fabhaus/equities_5m_stockprices`
+
+Full report: `audits/FABHAUS_AUDIT_REPORT.md`. **Verdict: conditionally viable, not yet accepted.** A real,
+material defect was found by direct testing (not the Hub viewer, which is broken for this dataset): the
+`datetime` field is documented as UTC but is actually America/New_York wall-clock time with a "Z" suffix
+mistakenly appended (proven via the closing-auction volume spike landing at the labelled 16:20-16:25, which
+only makes sense at the real 16:00 ET close). This is fixable at the ingestion adapter
+(`HuggingFaceEquitiesAdapter(source_tz="America/New_York")`, now built and tested) — not by itself a reason
+to replace the dataset. Two further items are NOT yet resolved: volume is systematically 20-46% of Yahoo's
+consolidated daily volume for every symbol checked, and the dataset's own documented lack of
+corporate-action adjustment is now confirmed (NVDA's 2024-06-07 10:1 split shows up exactly as expected).
+A corporate-action policy is drafted in the report; **H4 remains blocked until it is implemented**, per the
+project's own rule that raw history is never silently adjusted.
+
+Secondary candidate `GGLabYale/MTBench_finance_stock` (2013-2023 coverage) is recorded, not integrated.
+
+## H4 status: BLOCKED
+
+Not started. Blocked on: (1) re-running the dataset audit with `source_tz` applied and a wider symbol/month
+sample; (2) a volume-normalization decision; (3) implementing the corporate-action policy in code (with
+tests); (4) H5 (reproduce the known 2026-09-25 forward day) as the gate before any strategy research.

@@ -29,6 +29,15 @@ class DatasetManifest:
     validation: Dict[str, Any]
     created_at: str
     notes: Optional[str] = None
+    # Extended provenance (H4 dataset-audit requirement): an experiment must never point merely to
+    # "latest". Populated for Hugging Face imports; left at their defaults ([] / {} / None) for sources
+    # that don't apply (e.g. yahoo-bootstrap).
+    hf_repository: Optional[str] = None              # e.g. "fabhaus/equities_5m_stockprices"
+    hf_revision: Optional[str] = None                # the exact pinned commit SHA, never a branch name
+    upstream_files: List[str] = dataclasses.field(default_factory=list)      # shard/file(s) actually read
+    upstream_sha256: Dict[str, str] = dataclasses.field(default_factory=dict)  # per-file upstream hash (ETag), where available
+    selected_columns: List[str] = dataclasses.field(default_factory=list)    # raw fields actually ingested
+    adapter_version: Optional[str] = None            # ties a manifest to the exact ingestion logic that produced it
 
     def to_dict(self) -> Dict[str, Any]:
         return dataclasses.asdict(self)

@@ -1,0 +1,99 @@
+{
+ "dataset_id": "fabhaus/equities_5m_stockprices",
+ "revision": "f17c0b0c3cf6a455994f93d6a85e76274172ab03",
+ "shard_etags_sha256": {
+  "2024-01.jsonl": "3015bdf4f320357d19b60eb2075e7e044464d17d61b3f4e8cab7dcb50d30ea6a",
+  "2025-01.jsonl": "2b90b19c20a4a874056eaca4b005d964cddf0902a6be3657a0ee6f467ae402ed",
+  "2026-02.jsonl": "2cee207a938f4d235eb32c3a165578274270ede7f83c78ee27c894c72bfe63c3"
+ },
+ "samples": [
+  {
+   "shard": "2024-01.jsonl",
+   "label": "2024-01, from file start (day 1 intraday sequence)",
+   "byte_range": [
+    0,
+    260000000
+   ],
+   "bytes_fetched": 260000001,
+   "rows_matched": 617,
+   "distinct_symbols_matched": [
+    "AAPL",
+    "AMD",
+    "DELL",
+    "META",
+    "MSFT",
+    "NVDA",
+    "QQQ",
+    "SPY"
+   ],
+   "distinct_timestamps": 91
+  },
+  {
+   "shard": "2024-01.jsonl",
+   "label": "2024-01, from file end (month-end day)",
+   "byte_range": [
+    15613792596,
+    15633792595
+   ],
+   "bytes_fetched": 20000000,
+   "rows_matched": 224,
+   "distinct_symbols_matched": [
+    "AAPL",
+    "AMD",
+    "DELL",
+    "META",
+    "MSFT",
+    "NVDA",
+    "QQQ",
+    "SPY"
+   ],
+   "distinct_timestamps": 32
+  },
+  {
+   "shard": "2025-01.jsonl",
+   "label": "2025-01, from file start (one non-consecutive month)",
+   "byte_range": [
+    0,
+    20000000
+   ],
+   "bytes_fetched": 20000001,
+   "rows_matched": 171,
+   "distinct_symbols_matched": [
+    "AAPL",
+    "AMD",
+    "DELL",
+    "META",
+    "MSFT",
+    "NVDA",
+    "QQQ",
+    "SPY"
+   ],
+   "distinct_timestamps": 28
+  },
+  {
+   "shard": "2026-02.jsonl",
+   "label": "2026-02, from file start (a later non-consecutive month)",
+   "byte_range": [
+    0,
+    20000000
+   ],
+   "bytes_fetched": 20000001,
+   "rows_matched": 123,
+   "distinct_symbols_matched": [
+    "AAPL",
+    "AMD",
+    "DELL",
+    "META",
+    "MSFT",
+    "NVDA",
+    "QQQ",
+    "SPY"
+   ],
+   "distinct_timestamps": 17
+  }
+ ],
+ "total_rows_extracted": 1135,
+ "extracted_sample_sha256": "1ee1245adf86e1d818face8bc9ec9e204803555620063f0ec9876cf1d5c87427",
+ "extracted_sample_path": "C:\\Users\\aryan vir\\AppData\\Local\\Temp\\wt_h3\\research\\historical\\audits\\fabhaus_sample\\sample_rows.jsonl",
+ "note": "shard_etags_sha256 values are the upstream Hub ETag for each raw shard file at the pinned revision; HF serves LFS-backed files with the git-lfs sha256 OID as ETag (verified format: 64 lowercase hex chars)."
+}
