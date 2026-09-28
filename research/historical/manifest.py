@@ -38,6 +38,10 @@ class DatasetManifest:
     upstream_sha256: Dict[str, str] = dataclasses.field(default_factory=dict)  # per-file upstream hash (ETag), where available
     selected_columns: List[str] = dataclasses.field(default_factory=list)    # raw fields actually ingested
     adapter_version: Optional[str] = None            # ties a manifest to the exact ingestion logic that produced it
+    # H4 dataset-audit requirement: which slice of the forward Champion this dataset can actually replay
+    # (see research/historical/capability.py). None only for a raw dataset import that hasn't yet been
+    # run through an AVDI replay -- never populate this speculatively.
+    capability_fingerprint: Optional[str] = None
 
     def to_dict(self) -> Dict[str, Any]:
         return dataclasses.asdict(self)
