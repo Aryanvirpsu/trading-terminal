@@ -246,3 +246,22 @@ directly for the API key text (zero occurrences in either file) — this rerun i
 All four are usable today independent of the data_quality ceiling — H6 already resolves real outcomes for
 every MONITOR-capped candidate H5 produced; H7-H9 are infrastructure the eventual HIST-001 baseline needs
 regardless of which capability fingerprint it runs under.
+
+## HIST-001 (Smoke stage done; Medium/Full not started)
+
+Pre-registration (committed before any result): `research/historical/reports/HIST_001_PREREGISTRATION.md`.
+Result: `research/historical/reports/HIST_001_CHAMPION_BASELINE.md`. Code: `research/historical/hist001/`.
+
+Smoke stage (10 `technology`-sector symbols, January 2024, real pinned-revision fabhaus data streamed and
+filtered — never the full 478GB corpus, one ~15.6GB monthly shard processed on the fly) ran the real,
+unmodified Champion stack across all 567 real-trading-calendar cycles with zero exceptions and proven
+determinism (two independent runs, byte-identical). **Central finding**: zero decisions occurred — confirmed
+directly as a consequence of `strategies._bars()`'s own 55-daily-bar floor (a single month never
+accumulates more than ~24 daily bars), a property of window length, not a defect; Medium's 3-month window
+is expected to self-resolve this in its later weeks. Two disclosed gaps to close before Medium/Full: build
+a real macro dataset for the batch's own date range (this run's `PRICE_TREND_MACRO_V1` tag was nominal,
+not exercised, since no decisions occurred to exercise it), and capture decision-time price/stop/target for
+non-executed TRADEABLE observations so `capacity_opportunity_cost()` can actually resolve them.
+
+**Decision gate: PIPELINE VALIDATED. BASELINE VALID/INVALID verdict explicitly deferred** to Medium/Full,
+where real Champion decisions are expected — rendering that verdict on zero trades would be meaningless.
