@@ -13,3 +13,4 @@ pyarrow>=20,<26
 pandera[pandas]>=0.24,<1
 datasets>=3,<6
 huggingface_hub>=0.25
+mlflow>=3,<4
