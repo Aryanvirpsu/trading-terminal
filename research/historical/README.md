@@ -22,7 +22,12 @@ Run its tests: `python -m pytest tests/historical -q` (add `-m "not network"` to
 | **H3** | Wire the historical provider into the real scanner/decision-engine data-fetch points (adapters only, no duplicated logic) | **Done.** See below |
 | **H4** | Corporate-action layer, capability fingerprint, reproducibility check, thin execution reuse (real risk/broker/fills/journal against an isolated ledger) | **Done.** See below |
 | **H5** | Reproduce the known 2026-09-25 Ubuntu forward session | **Done — PASS WITH DOCUMENTED CAPABILITY DIFFERENCES.** `research/historical/reports/H5_FORWARD_REPRODUCTION.md` |
-| H6-H15 | Outcome engine, event identity, walk-forward, MLflow, funnel attribution, HIST-001..004, regime attribution, options, Nautilus cross-check, Optuna | Not started |
+| **H5.5** | Unlock one more historical evidence family to cross the data_quality ceiling | **Macro (`_fam_macro`) implemented and tested; blocked only on a real `FRED_API_KEY` to fetch real data and rerun H5.** See below |
+| **H6** | Causal outcome engine (target/stop/ambiguous, MFE/MAE, hypothetical candidates) | **Done.** `outcomes.py`, 13 tests + 3 integration tests |
+| **H7** | One canonical event/observation/decision/trade identity system | **Done.** `event_identity.py`, 7 tests |
+| **H8** | Walk-forward orchestration with a holdout that cannot be casually spent | **Done.** `walkforward.py`, 12 tests |
+| **H9** | MLflow experiment tracking | **Done.** `experiment_tracking.py`, 9 tests |
+| H10-H15 | Funnel attribution, HIST-001..004, regime attribution, options, Nautilus cross-check, Optuna | Not started |
 
 ### The Hugging Face dataset gap (disclosed, not papered over)
 
@@ -171,7 +176,72 @@ permanently at 0% coverage) meaning **no historical decision can reach TRADEABLE
 capability fingerprint, on any symbol or date**. This is a quantified constraint for H6+ to carry forward,
 not a defect in H5.
 
-**H5 passed.** Per the project's own ordering: H4 execution → H5 (done) → **H6 outcome engine** (next) →
-H7 event identity → H8 walk-forward → H9 experiment tracking → HIST-001 Champion baseline → CH-001/
-capacity/ranking experiments. No profitability experiment may run before HIST-001 exists, and HIST-001
-itself must carry the `data_quality`-ceiling caveat above.
+**H5 passed.** Per the project's own ordering: H4 execution → H5 (done) → H6-H9 (done, see below) →
+H5.5 (macro implemented, blocked on a real API key) → HIST-001 Champion baseline → CH-001/capacity/ranking
+experiments. No profitability experiment may run before HIST-001 exists, and HIST-001 itself must carry the
+`data_quality`-ceiling caveat above until H5.5 (or another evidence family) closes it and H5 is rerun.
+
+## H5.5 (macro implemented; blocked on a real FRED_API_KEY)
+
+Investigated the H5 ceiling before implementing anything, per the user's own instruction. **Correction to
+the original framing**: `data_quality`'s `"fundamentals"` category (weight 0.35) is never populated by
+`decision_engine.py` at all — not historically, not in live production either; there is no
+`_fam_fundamentals`. Wiring it would mean inventing a new production data path, out of scope for a lab that
+exists to replay how AVDI already decides. Pinned down directly against the real source in
+`tests/historical/test_h55_macro.py`, not just asserted.
+
+What actually maps onto the user's "fundamentals/filings" and "macro" instincts: `_fam_filings` (SEC EDGAR,
+weight 0.2 effective) and `_fam_macro` (FRED, weight 0.2 effective) — both real, live-wired families
+already in `FAMILIES_WITHOUT_HISTORICAL_REPLAY`, simply stubbed for historical replay. Checked directly
+against `lab/data_quality.py`'s real arithmetic: replaying **either one alone, in full,** raises
+`PRICE_TREND_ONLY_V1`'s 0.536 to 0.588 — comfortably past the unchanged 0.55 floor. Macro goes first: one
+shared time series per date (yield curve + VIX) versus filings' need for a real, dated, per-symbol SEC
+filing history — cheaper for the identical structural gain, and FRED's four relevant series (DGS10, DGS2,
+VIXCLS, FEDFUNDS) are daily and never revised, so no ALFRED-vintage complexity is needed for them
+specifically.
+
+`macro.py`: `MacroHistory.as_of()` is lookahead-safe (respects a 1-business-day publication lag, the same
+discipline `HistoricalMarketProvider` already applies to price bars); `historical_macro_signal()`
+reimplements `lab/fred.py`'s own yield-curve-tilt + VIX arithmetic against it. `avdi_adapter.py`'s
+`HistoricalAVDIContext` gains an optional `macro_history` param — when given, `_fam_macro` is genuinely
+replayed instead of stubbed; omitting it (every existing caller) is unchanged.
+
+**Blocked**: `fetch_fred_history()`/`build_macro_history()` need a real `FRED_API_KEY` (free, self-serve at
+fred.stlouisfed.org) to pull actual historical observations — this environment has none configured, and
+obtaining one requires an account signup this session should not do on the user's behalf. All 12
+`test_h55_macro.py` tests pass against synthetic/fixture data and the real `data_quality.py`/
+`decision_engine.py` arithmetic; nothing here has made a real FRED network call yet. Once a key is
+supplied: fetch real history for the `KNOWN_FORWARD_2026_09_25` date range, pass it as `macro_history=` to
+the H5 replay, regenerate the capability fingerprint (a new tag, e.g. `PRICE_TREND_MACRO_V1` — not yet
+added to `capability.py`, since no fingerprint should be minted before the family it names is actually
+exercised against real data), and rerun H5 to see whether real Champion TRADEABLEs emerge naturally.
+
+## H6-H9 (done — built in parallel with H5.5, since none require the data_quality ceiling to be closed first)
+
+* **H6 — causal outcome engine** (`outcomes.py`): `resolve_outcome()` walks bars strictly after an entry/
+  fill and resolves target/stop/still-open/no-data, tracking MFE, MAE, and the first timestamp each of
+  +1R/-1R/target/stop was touched. A stop and target both falling inside the same bar with no way to order
+  them from OHLC alone resolves `AMBIGUOUS`, always using the stop price (never the favorable target) for
+  any net-R figure. `resolve_hypothetical()` answers "what happened to the TRADEABLE blocked by capacity"
+  or "the MONITOR just below the gate" by resolving the same target/stop AVDI's own `evaluate()` proposed,
+  without touching the ledger — exercised end-to-end against all 12 `KNOWN_FORWARD_2026_09_25` reference
+  symbols in `known_forward/session_outcomes.py`.
+* **H7 — one canonical event/observation/decision/trade identity** (`event_identity.py`): consolidates the
+  forward runtime's own `shadow_log._assign_event()` clustering concept into a small, DB-free module.
+  Repeated observations of the same symbol+direction share one `event_id` until `close_event()` is called;
+  an event carries at most one open `trade_id`. Directly reproduces the acceptance doc's own headline
+  number (133 observations → 12 events) from the real per-symbol observation counts.
+* **H8 — walk-forward with a holdout that cannot be casually spent** (`walkforward.py`): a `WalkForwardPlan`
+  enforces exactly one holdout period, last. Every period access is recorded, tagged by purpose;
+  `inspect()` refuses the holdout for anything but a final report, and the only other way in,
+  `inspect_holdout(..., i_understand_this_ends_the_holdout=True)`, permanently and irreversibly marks it
+  contaminated the instant it succeeds.
+* **H9 — MLflow experiment tracking** (`experiment_tracking.py`): every run binds git commit, dataset
+  manifest hashes, capability fingerprint, strategy version, parameters, date range, walk-forward split, and
+  the outcome metric set (independent events, trades, net R, expectancy, profit factor, max drawdown,
+  MFE/MAE, funnel losses, capacity blocks) onto one MLflow run, tracked in a SQLite store under
+  `historical_data_root()/mlruns` (isolated, never a production path).
+
+All four are usable today independent of the data_quality ceiling — H6 already resolves real outcomes for
+every MONITOR-capped candidate H5 produced; H7-H9 are infrastructure the eventual HIST-001 baseline needs
+regardless of which capability fingerprint it runs under.
