@@ -41,6 +41,21 @@ Shadow evidence collection (`shadow_log`, `options_shadow`'s own resolve path) e
 Challenger evidence for the forward Ubuntu runtime and has no historical-replay meaning; disabled here the
 same way H3 disables `_fam_*` families with no historical replay -- a disclosed limitation, not a shortcut,
 and not required for correctness (it already writes through the isolated ledger like everything else).
+
+H5 blocker #5 -- decision vs. executable-price vs. outcome granularity: `HistoricalAVDIContext.provider`
+supplies DECISION data (whatever `strategies._bars`/`decision_engine._load_analysis` need -- normally
+daily bars for trend/RSI). `HistoricalExecutionContext` additionally accepts `execution_provider` (passed
+through the base class): `quote_for`/`_live_mark_src` read EXECUTABLE-PRICE data from it instead, so a
+finer intraday feed can back real fills/marks without ever leaking a finer bar's information into the
+daily trend calculation, and vice versa. Passing no `execution_provider` falls back to `provider` for both
+(H3/H4's original single-feed behavior, unchanged for any existing caller). OUTCOME/tracking data (stop/
+target checks in `market_hours()`) reads through the same execution provider, which is why this alone is
+enough to satisfy "subsequent complete bars only": `HistoricalMarketProvider` already filters every read to
+`timestamp <= clock.now` (H2's lookahead guard) and the clock only ever advances, so a stop/target check at
+cycle N can only see bars up to and including cycle N's own instant, never a later one. The provider's
+`quote()` fill price is the bar's CLOSE with a symmetric synthetic spread around it (never the bar's own
+high or low) -- the conservative, non-favorable-side choice this blocker calls for, already true of H2's
+original design and simply documented here rather than reinvented.
 """
 from __future__ import annotations
 
@@ -85,8 +100,11 @@ class HistoricalExecutionContext(HistoricalAVDIContext):
     longer than one context's lifetime, e.g. across an entire multi-day walk-forward)."""
 
     def _patched_quote_for(self, symbol: str):
+        # H5 blocker #5: execution reads self.execution_provider (finer timeframe when the caller supplied
+        # one), never self.provider (the decision-making/trend feed) -- see the module docstring's
+        # "decision vs executable-price vs outcome granularity" section.
         self.calls.append({"fn": "workflow.quote_for", "symbol": symbol, "clock_now": self.clock.now.isoformat()})
-        return self.provider.quote(symbol)
+        return self.execution_provider.quote(symbol)
 
     def _patched_provider_health(self):
         self.calls.append({"fn": "workflow.provider_health", "clock_now": self.clock.now.isoformat()})
@@ -95,7 +113,7 @@ class HistoricalExecutionContext(HistoricalAVDIContext):
 
     def _patched_live_mark_src(self, symbol: str):
         self.calls.append({"fn": "risk._live_mark_src", "symbol": symbol, "clock_now": self.clock.now.isoformat()})
-        q = self.provider.quote(symbol)
+        q = self.execution_provider.quote(symbol)
         if q is not None and q.last is not None:
             return float(q.last), "historical_quote"
         return None, "historical_quote_unavailable"          # caller falls back to last fill / avg_entry

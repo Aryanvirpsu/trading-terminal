@@ -25,7 +25,7 @@ import sys
 from contextlib import ExitStack
 from pathlib import Path
 from statistics import mean
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Sequence, Union
 from unittest import mock
 
 from .clock import HistoricalClock
@@ -103,11 +103,21 @@ class HistoricalAVDIContext:
     own market-data seams for the duration of the block, then restores them exactly. Safe to nest a fresh
     instance per clock tick; cheap (no disk I/O of its own beyond what `provider` already loaded)."""
 
-    def __init__(self, provider: HistoricalMarketProvider, *, neutral_sector: str = "technology"):
+    def __init__(self, provider: HistoricalMarketProvider, *, neutral_sector: Union[str, Sequence[str]] = "technology",
+                execution_provider: Optional[HistoricalMarketProvider] = None):
         assert_not_production_host()
         self.provider = provider
         self.clock: HistoricalClock = provider.clock
-        self.neutral_sector = neutral_sector
+        # H5: one or more sector keys to treat as "strong" (equal, unranked membership -- see
+        # _patched_rank_sectors). A single string is normalized to a one-element list for backward
+        # compatibility with H3's original single-sector design.
+        self.neutral_sectors: List[str] = [neutral_sector] if isinstance(neutral_sector, str) else list(neutral_sector)
+        # H5 blocker #5: decisions (scan/_bars/_load_analysis) read `provider`; execution (quote_for,
+        # _live_mark_src -- added by HistoricalExecutionContext) reads `execution_provider` if given,
+        # else falls back to `provider` (H3/H4's original single-provider behavior, unchanged for anyone
+        # not passing this). Kept as an attribute on the base class, not just the execution subclass, so a
+        # caller can inspect which providers are in play from either.
+        self.execution_provider: HistoricalMarketProvider = execution_provider or provider
         self._stack: Optional[ExitStack] = None
         self.calls: List[Dict[str, Any]] = []            # every patched call this context served, for audit
 
@@ -118,12 +128,17 @@ class HistoricalAVDIContext:
         return _bars_dict(points)
 
     def _patched_rank_sectors(self, limit_strong: int = 2, limit_weak: int = 1):
-        # Sector breadth/rotation has no historical replay yet (disclosed in README.md) — a single fixed,
-        # neutral sector is used so the REAL scan()/score_* code still runs unchanged on real per-symbol
-        # bars; only the sector-strength INPUT is stubbed, exactly like decision_engine._fam_stub().
+        # Sector breadth/ROTATION has no historical replay yet (disclosed in README.md) — every sector in
+        # self.neutral_sectors is fed in as equally "strong" (sector_score=0.0, no relative ranking) so the
+        # REAL scan()/score_* code still runs unchanged on real per-symbol bars across all of them; only the
+        # sector-strength INPUT is stubbed, exactly like decision_engine._fam_stub(). This gives a
+        # historical run real MEMBERSHIP coverage for symbols outside a single sector (H5: DELL/AAPL/AMD/
+        # MSFT/CRM/NVDA are technology, but META is communication, TSLA is consumer_discretionary, TMO/VRTX
+        # are health_care, FCX/NEM are materials) without claiming to replay actual sector rotation/relative
+        # strength — a symbol's sector RANK relative to others is still a disclosed CAPABILITY_DIFFERENCE.
         self.calls.append({"fn": "strategies.rank_sectors", "clock_now": self.clock.now.isoformat()})
-        strong = {"key": self.neutral_sector, "name": self.neutral_sector, "sector_score": 0.0, "rs_vs_spy_1m": 0.0}
-        return {"state": "ok", "ranked": [strong], "strong": [strong], "weak": [],
+        strong = [{"key": s, "name": s, "sector_score": 0.0, "rs_vs_spy_1m": 0.0} for s in self.neutral_sectors]
+        return {"state": "ok", "ranked": strong, "strong": strong, "weak": [],
                 "benchmark": None, "freshness": {"state": "historical-neutral"}}
 
     def _patched_load_analysis(self, symbol: str, exchange: str):
@@ -135,15 +150,30 @@ class HistoricalAVDIContext:
         self.calls.append({"fn": "decision_engine._safe_regime", "clock_now": self.clock.now.isoformat()})
         return None                                       # -> _fam_regime() degrades to zero-confidence, unchanged
 
+    def _patched_enabled_strategies(self):
+        # H5 blocker #6 (volume_trust.py): whichever strategies the REAL config would enable, minus any
+        # that need absolute dollar-volume this provider's source can't honestly supply. Patched here (not
+        # only in scan()) so EVERY caller that falls back to cfg.enabled_strategies() is covered, including
+        # workflow.premarket()'s own internal strategies.scan() call, not just a direct ctx.scan().
+        from .volume_trust import enabled_strategies_for
+        real = self._real_enabled_strategies()
+        chosen = enabled_strategies_for(self.provider.volume_trust, requested=real)
+        self.calls.append({"fn": "config.enabled_strategies", "volume_trust": self.provider.volume_trust.value,
+                           "requested": real, "enabled": chosen, "clock_now": self.clock.now.isoformat()})
+        return chosen
+
     def __enter__(self) -> "HistoricalAVDIContext":
         import decision_engine as de
         import halts
+        from paper import config as cfg
         from paper import strategies
 
         self._stack = ExitStack()
         p = self._stack.enter_context
+        self._real_enabled_strategies = cfg.enabled_strategies
         p(mock.patch.object(strategies, "_bars", self._patched_bars))
         p(mock.patch.object(strategies, "rank_sectors", self._patched_rank_sectors))
+        p(mock.patch.object(cfg, "enabled_strategies", self._patched_enabled_strategies))
         p(mock.patch.object(de, "_load_analysis", self._patched_load_analysis))
         p(mock.patch.object(de, "_safe_regime", self._patched_safe_regime))
         for name in FAMILIES_WITHOUT_HISTORICAL_REPLAY:

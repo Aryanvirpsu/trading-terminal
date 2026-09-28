@@ -16,6 +16,7 @@ import pandas as pd
 
 from .clock import HistoricalClock
 from .datasets.base import load_parquet
+from .volume_trust import VolumeTrust
 
 try:                                   # optional: only used for the return type's shape, never for I/O
     from lab.paper.fills import Quote
@@ -47,9 +48,14 @@ class HistoricalMarketProvider:
 
     provider_name = "historical"
 
-    def __init__(self, clock: HistoricalClock, dataset_ids: List[str], *, synthetic_spread_bps: float = 5.0):
+    def __init__(self, clock: HistoricalClock, dataset_ids: List[str], *, synthetic_spread_bps: float = 5.0,
+                volume_trust: "VolumeTrust | str" = VolumeTrust.UNKNOWN):
         self.clock = clock
         self.synthetic_spread_bps = synthetic_spread_bps
+        # H5 blocker #6: what this provider's volume figures may honestly be used for (see volume_trust.py).
+        # Defaults to UNKNOWN, which is treated exactly like RELATIVE_ONLY everywhere -- a provider must be
+        # given ABSOLUTE explicitly, it is never assumed.
+        self.volume_trust = VolumeTrust(volume_trust)
         frames = [load_parquet(did) for did in dataset_ids]
         df = pd.concat(frames, ignore_index=True) if len(frames) > 1 else frames[0]
         df = df.sort_values(["symbol", "timestamp"]).drop_duplicates(subset=["symbol", "timestamp"])
