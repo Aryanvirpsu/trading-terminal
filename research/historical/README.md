@@ -20,8 +20,9 @@ Run its tests: `python -m pytest tests/historical -q` (add `-m "not network"` to
 | **H1** | Canonical bar schema + validation (`schemas/bars.py`), dataset manifest with SHA-256 provenance (`manifest.py`), source-agnostic adapter interface (`datasets/base.py`), a generic (config-driven) Hugging Face adapter, and a Parquet+DuckDB store | **Done.** `tests/historical/test_h1_dataset_foundation.py` (14 tests incl. one real 5-symbol pull) |
 | **H2** | `HistoricalClock` + `HistoricalMarketProvider`, with a hard lookahead guard | **Done.** `tests/historical/test_h2_clock_and_lookahead.py` (18 tests) |
 | **H3** | Wire the historical provider into the real scanner/decision-engine data-fetch points (adapters only, no duplicated logic) | **Done.** See below |
-| **H4** | Corporate-action layer, capability fingerprint, reproducibility check, thin execution reuse (real risk/broker/fills/journal against an isolated ledger) | **Blockers 1-5 resolved; execution wired and tested. Not yet gated (see "H4 status" below) — no profitability experiment may run yet.** |
-| H5-H15 | Reproduce the known 2026-09-25 forward day, outcome engine, event identity, walk-forward, MLflow, funnel attribution, HIST-001..004, regime attribution, options, Nautilus cross-check, Optuna | Not started |
+| **H4** | Corporate-action layer, capability fingerprint, reproducibility check, thin execution reuse (real risk/broker/fills/journal against an isolated ledger) | **Done.** See below |
+| **H5** | Reproduce the known 2026-09-25 Ubuntu forward session | **Done — PASS WITH DOCUMENTED CAPABILITY DIFFERENCES.** `research/historical/reports/H5_FORWARD_REPRODUCTION.md` |
+| H6-H15 | Outcome engine, event identity, walk-forward, MLflow, funnel attribution, HIST-001..004, regime attribution, options, Nautilus cross-check, Optuna | Not started |
 
 ### The Hugging Face dataset gap (disclosed, not papered over)
 
@@ -96,12 +97,12 @@ adjustment is confirmed (NVDA's 2024-06-07 10:1 split shows up exactly as expect
 
 Secondary candidate `GGLabYale/MTBench_finance_stock` (2013-2023 coverage) is recorded, not integrated.
 
-## H4 (blockers 1-5 resolved; execution wired; not yet gated)
+## H4 (done)
 
 The H4 directive's five blockers, all done:
 
 1. **Timezone re-audit** — corrected in the audit report (see above); `research/historical/audits/fabhaus_tz_reaudit.py` + `fabhaus_tz_sample/` are the reproducible evidence.
-2. **Volume characterization** — `RELATIVE_ONLY` verdict in the audit report §6; enforced by convention (no absolute-volume rule exists in this codebase's historical path today, and none may be added against fabhaus data), not yet by a runtime assertion — a real gap if a future experiment adds one.
+2. **Volume characterization** — `RELATIVE_ONLY` verdict in the audit report §6; enforced at runtime by `volume_trust.py` (H5 closed the "not yet a runtime assertion" gap noted here originally — see H5 below): `HistoricalMarketProvider.volume_trust` + `enabled_strategies_for()` drop `score_liquid_momentum` (the only strategy with an absolute-dollar-volume floor) from a non-`ABSOLUTE` source's enabled strategies, enforced at `paper.config.enabled_strategies()` so every caller is covered.
 3. **Corporate actions, implemented** — `corporate_actions.py`: `detect_splits()` (day-over-day RAW close ratio outside [0.4, 2.5], corroborated by an inverse volume move where available), `is_confirmed()` (fail-closed default), `split_adjusted_view(as_of_date=...)` (lookahead-safe: a split only affects the view from its own date onward, never retroactively into an earlier as-of instant), `detect_quarantine_candidates()` and `apply_ticker_mapping()` (quarantine, never silent remap). Tested in `tests/historical/test_h4_corporate_actions.py`.
 4. **Capability fingerprint** — `capability.py`'s `PRICE_TREND_ONLY_V1`, naming exactly which decision-engine families a historical run replays vs. stubs, plus the volume status. Added to `DatasetManifest.capability_fingerprint`. A historical result must always carry this fingerprint and must never be described as a backtest of the full forward Champion.
 5. **Repeatable ingestion check** — `tests/historical/test_h4_capability_and_reproducibility.py` proves `import_and_store()` is byte-identical (same rows, same content hash, same manifest) for identical inputs, and that the check actually detects a real change (tested both directions). The live-source version of this property (same HF revision + byte range → byte-identical bytes) was demonstrated by hand in the audit report §8 via the `git-lfs` ETag and a repeated extraction.
@@ -134,20 +135,43 @@ Two real defects were found and fixed while wiring this, beyond what H3 already 
   and its tests therefore import everything through the flat `paper.*` form; this is documented prominently
   in `execution.py`'s module docstring so it isn't re-discovered the hard way later.
 
-**Known scope limits, disclosed, not yet closed:**
-* `run_session()` uses ONE dataset/timeframe for both decision-making bars and execution quotes (matching
-  H3's existing single-provider design). Realistic intraday stop/target fills need a second, finer
-  (e.g. 5-minute) provider wired into the execution quote path specifically — not done yet.
-* `tests/historical/` mutates `sys.path` process-wide on import (via `avdi_adapter.py`'s `lab`/`dashboard`/
-  `src` insertion) and must be run in its OWN pytest process, never in the same session as `tests/unit/`
-  — confirmed this is pre-existing since H3, not introduced by H4. CI's separate `historical-lab` job
-  already does this correctly; running `python -m pytest tests/` (no path filter) locally will show
-  unrelated failures in `tests/unit/` for this reason — always target `tests/historical` and `tests/unit`
-  in separate invocations.
-* The `RELATIVE_ONLY` volume policy is a documented convention, not yet a runtime assertion that would
-  reject an experiment for evaluating an absolute-volume rule against fabhaus data.
+**Remaining, disclosed limit**: `tests/historical/` mutates `sys.path` process-wide on import (via
+`avdi_adapter.py`'s `lab`/`dashboard`/`src` insertion) and must be run in its OWN pytest process, never in
+the same session as `tests/unit/` — confirmed pre-existing since H3, not introduced by H4/H5. CI's separate
+`historical-lab` job already does this correctly; running `python -m pytest tests/` (no path filter)
+locally will show unrelated failures in `tests/unit/` for this reason — always target `tests/historical`
+and `tests/unit` in separate invocations.
 
-**H4 is not yet gated for strategy research.** Per the project's own ordering: H4 execution → H5 (reproduce
-the known 2026-09-25 forward day) → prove Historical Lab behaves like Ubuntu → outcome/event engine →
-walk-forward → HIST-001 Champion baseline → CH-001/capacity/ranking experiments. No profitability
-experiment may run before H5 passes.
+## H5 (done — PASS WITH DOCUMENTED CAPABILITY DIFFERENCES)
+
+Full report: `research/historical/reports/H5_FORWARD_REPRODUCTION.md`; machine-readable artifacts at
+`research/historical/reports/h5_artifacts.json`. Reproduced the real 2026-09-25 Ubuntu forward session
+(`docs/UBUNTU_LIVE_ACCEPTANCE_01.md`) against a real, committed Yahoo-sourced dataset
+(`research/historical/known_forward/`, `KNOWN_FORWARD_2026_09_25_{DAILY,5M}` — separately versioned, never
+mixed with the fabhaus corpus), driving the exact 27-cycle discovery schedule through the real, unmodified
+`workflow.premarket()`/`market_hours()`.
+
+Closed H4's remaining "documented, not enforced" gap: `execution.py`'s `HistoricalExecutionContext` now
+accepts a separate `execution_provider` (finer timeframe for quotes/marks, independent of the
+decision-making daily feed — H4's old single-feed limitation).
+
+**Found and fixed three real mechanical bugs** while diagnosing why the replay wasn't reproducing DELL/
+META's TRADEABLE transitions: `lab/freshness.py:bar_age_seconds()` and
+`dashboard/market_regime.session_state()` both read the real wall clock instead of the historical clock
+(now patched in `avdi_adapter.py`), and `yahoo_bootstrap.py` labelled daily bars at UTC midnight instead of
+their own session close — a real same-day lookahead leak, now fixed (DST-correct, per-row). Also added:
+today's still-forming daily bar can be honestly reconstructed from real, already-visible intraday bars when
+a finer feed is available, closing a real freshness gap a pure single-daily-feed replay can't otherwise
+close.
+
+**Central finding**: with those fixed, DELL and META both reach the real decision pipeline with strong
+technicals but cap out at exactly `data_quality.overall=0.536`, just under the unchanged 0.55 minimum — a
+**structural ceiling under `PRICE_TREND_ONLY_V1`** (fundamentals/news/analyst/filings/macro/options
+permanently at 0% coverage) meaning **no historical decision can reach TRADEABLE under the current
+capability fingerprint, on any symbol or date**. This is a quantified constraint for H6+ to carry forward,
+not a defect in H5.
+
+**H5 passed.** Per the project's own ordering: H4 execution → H5 (done) → **H6 outcome engine** (next) →
+H7 event identity → H8 walk-forward → H9 experiment tracking → HIST-001 Champion baseline → CH-001/
+capacity/ranking experiments. No profitability experiment may run before HIST-001 exists, and HIST-001
+itself must carry the `data_quality`-ceiling caveat above.
