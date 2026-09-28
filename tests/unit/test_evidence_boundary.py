@@ -100,13 +100,20 @@ def test_boundary_is_append_only(env):
 
 
 def test_force_unhealthy_hook_supports_the_rollback_proof(env, monkeypatch):
+    """Regression: the original synthetic state had no last_discovery/last_tracker heartbeat, so a CI run
+    landing during market hours correctly reported no_discovery_scan_recent/tracker_stopped and failed --
+    a test bug (an incomplete healthy baseline), not a production defect. `now` is injected explicitly so
+    the test is fully wall-clock-independent regardless of when CI happens to run."""
     lock = rt.runtime_lock()
     assert lock.acquire()
     try:
-        st = {"heartbeat": dt.datetime.now(UTC).isoformat(), "restore_ok": True, "counters": {}}
-        assert rt.health(state=st)["healthy"] is True
+        now = dt.datetime.now(UTC)
+        ts = now.isoformat()
+        st = {"heartbeat": ts, "restore_ok": True, "counters": {},
+             "last_discovery": {"at": ts}, "last_tracker": {"at": ts, "quote_age_s_max": 0}}
+        assert rt.health(now=now, state=st)["healthy"] is True
         monkeypatch.setenv("AVDI_FORCE_UNHEALTHY", "1")
-        h = rt.health(state=st)
+        h = rt.health(now=now, state=st)
         assert not h["healthy"] and "forced_unhealthy_test" in h["unhealthy"]
     finally:
         lock.release()
