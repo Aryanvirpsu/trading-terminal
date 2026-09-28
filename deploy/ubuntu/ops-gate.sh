@@ -3,8 +3,13 @@
 # authorized_keys as:   restrict,command="/home/ubuntu/avdi-runtime/ops-gate.sh <role>" ssh-ed25519 AAAA...
 # A key holder gets NO shell: only the whitelisted operations for its role below.
 #   role ops     : status | health | evidence | backup-now | backup-list | backup-pull |
-#                  verify-backup | health-log | offhost-ack <backup-name>
+#                  verify-backup | health-log | offhost-ack <backup-name> | acceptance-status [YYYY-MM-DD]
 #   role deploy  : status | health | deploy <40-hex-sha> [--simulate-failure]   (tarball on stdin)
+# acceptance-status runs ONLY `docker exec avdi-runtime python automation/avdi_acceptance.py [date]` --
+# the existing, already-read-only (sqlite opened mode=ro) POST_FIX_FIRST_ENTRY extractor, nothing else: no
+# arbitrary command, no arbitrary Python module, no shell, no writable/free-form arguments beyond a single
+# strictly-validated YYYY-MM-DD date, no container mutation, no restart/deploy capability. ops role only --
+# deploy holds no read path here unless explicitly added to `allowed()` below.
 # Deployment is NEVER forced into the market window: deploy.sh refuses it and this gate never passes --force.
 set -eu
 ROLE="${1:-}"
@@ -19,7 +24,7 @@ if [ "$#" -gt 0 ]; then shift; fi      # dash exits on a failing `shift`, even w
 allowed() {
   case "$ROLE:$OP" in
     ops:status|ops:health|ops:evidence|ops:backup-now|ops:backup-list|ops:backup-pull) return 0 ;;
-    ops:verify-backup|ops:health-log|ops:offhost-ack) return 0 ;;
+    ops:verify-backup|ops:health-log|ops:offhost-ack|ops:acceptance-status) return 0 ;;
     deploy:status|deploy:health|deploy:deploy) return 0 ;;
   esac
   return 1
@@ -44,6 +49,16 @@ case "$OP" in
       *) echo "bad backup name" >&2; exit 2 ;;
     esac
     exec $RT offhost-ack "$NAME" ;;
+  acceptance-status)
+    [ "$#" -le 1 ] || { echo "too many arguments" >&2; exit 2; }
+    DATE="${1:-}"
+    case "$DATE" in
+      "") ;;
+      [0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]) ;;
+      *) echo "bad date (expected YYYY-MM-DD)" >&2; exit 2 ;;
+    esac
+    exec docker exec avdi-runtime python automation/avdi_acceptance.py $DATE
+    ;;
   backup-list) exec docker run --rm -v avdi_runtime_ledger:/d:ro alpine:3 sh -c 'ls -1 /d/backups' ;;
   backup-pull)
     exec docker run --rm -v avdi_runtime_ledger:/d:ro alpine:3 sh -c \
