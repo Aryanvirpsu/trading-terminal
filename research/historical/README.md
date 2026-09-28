@@ -12,15 +12,16 @@ pip install -r research/historical/requirements.txt
 ```
 Run its tests: `python -m pytest tests/historical -q` (add `-m "not network"` to skip the one live-data test).
 
-## Status (2026-09-27)
+## Status (2026-09-28)
 
 | Phase | What | Status |
 |---|---|---|
 | **H0** | Production isolation guard (`guards.py`) — refuses any path resolving into `/data/case1(2)`, `.tradingview_mcp_data`, the real ledger/shadow filenames, or a host fingerprinted as the Ubuntu runtime | **Done.** `tests/historical/test_production_isolation.py` (26 tests) |
 | **H1** | Canonical bar schema + validation (`schemas/bars.py`), dataset manifest with SHA-256 provenance (`manifest.py`), source-agnostic adapter interface (`datasets/base.py`), a generic (config-driven) Hugging Face adapter, and a Parquet+DuckDB store | **Done.** `tests/historical/test_h1_dataset_foundation.py` (14 tests incl. one real 5-symbol pull) |
 | **H2** | `HistoricalClock` + `HistoricalMarketProvider`, with a hard lookahead guard | **Done.** `tests/historical/test_h2_clock_and_lookahead.py` (18 tests) |
-| **H3** | Wire the historical provider into the real scanner/decision-engine data-fetch points (adapters only, no duplicated logic) | Not started |
-| H4-H15 | Historical account/execution, reproduce 2026-09-25, outcome engine, event identity, walk-forward, MLflow, funnel attribution, HIST-001..004, regime attribution, options, Nautilus cross-check, Optuna | Not started |
+| **H3** | Wire the historical provider into the real scanner/decision-engine data-fetch points (adapters only, no duplicated logic) | **Done.** See below |
+| **H4** | Corporate-action layer, capability fingerprint, reproducibility check, thin execution reuse (real risk/broker/fills/journal against an isolated ledger) | **Blockers 1-5 resolved; execution wired and tested. Not yet gated (see "H4 status" below) — no profitability experiment may run yet.** |
+| H5-H15 | Reproduce the known 2026-09-25 forward day, outcome engine, event identity, walk-forward, MLflow, funnel attribution, HIST-001..004, regime attribution, options, Nautilus cross-check, Optuna | Not started |
 
 ### The Hugging Face dataset gap (disclosed, not papered over)
 
@@ -76,24 +77,77 @@ neutralised to zero confidence for every historical run — only the price-deriv
 the risk/regime family (itself neutral when no regime is supplied) carry real signal today. A historical
 decision label should be read with that in mind until more evidence families are wired.
 
-## Dataset audit (done): `fabhaus/equities_5m_stockprices`
+## Dataset audit (done, corrected): `fabhaus/equities_5m_stockprices`
 
-Full report: `audits/FABHAUS_AUDIT_REPORT.md`. **Verdict: conditionally viable, not yet accepted.** A real,
-material defect was found by direct testing (not the Hub viewer, which is broken for this dataset): the
-`datetime` field is documented as UTC but is actually America/New_York wall-clock time with a "Z" suffix
-mistakenly appended (proven via the closing-auction volume spike landing at the labelled 16:20-16:25, which
-only makes sense at the real 16:00 ET close). This is fixable at the ingestion adapter
-(`HuggingFaceEquitiesAdapter(source_tz="America/New_York")`, now built and tested) — not by itself a reason
-to replace the dataset. Two further items are NOT yet resolved: volume is systematically 20-46% of Yahoo's
-consolidated daily volume for every symbol checked, and the dataset's own documented lack of
-corporate-action adjustment is now confirmed (NVDA's 2024-06-07 10:1 split shows up exactly as expected).
-A corporate-action policy is drafted in the report; **H4 remains blocked until it is implemented**, per the
-project's own rule that raw history is never silently adjusted.
+Full report: `audits/FABHAUS_AUDIT_REPORT.md`. **Verdict: ACCEPTED for H4**, conditional on the
+corporate-action detector/quarantine logic actually running (it now does — see H4 below) and volume being
+treated as `RELATIVE_ONLY` (also enforced below, not just documented).
+
+The audit's own first pass concluded the `datetime` field was mislabelled (America/New_York wall-clock with
+an incorrect "Z" suffix), based on a 260 MB sample window that happened to truncate before the real market
+close. **That conclusion was wrong and has been corrected in the report**, after re-testing across 6 dates
+spanning both seasons and both 2024 DST transition boundaries, for an ETF and an equity: the timestamps are
+genuinely, correctly UTC. `source_tz` remains a generic `HuggingFaceEquitiesAdapter` feature (for a source
+that genuinely has this problem) but must NOT be used for fabhaus. Volume is characterized (not fixed) as a
+consistent 20-46% of Yahoo's consolidated daily volume across every symbol checked — marked `RELATIVE_ONLY`;
+no absolute-volume rule may run against this source. The dataset's lack of pre-applied corporate-action
+adjustment is confirmed (NVDA's 2024-06-07 10:1 split shows up exactly as expected) and is now handled by
+`corporate_actions.py` (raw/split_adjusted, detection, lookahead-safe application, quarantine).
 
 Secondary candidate `GGLabYale/MTBench_finance_stock` (2013-2023 coverage) is recorded, not integrated.
 
-## H4 status: BLOCKED
+## H4 (blockers 1-5 resolved; execution wired; not yet gated)
 
-Not started. Blocked on: (1) re-running the dataset audit with `source_tz` applied and a wider symbol/month
-sample; (2) a volume-normalization decision; (3) implementing the corporate-action policy in code (with
-tests); (4) H5 (reproduce the known 2026-09-25 forward day) as the gate before any strategy research.
+The H4 directive's five blockers, all done:
+
+1. **Timezone re-audit** — corrected in the audit report (see above); `research/historical/audits/fabhaus_tz_reaudit.py` + `fabhaus_tz_sample/` are the reproducible evidence.
+2. **Volume characterization** — `RELATIVE_ONLY` verdict in the audit report §6; enforced by convention (no absolute-volume rule exists in this codebase's historical path today, and none may be added against fabhaus data), not yet by a runtime assertion — a real gap if a future experiment adds one.
+3. **Corporate actions, implemented** — `corporate_actions.py`: `detect_splits()` (day-over-day RAW close ratio outside [0.4, 2.5], corroborated by an inverse volume move where available), `is_confirmed()` (fail-closed default), `split_adjusted_view(as_of_date=...)` (lookahead-safe: a split only affects the view from its own date onward, never retroactively into an earlier as-of instant), `detect_quarantine_candidates()` and `apply_ticker_mapping()` (quarantine, never silent remap). Tested in `tests/historical/test_h4_corporate_actions.py`.
+4. **Capability fingerprint** — `capability.py`'s `PRICE_TREND_ONLY_V1`, naming exactly which decision-engine families a historical run replays vs. stubs, plus the volume status. Added to `DatasetManifest.capability_fingerprint`. A historical result must always carry this fingerprint and must never be described as a backtest of the full forward Champion.
+5. **Repeatable ingestion check** — `tests/historical/test_h4_capability_and_reproducibility.py` proves `import_and_store()` is byte-identical (same rows, same content hash, same manifest) for identical inputs, and that the check actually detects a real change (tested both directions). The live-source version of this property (same HF revision + byte range → byte-identical bytes) was demonstrated by hand in the audit report §8 via the `git-lfs` ETag and a repeated extraction.
+
+**Execution, thin reuse (`execution.py`)**: `isolate_paper_ledger()` points `paper.db`'s module-level
+`_DATA_DIR` at a historical-only SQLite directory (the same seam `tests/conftest.py` already uses) — this
+isolates `journal`, `risk`, `broker`, `options_shadow`, and `shadow_log` all at once, since every one of
+them reads `db._DATA_DIR` rather than caching its own copy (confirmed by reading each module).
+`HistoricalExecutionContext` (extends H3's `HistoricalAVDIContext`) additionally patches `workflow.quote_for`,
+`workflow.provider_health`, and `risk._live_mark_src` to route through historical data. `run_session()` then
+calls the REAL, unmodified `workflow.premarket()`/`workflow.market_hours()` — i.e. the real
+capacity/sector/correlation/cooldown/drawdown checks, the real executable-price sizing, the real fill
+simulator, the real order lifecycle and journal — against the isolated ledger. Tested in
+`tests/historical/test_h4_execution.py` (5 tests), including a test that forces any real network call to
+raise, proving every live path really is intercepted rather than coincidentally unreached.
+
+Two real defects were found and fixed while wiring this, beyond what H3 already covers:
+
+* **`risk._live_mark_src()`** (used by both `risk.account_state()` and `broker.account()` to mark OPEN
+  positions) calls a live Yahoo/Finnhub quote directly — unpatched, a historical replay's reported
+  equity/drawdown would have been silently contaminated by TODAY's real price for any symbol with an open
+  historical position. This is a correctness defect distinct from H3's disclosed missing-evidence-families
+  limitation, now patched.
+* **`workflow.provider_health()`** makes live provider checks and `premarket()` aborts entirely
+  ("no orders planned") if it reports unhealthy — now patched to report synthetic health for historical runs.
+* **Module identity**: `avdi_adapter.py` imports the decision stack as the flat `paper.*` package (`lab/`
+  on `sys.path`), because that is how the AVDI package's own internal relative imports resolve. Importing
+  the same files as `lab.paper.*` instead creates a SECOND, independent module object per name — a patch
+  on one has zero effect on the other, with no error, just a silently-unpatched live call. `execution.py`
+  and its tests therefore import everything through the flat `paper.*` form; this is documented prominently
+  in `execution.py`'s module docstring so it isn't re-discovered the hard way later.
+
+**Known scope limits, disclosed, not yet closed:**
+* `run_session()` uses ONE dataset/timeframe for both decision-making bars and execution quotes (matching
+  H3's existing single-provider design). Realistic intraday stop/target fills need a second, finer
+  (e.g. 5-minute) provider wired into the execution quote path specifically — not done yet.
+* `tests/historical/` mutates `sys.path` process-wide on import (via `avdi_adapter.py`'s `lab`/`dashboard`/
+  `src` insertion) and must be run in its OWN pytest process, never in the same session as `tests/unit/`
+  — confirmed this is pre-existing since H3, not introduced by H4. CI's separate `historical-lab` job
+  already does this correctly; running `python -m pytest tests/` (no path filter) locally will show
+  unrelated failures in `tests/unit/` for this reason — always target `tests/historical` and `tests/unit`
+  in separate invocations.
+* The `RELATIVE_ONLY` volume policy is a documented convention, not yet a runtime assertion that would
+  reject an experiment for evaluating an absolute-volume rule against fabhaus data.
+
+**H4 is not yet gated for strategy research.** Per the project's own ordering: H4 execution → H5 (reproduce
+the known 2026-09-25 forward day) → prove Historical Lab behaves like Ubuntu → outcome/event engine →
+walk-forward → HIST-001 Champion baseline → CH-001/capacity/ranking experiments. No profitability
+experiment may run before H5 passes.
