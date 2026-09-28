@@ -1,0 +1,5801 @@
+{
+ "generated_at": "2026-09-28T07:44:14.085200+00:00",
+ "session": {
+  "session_date": "2026-09-25",
+  "engine_version_boundary_et": "09:35:22",
+  "boundary_equity": 504.66,
+  "boundary_cash": 504.66,
+  "boundary_open_positions": 0,
+  "boundary_entries_today": 0,
+  "discovery_cycles_expected": 26,
+  "discovery_cycles_actual": 26,
+  "premarket_prep_cycles": 1,
+  "raw_observations_total": 133,
+  "independent_events_total": 12,
+  "journaled_signals_total": 21,
+  "paper_entries_total": 2,
+  "entry_cutoff_note": "regular entries allowed through 14:50 ET; 15:05-15:50 ET cycles are post_cutoff, observation-only",
+  "close_equity": 504.49,
+  "close_cash": 353.67,
+  "close_open_positions": 2,
+  "v11_pnl_unrealized": -0.17
+ },
+ "reference_events": [
+  {
+   "symbol": "DELL",
+   "sector": "technology",
+   "observations": 26,
+   "first_seen_cycle_et": "09:15",
+   "classification_progression": [
+    "MONITOR",
+    "TRADEABLE"
+   ],
+   "final_action": "entered",
+   "refusal_reason": null,
+   "notes": "MONITOR 09:15-11:50 ET -> TRADEABLE at 12:05 ET -> entered; TRADEABLE for the rest of the day (held)."
+  },
+  {
+   "symbol": "META",
+   "sector": "communication",
+   "observations": 20,
+   "first_seen_cycle_et": "09:35",
+   "classification_progression": [
+    "REJECT",
+    "MONITOR",
+    "TRADEABLE"
+   ],
+   "final_action": "entered",
+   "refusal_reason": null,
+   "notes": "REJECT/MONITOR flips (label flipped several times near threshold: 8 journal rows from 20 observations) -> TRADEABLE at 13:05 ET -> entered."
+  },
+  {
+   "symbol": "AAPL",
+   "sector": "technology",
+   "observations": 23,
+   "first_seen_cycle_et": "09:50",
+   "classification_progression": [
+    "MONITOR",
+    "TRADEABLE"
+   ],
+   "final_action": "not_entered_capacity",
+   "refusal_reason": "technology sector slot held by DELL (shadow capacity_reason=sector; ledger reason generic: 'stock leg not canonically executable')",
+   "notes": "Reached TRADEABLE at 12:05 ET alongside DELL; only one technology slot available and the Champion's scanner order picked DELL."
+  },
+  {
+   "symbol": "TMO",
+   "sector": "health_care",
+   "observations": 6,
+   "first_seen_cycle_et": "10:05",
+   "classification_progression": [
+    "MONITOR",
+    "TRADEABLE"
+   ],
+   "final_action": "not_entered_capacity",
+   "refusal_reason": "daily entry cap reached (2/day, incl. persisted entries)",
+   "notes": "6 observations 14:20-15:50 ET; blocked once DELL+META had consumed the 2-per-day cap."
+  },
+  {
+   "symbol": "MSFT",
+   "sector": "technology",
+   "observations": 1,
+   "first_seen_cycle_et": "14:35",
+   "classification_progression": [
+    "TRADEABLE"
+   ],
+   "final_action": "not_entered_capacity",
+   "refusal_reason": "daily entry cap reached (2/day, incl. persisted entries)",
+   "notes": "Single observation at 14:35 ET, already past the point the daily cap was consumed."
+  },
+  {
+   "symbol": "TSLA",
+   "sector": "consumer_discretionary",
+   "observations": 1,
+   "first_seen_cycle_et": "15:05",
+   "classification_progression": [
+    "MONITOR"
+   ],
+   "final_action": "not_entered_cutoff",
+   "refusal_reason": "post-cutoff (15:05-15:50 ET window is observation-only; regular entries end at 14:50 ET)",
+   "notes": "Single observation at 15:05 ET -- arrived after the entry cutoff, observation-only by session design."
+  },
+  {
+   "symbol": "AMD",
+   "sector": "technology",
+   "observations": 26,
+   "first_seen_cycle_et": "09:35",
+   "classification_progression": [
+    "REJECT",
+    "MONITOR"
+   ],
+   "final_action": "not_entered_generic",
+   "refusal_reason": null,
+   "notes": "Present in the very first 09:35 scan; never reached TRADEABLE per the funnel table."
+  },
+  {
+   "symbol": "CRM",
+   "sector": "technology",
+   "observations": 25,
+   "first_seen_cycle_et": "09:35",
+   "classification_progression": [
+    "REJECT",
+    "MONITOR"
+   ],
+   "final_action": "not_entered_generic",
+   "refusal_reason": null,
+   "notes": "Present in the very first 09:35 scan; never reached TRADEABLE per the funnel table."
+  },
+  {
+   "symbol": "NVDA",
+   "sector": "technology",
+   "observations": 2,
+   "first_seen_cycle_et": "09:35",
+   "classification_progression": [
+    "REJECT",
+    "MONITOR"
+   ],
+   "final_action": "not_entered_generic",
+   "refusal_reason": null,
+   "notes": "Only 2 observations all day; never reached TRADEABLE."
+  },
+  {
+   "symbol": "FCX",
+   "sector": "materials",
+   "observations": 1,
+   "first_seen_cycle_et": "15:05",
+   "classification_progression": [
+    "MONITOR"
+   ],
+   "final_action": "not_entered_generic",
+   "refusal_reason": null,
+   "notes": "First appeared at 15:05 ET, single observation."
+  },
+  {
+   "symbol": "NEM",
+   "sector": "materials",
+   "observations": 1,
+   "first_seen_cycle_et": "15:05",
+   "classification_progression": [
+    "MONITOR"
+   ],
+   "final_action": "not_entered_generic",
+   "refusal_reason": null,
+   "notes": "First appeared at 15:05 ET, single observation."
+  },
+  {
+   "symbol": "VRTX",
+   "sector": "health_care",
+   "observations": 1,
+   "first_seen_cycle_et": "10:05",
+   "classification_progression": [
+    "MONITOR"
+   ],
+   "final_action": "not_entered_generic",
+   "refusal_reason": null,
+   "notes": "First appeared at 10:05 ET, single observation."
+  }
+ ],
+ "reference_orders": [
+  {
+   "symbol": "DELL",
+   "decision_time_et": "12:05:23",
+   "quality": 67.0,
+   "expected_r": 1.007,
+   "classification": "TRADEABLE",
+   "sector": "technology",
+   "capacity_note": "two eligible (DELL, AAPL), one technology slot; scanner order picked DELL",
+   "quote_provider": "yahoo",
+   "quote_ask": 565.4026,
+   "spread_pct": 0.1,
+   "executable_price": 565.6853,
+   "quantity": 0.109577,
+   "planned_risk": 5.0,
+   "notional": 61.99,
+   "order_id": "ord_6b76c171eb2fcd10",
+   "fill_price": 565.6853,
+   "slippage_dollars": 0.2827,
+   "fees": 0.0,
+   "stop": 517.79,
+   "target": 659.78,
+   "mfe_r_at_close": 0.17,
+   "mae_r_at_close": 0.51
+  },
+  {
+   "symbol": "META",
+   "decision_time_et": "13:05:00",
+   "quality": 62.1,
+   "expected_r": 0.924,
+   "classification": "TRADEABLE",
+   "sector": "communication",
+   "capacity_note": "no sector conflict",
+   "quote_provider": "tradingview",
+   "quote_ask": 750.1249,
+   "spread_pct": null,
+   "executable_price": 750.5,
+   "quantity": 0.118596,
+   "planned_risk": 5.0,
+   "notional": null,
+   "order_id": "ord_811f32a092e7b76e",
+   "fill_price": 750.5,
+   "slippage_dollars": 0.3751,
+   "fees": 0.0,
+   "stop": 706.2,
+   "target": 839.43,
+   "mfe_r_at_close": 0.43,
+   "mae_r_at_close": 0.09
+  }
+ ],
+ "capability_fingerprint": {
+  "tag": "PRICE_TREND_ONLY_V1",
+  "live_families": [
+   "price_trend",
+   "momentum",
+   "rsi",
+   "atr",
+   "liquid_momentum_scoring",
+   "risk_sizing",
+   "capacity_and_sector_caps",
+   "fill_simulation"
+  ],
+  "stubbed_families": [
+   "_fam_catalyst",
+   "_fam_short",
+   "_fam_filings",
+   "_fam_options_flow",
+   "_fam_social",
+   "_fam_analyst",
+   "_fam_macro",
+   "sector_breadth_rotation",
+   "halts"
+  ],
+  "volume_status": "RELATIVE_ONLY",
+  "notes": "No historical replay for catalyst headlines, short interest, SEC filings, options flow, social sentiment, analyst ratings, macro series, sector breadth/rotation, or trading halts -- all neutralised to decision_engine._fam_stub or an equivalent fixed neutral input. Volume is RELATIVE_ONLY (see FABHAUS_AUDIT_REPORT.md section 6): no absolute-volume rule may be evaluated against historical data. A result produced under this fingerprint characterizes the price/TA-driven slice of AVDI's decision logic only, and must never be described as a backtest of the full forward Champion."
+ },
+ "run_manifest": {
+  "run_id": "h5_artifacts_run",
+  "session_date": "2026-09-25",
+  "dataset_manifests": {
+   "daily": {
+    "dataset_id": "KNOWN_FORWARD_2026_09_25_DAILY",
+    "source": "yahoo-bootstrap",
+    "revision": "n/a",
+    "symbols": [
+     "AAPL",
+     "AMD",
+     "CRM",
+     "DELL",
+     "FCX",
+     "META",
+     "MSFT",
+     "NEM",
+     "NVDA",
+     "TMO",
+     "TSLA",
+     "VRTX"
+    ],
+    "start": "2026-06-01",
+    "end": "2026-09-26",
+    "timeframe": "1d",
+    "rows": 984,
+    "sha256": "8fc833d12c629e6b03160a7751749c1ad0f09f1d2a5d0aeda3902e771c787a98",
+    "parquet_path": "equities\\KNOWN_FORWARD_2026_09_25_DAILY.parquet",
+    "parquet_sha256": "c8cdc8dae777b337b7278bbca7649fd44e706ef584425a582946335823679065",
+    "validation": {
+     "rows": 984,
+     "symbols": [
+      "AAPL",
+      "AMD",
+      "CRM",
+      "DELL",
+      "FCX",
+      "META",
+      "MSFT",
+      "NEM",
+      "NVDA",
+      "TMO",
+      "TSLA",
+      "VRTX"
+     ],
+     "ok": true,
+     "failures": {}
+    },
+    "created_at": "2026-09-28T07:33:15+00:00",
+    "notes": "H5 KNOWN_FORWARD_2026_09_25 (source=yahoo-bootstrap): daily bars for decision-making (trend/RSI), 2026-06-01..2026-09-26. Real Yahoo data, fetched fresh for this exact session; NOT the fabhaus research corpus, NOT raw Ubuntu shadow-log data (unreachable from this environment).",
+    "hf_repository": null,
+    "hf_revision": null,
+    "upstream_files": [],
+    "upstream_sha256": {},
+    "selected_columns": [],
+    "adapter_version": null,
+    "capability_fingerprint": null,
+    "volume_trust": "ABSOLUTE"
+   },
+   "intraday": {
+    "dataset_id": "KNOWN_FORWARD_2026_09_25_5M",
+    "source": "yahoo-bootstrap",
+    "revision": "n/a",
+    "symbols": [
+     "AAPL",
+     "AMD",
+     "CRM",
+     "DELL",
+     "FCX",
+     "META",
+     "MSFT",
+     "NEM",
+     "NVDA",
+     "TMO",
+     "TSLA",
+     "VRTX"
+    ],
+    "start": "2026-09-25",
+    "end": "2026-09-26",
+    "timeframe": "5m",
+    "rows": 936,
+    "sha256": "82c9df71d03c2787f3eb5262eebca0104b961b3648bfaeff8fc52b0eb81f27bb",
+    "parquet_path": "equities\\KNOWN_FORWARD_2026_09_25_5M.parquet",
+    "parquet_sha256": "7493d42e6c84badf05d7b4c28095e1faa47eb129602bce5ba450a52e53baf628",
+    "validation": {
+     "rows": 936,
+     "symbols": [
+      "AAPL",
+      "AMD",
+      "CRM",
+      "DELL",
+      "FCX",
+      "META",
+      "MSFT",
+      "NEM",
+      "NVDA",
+      "TMO",
+      "TSLA",
+      "VRTX"
+     ],
+     "ok": true,
+     "failures": {}
+    },
+    "created_at": "2026-09-28T07:33:16+00:00",
+    "notes": "H5 KNOWN_FORWARD_2026_09_25 (source=yahoo-bootstrap): 5-minute bars for the session itself (2026-09-25), for execution/quote data -- see H5 blocker #5 (decision vs. executable-price granularity).",
+    "hf_repository": null,
+    "hf_revision": null,
+    "upstream_files": [],
+    "upstream_sha256": {},
+    "selected_columns": [],
+    "adapter_version": null,
+    "capability_fingerprint": null,
+    "volume_trust": "ABSOLUTE"
+   }
+  }
+ },
+ "historical_cycles": [
+  {
+   "cycle_id": "2026-09-25T0915",
+   "et_time": "2026-09-25T09:15:00-04:00",
+   "session_type": "premarket_prep",
+   "allow_entries": false,
+   "premarket": {
+    "session_date": "2026-09-25",
+    "state": "ok",
+    "started_at": "2026-09-28T07:44:12.393607+00:00",
+    "cycle_id": "2026-09-25T0915",
+    "entries_allowed": false,
+    "provider_health": {
+     "checked_at": "2026-09-25T13:15:00+00:00",
+     "healthy": true,
+     "historical_replay": true,
+     "providers": {
+      "note": "historical replay -- live provider health has no meaning here"
+     }
+    },
+    "market_regime": null,
+    "sectors_considered": [
+     "communication",
+     "consumer_discretionary",
+     "health_care",
+     "materials",
+     "technology"
+    ],
+    "sector_ranking": [
+     {
+      "name": "communication",
+      "score": 0.0,
+      "rs": 0.0
+     },
+     {
+      "name": "consumer_discretionary",
+      "score": 0.0,
+      "rs": 0.0
+     },
+     {
+      "name": "health_care",
+      "score": 0.0,
+      "rs": 0.0
+     },
+     {
+      "name": "materials",
+      "score": 0.0,
+      "rs": 0.0
+     },
+     {
+      "name": "technology",
+      "score": 0.0,
+      "rs": 0.0
+     }
+    ],
+    "candidates": 22,
+    "finalists": [
+     {
+      "symbol": "META",
+      "strategy": "sector_relative_strength",
+      "score": 20.98,
+      "ret_1m": 34.97,
+      "sector_score": 0.0,
+      "direction": "LONG",
+      "why": "leader in leading sector communication (sector score +0.00), 1M +35.0%",
+      "sector": "communication",
+      "sector_name": "communication",
+      "sector_is_strong": true,
+      "as_of": "2026-09-24T20:00:00+00:00",
+      "scanner_rank": 1
+     },
+     {
+      "symbol": "AMD",
+      "strategy": "sector_relative_strength",
+      "score": 18.51,
+      "ret_1m": 30.84,
+      "sector_score": 0.0,
+      "direction": "LONG",
+      "why": "leader in leading sector technology (sector score +0.00), 1M +30.8%",
+      "sector": "technology",
+      "sector_name": "technology",
+      "sector_is_strong": true,
+      "as_of": "2026-09-24T20:00:00+00:00",
+      "scanner_rank": 2
+     },
+     {
+      "symbol": "DELL",
+      "strategy": "liquid_momentum",
+      "score": 12.55,
+      "rsi": 53.7,
+      "ret_1m": 15.57,
+      "rel_vol": 0.72,
+      "dollar_volume": 5940983247,
+      "direction": "LONG",
+      "why": "above 20/50-DMA, 1M +15.6%, RSI 53.7, $5941M/day",
+      "sector": "technology",
+      "sector_name": "technology",
+      "sector_is_strong": true,
+      "as_of": "2026-09-24T20:00:00+00:00",
+      "scanner_rank": 3
+     },
+     {
+      "symbol": "CRM",
+      "strategy": "sector_relative_strength",
+      "score": 9.51,
+      "ret_1m": 15.85,
+      "sector_score": 0.0,
+      "direction": "LONG",
+      "why": "leader in leading sector technology (sector score +0.00), 1M +15.9%",
+      "sector": "technology",
+      "sector_name": "technology",
+      "sector_is_strong": true,
+      "as_of": "2026-09-24T20:00:00+00:00",
+      "scanner_rank": 4
+     },
+     {
+      "symbol": "TMO",
+      "strategy": "liquid_momentum",
+      "score": 8.33,
+      "rsi": 77.2,
+      "ret_1m": 7.05,
+      "rel_vol": 0.98,
+      "dollar_volume": 1449844963,
+      "direction": "LONG",
+      "why": "above 20/50-DMA, 1M +7.1%, RSI 77.2, $1450M/day",
+      "sector": "health_care",
+      "sector_name": "health_care",
+      "sector_is_strong": true,
+      "as_of": "2026-09-24T20:00:00+00:00",
+      "scanner_rank": 5
+     }
+    ],
+    "evaluated": [
+     {
+      "symbol": "META",
+      "action": "MONITOR",
+      "signal_id": null,
+      "instrument": "NO TRADE",
+      "note": "entries disabled (premarket_prep) - observation only"
+     },
+     {
+      "symbol": "AMD",
+      "action": "MONITOR",
+      "signal_id": null,
+      "instrument": "NO TRADE",
+      "note": "entries disabled (premarket_prep) - observation only"
+     },
+     {
+      "symbol": "DELL",
+      "action": "MONITOR",
+      "signal_id": null,
+      "instrument": "NO TRADE",
+      "note": "entries disabled (premarket_prep) - observation only"
+     },
+     {
+      "symbol": "CRM",
+      "action": "MONITOR",
+      "signal_id": null,
+      "instrument": "NO TRADE",
+      "note": "entries disabled (premarket_prep) - observation only"
+     },
+     {
+      "symbol": "TMO",
+      "action": "MONITOR",
+      "signal_id": null,
+      "instrument": "NO TRADE",
+      "note": "entries disabled (premarket_prep) - observation only"
+     }
+    ],
+    "orders_placed": [],
+    "config_version": "cfg-fee37d4872"
+   },
+   "market_hours": {
+    "session_date": "2026-09-25",
+    "symbols_watched": [],
+    "orders_processed": 0,
+    "exits": 0,
+    "exit_actions": [],
+    "tracked_updated": 0,
+    "shadow_resolved": {
+     "checked": 0,
+     "resolved": 0,
+     "expired": 0,
+     "skipped_missing_data": 0
+    },
+    "scope": "all",
+    "quote_age_s_max": null,
+    "quotes_missing": []
+   }
+  },
+  {
+   "cycle_id": "2026-09-25T0935",
+   "et_time": "2026-09-25T09:35:00-04:00",
+   "session_type": "regular",
+   "allow_entries": true,
+   "premarket": {
+    "session_date": "2026-09-25",
+    "state": "ok",
+    "started_at": "2026-09-28T07:44:12.550526+00:00",
+    "cycle_id": "2026-09-25T0935",
+    "entries_allowed": true,
+    "provider_health": {
+     "checked_at": "2026-09-25T13:35:00+00:00",
+     "healthy": true,
+     "historical_replay": true,
+     "providers": {
+      "note": "historical replay -- live provider health has no meaning here"
+     }
+    },
+    "market_regime": null,
+    "sectors_considered": [
+     "communication",
+     "consumer_discretionary",
+     "health_care",
+     "materials",
+     "technology"
+    ],
+    "sector_ranking": [
+     {
+      "name": "communication",
+      "score": 0.0,
+      "rs": 0.0
+     },
+     {
+      "name": "consumer_discretionary",
+      "score": 0.0,
+      "rs": 0.0
+     },
+     {
+      "name": "health_care",
+      "score": 0.0,
+      "rs": 0.0
+     },
+     {
+      "name": "materials",
+      "score": 0.0,
+      "rs": 0.0
+     },
+     {
+      "name": "technology",
+      "score": 0.0,
+      "rs": 0.0
+     }
+    ],
+    "candidates": 22,
+    "finalists": [
+     {
+      "symbol": "META",
+      "strategy": "sector_relative_strength",
+      "score": 20.98,
+      "ret_1m": 34.97,
+      "sector_score": 0.0,
+      "direction": "LONG",
+      "why": "leader in leading sector communication (sector score +0.00), 1M +35.0%",
+      "sector": "communication",
+      "sector_name": "communication",
+      "sector_is_strong": true,
+      "as_of": "2026-09-24T20:00:00+00:00",
+      "scanner_rank": 1
+     },
+     {
+      "symbol": "AMD",
+      "strategy": "sector_relative_strength",
+      "score": 18.51,
+      "ret_1m": 30.84,
+      "sector_score": 0.0,
+      "direction": "LONG",
+      "why": "leader in leading sector technology (sector score +0.00), 1M +30.8%",
+      "sector": "technology",
+      "sector_name": "technology",
+      "sector_is_strong": true,
+      "as_of": "2026-09-24T20:00:00+00:00",
+      "scanner_rank": 2
+     },
+     {
+      "symbol": "DELL",
+      "strategy": "liquid_momentum",
+      "score": 12.55,
+      "rsi": 53.7,
+      "ret_1m": 15.57,
+      "rel_vol": 0.72,
+      "dollar_volume": 5940983247,
+      "direction": "LONG",
+      "why": "above 20/50-DMA, 1M +15.6%, RSI 53.7, $5941M/day",
+      "sector": "technology",
+      "sector_name": "technology",
+      "sector_is_strong": true,
+      "as_of": "2026-09-24T20:00:00+00:00",
+      "scanner_rank": 3
+     },
+     {
+      "symbol": "CRM",
+      "strategy": "sector_relative_strength",
+      "score": 9.51,
+      "ret_1m": 15.85,
+      "sector_score": 0.0,
+      "direction": "LONG",
+      "why": "leader in leading sector technology (sector score +0.00), 1M +15.9%",
+      "sector": "technology",
+      "sector_name": "technology",
+      "sector_is_strong": true,
+      "as_of": "2026-09-24T20:00:00+00:00",
+      "scanner_rank": 4
+     },
+     {
+      "symbol": "TMO",
+      "strategy": "liquid_momentum",
+      "score": 8.33,
+      "rsi": 77.2,
+      "ret_1m": 7.05,
+      "rel_vol": 0.98,
+      "dollar_volume": 1449844963,
+      "direction": "LONG",
+      "why": "above 20/50-DMA, 1M +7.1%, RSI 77.2, $1450M/day",
+      "sector": "health_care",
+      "sector_name": "health_care",
+      "sector_is_strong": true,
+      "as_of": "2026-09-24T20:00:00+00:00",
+      "scanner_rank": 5
+     }
+    ],
+    "evaluated": [
+     {
+      "symbol": "META",
+      "action": "MONITOR",
+      "signal_id": "sig_10bf2b82ea7a8cd7",
+      "instrument": "NO TRADE",
+      "note": "stock leg not canonically executable"
+     },
+     {
+      "symbol": "AMD",
+      "action": "MONITOR",
+      "signal_id": "sig_6385c26dcc928bed",
+      "instrument": "NO TRADE",
+      "note": "stock leg not canonically executable"
+     },
+     {
+      "symbol": "DELL",
+      "action": "MONITOR",
+      "signal_id": "sig_c2ea6f9964c6d984",
+      "instrument": "NO TRADE",
+      "note": "stock leg not canonically executable"
+     },
+     {
+      "symbol": "CRM",
+      "action": "MONITOR",
+      "signal_id": "sig_6b0fc1d9ff183387",
+      "instrument": "NO TRADE",
+      "note": "stock leg not canonically executable"
+     },
+     {
+      "symbol": "TMO",
+      "action": "MONITOR",
+      "signal_id": "sig_c47c05aa2a29ea90",
+      "instrument": "NO TRADE",
+      "note": "stock leg not canonically executable"
+     }
+    ],
+    "orders_placed": [],
+    "config_version": "cfg-fee37d4872"
+   },
+   "market_hours": {
+    "session_date": "2026-09-25",
+    "symbols_watched": [
+     "AMD",
+     "CRM",
+     "DELL",
+     "META",
+     "TMO"
+    ],
+    "orders_processed": 0,
+    "exits": 0,
+    "exit_actions": [],
+    "tracked_updated": 5,
+    "shadow_resolved": {
+     "checked": 0,
+     "resolved": 0,
+     "expired": 0,
+     "skipped_missing_data": 0
+    },
+    "scope": "all",
+    "quote_age_s_max": 238152.6,
+    "quotes_missing": []
+   }
+  },
+  {
+   "cycle_id": "2026-09-25T0950",
+   "et_time": "2026-09-25T09:50:00-04:00",
+   "session_type": "regular",
+   "allow_entries": true,
+   "premarket": {
+    "session_date": "2026-09-25",
+    "state": "ok",
+    "started_at": "2026-09-28T07:44:12.607601+00:00",
+    "cycle_id": "2026-09-25T0950",
+    "entries_allowed": true,
+    "provider_health": {
+     "checked_at": "2026-09-25T13:50:00+00:00",
+     "healthy": true,
+     "historical_replay": true,
+     "providers": {
+      "note": "historical replay -- live provider health has no meaning here"
+     }
+    },
+    "market_regime": null,
+    "sectors_considered": [
+     "communication",
+     "consumer_discretionary",
+     "health_care",
+     "materials",
+     "technology"
+    ],
+    "sector_ranking": [
+     {
+      "name": "communication",
+      "score": 0.0,
+      "rs": 0.0
+     },
+     {
+      "name": "consumer_discretionary",
+      "score": 0.0,
+      "rs": 0.0
+     },
+     {
+      "name": "health_care",
+      "score": 0.0,
+      "rs": 0.0
+     },
+     {
+      "name": "materials",
+      "score": 0.0,
+      "rs": 0.0
+     },
+     {
+      "name": "technology",
+      "score": 0.0,
+      "rs": 0.0
+     }
+    ],
+    "candidates": 22,
+    "finalists": [
+     {
+      "symbol": "META",
+      "strategy": "sector_relative_strength",
+      "score": 20.98,
+      "ret_1m": 34.97,
+      "sector_score": 0.0,
+      "direction": "LONG",
+      "why": "leader in leading sector communication (sector score +0.00), 1M +35.0%",
+      "sector": "communication",
+      "sector_name": "communication",
+      "sector_is_strong": true,
+      "as_of": "2026-09-24T20:00:00+00:00",
+      "scanner_rank": 1
+     },
+     {
+      "symbol": "AMD",
+      "strategy": "sector_relative_strength",
+      "score": 18.51,
+      "ret_1m": 30.84,
+      "sector_score": 0.0,
+      "direction": "LONG",
+      "why": "leader in leading sector technology (sector score +0.00), 1M +30.8%",
+      "sector": "technology",
+      "sector_name": "technology",
+      "sector_is_strong": true,
+      "as_of": "2026-09-24T20:00:00+00:00",
+      "scanner_rank": 2
+     },
+     {
+      "symbol": "DELL",
+      "strategy": "liquid_momentum",
+      "score": 12.55,
+      "rsi": 53.7,
+      "ret_1m": 15.57,
+      "rel_vol": 0.72,
+      "dollar_volume": 5940983247,
+      "direction": "LONG",
+      "why": "above 20/50-DMA, 1M +15.6%, RSI 53.7, $5941M/day",
+      "sector": "technology",
+      "sector_name": "technology",
+      "sector_is_strong": true,
+      "as_of": "2026-09-24T20:00:00+00:00",
+      "scanner_rank": 3
+     },
+     {
+      "symbol": "CRM",
+      "strategy": "sector_relative_strength",
+      "score": 9.51,
+      "ret_1m": 15.85,
+      "sector_score": 0.0,
+      "direction": "LONG",
+      "why": "leader in leading sector technology (sector score +0.00), 1M +15.9%",
+      "sector": "technology",
+      "sector_name": "technology",
+      "sector_is_strong": true,
+      "as_of": "2026-09-24T20:00:00+00:00",
+      "scanner_rank": 4
+     },
+     {
+      "symbol": "TMO",
+      "strategy": "liquid_momentum",
+      "score": 8.33,
+      "rsi": 77.2,
+      "ret_1m": 7.05,
+      "rel_vol": 0.98,
+      "dollar_volume": 1449844963,
+      "direction": "LONG",
+      "why": "above 20/50-DMA, 1M +7.1%, RSI 77.2, $1450M/day",
+      "sector": "health_care",
+      "sector_name": "health_care",
+      "sector_is_strong": true,
+      "as_of": "2026-09-24T20:00:00+00:00",
+      "scanner_rank": 5
+     }
+    ],
+    "evaluated": [
+     {
+      "symbol": "META",
+      "action": "MONITOR",
+      "signal_id": "sig_10bf2b82ea7a8cd7",
+      "instrument": "NO TRADE",
+      "note": "unchanged observation - not re-journaled"
+     },
+     {
+      "symbol": "AMD",
+      "action": "MONITOR",
+      "signal_id": "sig_6385c26dcc928bed",
+      "instrument": "NO TRADE",
+      "note": "unchanged observation - not re-journaled"
+     },
+     {
+      "symbol": "DELL",
+      "action": "MONITOR",
+      "signal_id": "sig_c2ea6f9964c6d984",
+      "instrument": "NO TRADE",
+      "note": "unchanged observation - not re-journaled"
+     },
+     {
+      "symbol": "CRM",
+      "action": "MONITOR",
+      "signal_id": "sig_6b0fc1d9ff183387",
+      "instrument": "NO TRADE",
+      "note": "unchanged observation - not re-journaled"
+     },
+     {
+      "symbol": "TMO",
+      "action": "MONITOR",
+      "signal_id": "sig_c47c05aa2a29ea90",
+      "instrument": "NO TRADE",
+      "note": "unchanged observation - not re-journaled"
+     }
+    ],
+    "orders_placed": [],
+    "config_version": "cfg-fee37d4872"
+   },
+   "market_hours": {
+    "session_date": "2026-09-25",
+    "symbols_watched": [
+     "AMD",
+     "CRM",
+     "DELL",
+     "META",
+     "TMO"
+    ],
+    "orders_processed": 0,
+    "exits": 0,
+    "exit_actions": [],
+    "tracked_updated": 5,
+    "shadow_resolved": {
+     "checked": 0,
+     "resolved": 0,
+     "expired": 0,
+     "skipped_missing_data": 0
+    },
+    "scope": "all",
+    "quote_age_s_max": 237252.7,
+    "quotes_missing": []
+   }
+  },
+  {
+   "cycle_id": "2026-09-25T1005",
+   "et_time": "2026-09-25T10:05:00-04:00",
+   "session_type": "regular",
+   "allow_entries": true,
+   "premarket": {
+    "session_date": "2026-09-25",
+    "state": "ok",
+    "started_at": "2026-09-28T07:44:12.661288+00:00",
+    "cycle_id": "2026-09-25T1005",
+    "entries_allowed": true,
+    "provider_health": {
+     "checked_at": "2026-09-25T14:05:00+00:00",
+     "healthy": true,
+     "historical_replay": true,
+     "providers": {
+      "note": "historical replay -- live provider health has no meaning here"
+     }
+    },
+    "market_regime": null,
+    "sectors_considered": [
+     "communication",
+     "consumer_discretionary",
+     "health_care",
+     "materials",
+     "technology"
+    ],
+    "sector_ranking": [
+     {
+      "name": "communication",
+      "score": 0.0,
+      "rs": 0.0
+     },
+     {
+      "name": "consumer_discretionary",
+      "score": 0.0,
+      "rs": 0.0
+     },
+     {
+      "name": "health_care",
+      "score": 0.0,
+      "rs": 0.0
+     },
+     {
+      "name": "materials",
+      "score": 0.0,
+      "rs": 0.0
+     },
+     {
+      "name": "technology",
+      "score": 0.0,
+      "rs": 0.0
+     }
+    ],
+    "candidates": 22,
+    "finalists": [
+     {
+      "symbol": "META",
+      "strategy": "sector_relative_strength",
+      "score": 20.98,
+      "ret_1m": 34.97,
+      "sector_score": 0.0,
+      "direction": "LONG",
+      "why": "leader in leading sector communication (sector score +0.00), 1M +35.0%",
+      "sector": "communication",
+      "sector_name": "communication",
+      "sector_is_strong": true,
+      "as_of": "2026-09-24T20:00:00+00:00",
+      "scanner_rank": 1
+     },
+     {
+      "symbol": "AMD",
+      "strategy": "sector_relative_strength",
+      "score": 18.51,
+      "ret_1m": 30.84,
+      "sector_score": 0.0,
+      "direction": "LONG",
+      "why": "leader in leading sector technology (sector score +0.00), 1M +30.8%",
+      "sector": "technology",
+      "sector_name": "technology",
+      "sector_is_strong": true,
+      "as_of": "2026-09-24T20:00:00+00:00",
+      "scanner_rank": 2
+     },
+     {
+      "symbol": "DELL",
+      "strategy": "liquid_momentum",
+      "score": 12.55,
+      "rsi": 53.7,
+      "ret_1m": 15.57,
+      "rel_vol": 0.72,
+      "dollar_volume": 5940983247,
+      "direction": "LONG",
+      "why": "above 20/50-DMA, 1M +15.6%, RSI 53.7, $5941M/day",
+      "sector": "technology",
+      "sector_name": "technology",
+      "sector_is_strong": true,
+      "as_of": "2026-09-24T20:00:00+00:00",
+      "scanner_rank": 3
+     },
+     {
+      "symbol": "CRM",
+      "strategy": "sector_relative_strength",
+      "score": 9.51,
+      "ret_1m": 15.85,
+      "sector_score": 0.0,
+      "direction": "LONG",
+      "why": "leader in leading sector technology (sector score +0.00), 1M +15.9%",
+      "sector": "technology",
+      "sector_name": "technology",
+      "sector_is_strong": true,
+      "as_of": "2026-09-24T20:00:00+00:00",
+      "scanner_rank": 4
+     },
+     {
+      "symbol": "TMO",
+      "strategy": "liquid_momentum",
+      "score": 8.33,
+      "rsi": 77.2,
+      "ret_1m": 7.05,
+      "rel_vol": 0.98,
+      "dollar_volume": 1449844963,
+      "direction": "LONG",
+      "why": "above 20/50-DMA, 1M +7.1%, RSI 77.2, $1450M/day",
+      "sector": "health_care",
+      "sector_name": "health_care",
+      "sector_is_strong": true,
+      "as_of": "2026-09-24T20:00:00+00:00",
+      "scanner_rank": 5
+     }
+    ],
+    "evaluated": [
+     {
+      "symbol": "META",
+      "action": "MONITOR",
+      "signal_id": "sig_10bf2b82ea7a8cd7",
+      "instrument": "NO TRADE",
+      "note": "unchanged observation - not re-journaled"
+     },
+     {
+      "symbol": "AMD",
+      "action": "MONITOR",
+      "signal_id": "sig_6385c26dcc928bed",
+      "instrument": "NO TRADE",
+      "note": "unchanged observation - not re-journaled"
+     },
+     {
+      "symbol": "DELL",
+      "action": "MONITOR",
+      "signal_id": "sig_c2ea6f9964c6d984",
+      "instrument": "NO TRADE",
+      "note": "unchanged observation - not re-journaled"
+     },
+     {
+      "symbol": "CRM",
+      "action": "MONITOR",
+      "signal_id": "sig_6b0fc1d9ff183387",
+      "instrument": "NO TRADE",
+      "note": "unchanged observation - not re-journaled"
+     },
+     {
+      "symbol": "TMO",
+      "action": "MONITOR",
+      "signal_id": "sig_c47c05aa2a29ea90",
+      "instrument": "NO TRADE",
+      "note": "unchanged observation - not re-journaled"
+     }
+    ],
+    "orders_placed": [],
+    "config_version": "cfg-fee37d4872"
+   },
+   "market_hours": {
+    "session_date": "2026-09-25",
+    "symbols_watched": [
+     "AMD",
+     "CRM",
+     "DELL",
+     "META",
+     "TMO"
+    ],
+    "orders_processed": 0,
+    "exits": 0,
+    "exit_actions": [],
+    "tracked_updated": 5,
+    "shadow_resolved": {
+     "checked": 0,
+     "resolved": 0,
+     "expired": 0,
+     "skipped_missing_data": 0
+    },
+    "scope": "all",
+    "quote_age_s_max": 236352.7,
+    "quotes_missing": []
+   }
+  },
+  {
+   "cycle_id": "2026-09-25T1020",
+   "et_time": "2026-09-25T10:20:00-04:00",
+   "session_type": "regular",
+   "allow_entries": true,
+   "premarket": {
+    "session_date": "2026-09-25",
+    "state": "ok",
+    "started_at": "2026-09-28T07:44:12.716716+00:00",
+    "cycle_id": "2026-09-25T1020",
+    "entries_allowed": true,
+    "provider_health": {
+     "checked_at": "2026-09-25T14:20:00+00:00",
+     "healthy": true,
+     "historical_replay": true,
+     "providers": {
+      "note": "historical replay -- live provider health has no meaning here"
+     }
+    },
+    "market_regime": null,
+    "sectors_considered": [
+     "communication",
+     "consumer_discretionary",
+     "health_care",
+     "materials",
+     "technology"
+    ],
+    "sector_ranking": [
+     {
+      "name": "communication",
+      "score": 0.0,
+      "rs": 0.0
+     },
+     {
+      "name": "consumer_discretionary",
+      "score": 0.0,
+      "rs": 0.0
+     },
+     {
+      "name": "health_care",
+      "score": 0.0,
+      "rs": 0.0
+     },
+     {
+      "name": "materials",
+      "score": 0.0,
+      "rs": 0.0
+     },
+     {
+      "name": "technology",
+      "score": 0.0,
+      "rs": 0.0
+     }
+    ],
+    "candidates": 22,
+    "finalists": [
+     {
+      "symbol": "META",
+      "strategy": "sector_relative_strength",
+      "score": 20.98,
+      "ret_1m": 34.97,
+      "sector_score": 0.0,
+      "direction": "LONG",
+      "why": "leader in leading sector communication (sector score +0.00), 1M +35.0%",
+      "sector": "communication",
+      "sector_name": "communication",
+      "sector_is_strong": true,
+      "as_of": "2026-09-24T20:00:00+00:00",
+      "scanner_rank": 1
+     },
+     {
+      "symbol": "AMD",
+      "strategy": "sector_relative_strength",
+      "score": 18.51,
+      "ret_1m": 30.84,
+      "sector_score": 0.0,
+      "direction": "LONG",
+      "why": "leader in leading sector technology (sector score +0.00), 1M +30.8%",
+      "sector": "technology",
+      "sector_name": "technology",
+      "sector_is_strong": true,
+      "as_of": "2026-09-24T20:00:00+00:00",
+      "scanner_rank": 2
+     },
+     {
+      "symbol": "DELL",
+      "strategy": "liquid_momentum",
+      "score": 12.55,
+      "rsi": 53.7,
+      "ret_1m": 15.57,
+      "rel_vol": 0.72,
+      "dollar_volume": 5940983247,
+      "direction": "LONG",
+      "why": "above 20/50-DMA, 1M +15.6%, RSI 53.7, $5941M/day",
+      "sector": "technology",
+      "sector_name": "technology",
+      "sector_is_strong": true,
+      "as_of": "2026-09-24T20:00:00+00:00",
+      "scanner_rank": 3
+     },
+     {
+      "symbol": "CRM",
+      "strategy": "sector_relative_strength",
+      "score": 9.51,
+      "ret_1m": 15.85,
+      "sector_score": 0.0,
+      "direction": "LONG",
+      "why": "leader in leading sector technology (sector score +0.00), 1M +15.9%",
+      "sector": "technology",
+      "sector_name": "technology",
+      "sector_is_strong": true,
+      "as_of": "2026-09-24T20:00:00+00:00",
+      "scanner_rank": 4
+     },
+     {
+      "symbol": "TMO",
+      "strategy": "liquid_momentum",
+      "score": 8.33,
+      "rsi": 77.2,
+      "ret_1m": 7.05,
+      "rel_vol": 0.98,
+      "dollar_volume": 1449844963,
+      "direction": "LONG",
+      "why": "above 20/50-DMA, 1M +7.1%, RSI 77.2, $1450M/day",
+      "sector": "health_care",
+      "sector_name": "health_care",
+      "sector_is_strong": true,
+      "as_of": "2026-09-24T20:00:00+00:00",
+      "scanner_rank": 5
+     }
+    ],
+    "evaluated": [
+     {
+      "symbol": "META",
+      "action": "MONITOR",
+      "signal_id": "sig_10bf2b82ea7a8cd7",
+      "instrument": "NO TRADE",
+      "note": "unchanged observation - not re-journaled"
+     },
+     {
+      "symbol": "AMD",
+      "action": "MONITOR",
+      "signal_id": "sig_6385c26dcc928bed",
+      "instrument": "NO TRADE",
+      "note": "unchanged observation - not re-journaled"
+     },
+     {
+      "symbol": "DELL",
+      "action": "MONITOR",
+      "signal_id": "sig_c2ea6f9964c6d984",
+      "instrument": "NO TRADE",
+      "note": "unchanged observation - not re-journaled"
+     },
+     {
+      "symbol": "CRM",
+      "action": "MONITOR",
+      "signal_id": "sig_6b0fc1d9ff183387",
+      "instrument": "NO TRADE",
+      "note": "unchanged observation - not re-journaled"
+     },
+     {
+      "symbol": "TMO",
+      "action": "MONITOR",
+      "signal_id": "sig_c47c05aa2a29ea90",
+      "instrument": "NO TRADE",
+      "note": "unchanged observation - not re-journaled"
+     }
+    ],
+    "orders_placed": [],
+    "config_version": "cfg-fee37d4872"
+   },
+   "market_hours": {
+    "session_date": "2026-09-25",
+    "symbols_watched": [
+     "AMD",
+     "CRM",
+     "DELL",
+     "META",
+     "TMO"
+    ],
+    "orders_processed": 0,
+    "exits": 0,
+    "exit_actions": [],
+    "tracked_updated": 5,
+    "shadow_resolved": {
+     "checked": 0,
+     "resolved": 0,
+     "expired": 0,
+     "skipped_missing_data": 0
+    },
+    "scope": "all",
+    "quote_age_s_max": 235452.8,
+    "quotes_missing": []
+   }
+  },
+  {
+   "cycle_id": "2026-09-25T1035",
+   "et_time": "2026-09-25T10:35:00-04:00",
+   "session_type": "regular",
+   "allow_entries": true,
+   "premarket": {
+    "session_date": "2026-09-25",
+    "state": "ok",
+    "started_at": "2026-09-28T07:44:12.770638+00:00",
+    "cycle_id": "2026-09-25T1035",
+    "entries_allowed": true,
+    "provider_health": {
+     "checked_at": "2026-09-25T14:35:00+00:00",
+     "healthy": true,
+     "historical_replay": true,
+     "providers": {
+      "note": "historical replay -- live provider health has no meaning here"
+     }
+    },
+    "market_regime": null,
+    "sectors_considered": [
+     "communication",
+     "consumer_discretionary",
+     "health_care",
+     "materials",
+     "technology"
+    ],
+    "sector_ranking": [
+     {
+      "name": "communication",
+      "score": 0.0,
+      "rs": 0.0
+     },
+     {
+      "name": "consumer_discretionary",
+      "score": 0.0,
+      "rs": 0.0
+     },
+     {
+      "name": "health_care",
+      "score": 0.0,
+      "rs": 0.0
+     },
+     {
+      "name": "materials",
+      "score": 0.0,
+      "rs": 0.0
+     },
+     {
+      "name": "technology",
+      "score": 0.0,
+      "rs": 0.0
+     }
+    ],
+    "candidates": 22,
+    "finalists": [
+     {
+      "symbol": "META",
+      "strategy": "sector_relative_strength",
+      "score": 20.98,
+      "ret_1m": 34.97,
+      "sector_score": 0.0,
+      "direction": "LONG",
+      "why": "leader in leading sector communication (sector score +0.00), 1M +35.0%",
+      "sector": "communication",
+      "sector_name": "communication",
+      "sector_is_strong": true,
+      "as_of": "2026-09-24T20:00:00+00:00",
+      "scanner_rank": 1
+     },
+     {
+      "symbol": "AMD",
+      "strategy": "sector_relative_strength",
+      "score": 18.51,
+      "ret_1m": 30.84,
+      "sector_score": 0.0,
+      "direction": "LONG",
+      "why": "leader in leading sector technology (sector score +0.00), 1M +30.8%",
+      "sector": "technology",
+      "sector_name": "technology",
+      "sector_is_strong": true,
+      "as_of": "2026-09-24T20:00:00+00:00",
+      "scanner_rank": 2
+     },
+     {
+      "symbol": "DELL",
+      "strategy": "liquid_momentum",
+      "score": 12.55,
+      "rsi": 53.7,
+      "ret_1m": 15.57,
+      "rel_vol": 0.72,
+      "dollar_volume": 5940983247,
+      "direction": "LONG",
+      "why": "above 20/50-DMA, 1M +15.6%, RSI 53.7, $5941M/day",
+      "sector": "technology",
+      "sector_name": "technology",
+      "sector_is_strong": true,
+      "as_of": "2026-09-24T20:00:00+00:00",
+      "scanner_rank": 3
+     },
+     {
+      "symbol": "CRM",
+      "strategy": "sector_relative_strength",
+      "score": 9.51,
+      "ret_1m": 15.85,
+      "sector_score": 0.0,
+      "direction": "LONG",
+      "why": "leader in leading sector technology (sector score +0.00), 1M +15.9%",
+      "sector": "technology",
+      "sector_name": "technology",
+      "sector_is_strong": true,
+      "as_of": "2026-09-24T20:00:00+00:00",
+      "scanner_rank": 4
+     },
+     {
+      "symbol": "TMO",
+      "strategy": "liquid_momentum",
+      "score": 8.33,
+      "rsi": 77.2,
+      "ret_1m": 7.05,
+      "rel_vol": 0.98,
+      "dollar_volume": 1449844963,
+      "direction": "LONG",
+      "why": "above 20/50-DMA, 1M +7.1%, RSI 77.2, $1450M/day",
+      "sector": "health_care",
+      "sector_name": "health_care",
+      "sector_is_strong": true,
+      "as_of": "2026-09-24T20:00:00+00:00",
+      "scanner_rank": 5
+     }
+    ],
+    "evaluated": [
+     {
+      "symbol": "META",
+      "action": "MONITOR",
+      "signal_id": "sig_10bf2b82ea7a8cd7",
+      "instrument": "NO TRADE",
+      "note": "unchanged observation - not re-journaled"
+     },
+     {
+      "symbol": "AMD",
+      "action": "MONITOR",
+      "signal_id": "sig_6385c26dcc928bed",
+      "instrument": "NO TRADE",
+      "note": "unchanged observation - not re-journaled"
+     },
+     {
+      "symbol": "DELL",
+      "action": "MONITOR",
+      "signal_id": "sig_c2ea6f9964c6d984",
+      "instrument": "NO TRADE",
+      "note": "unchanged observation - not re-journaled"
+     },
+     {
+      "symbol": "CRM",
+      "action": "MONITOR",
+      "signal_id": "sig_6b0fc1d9ff183387",
+      "instrument": "NO TRADE",
+      "note": "unchanged observation - not re-journaled"
+     },
+     {
+      "symbol": "TMO",
+      "action": "MONITOR",
+      "signal_id": "sig_c47c05aa2a29ea90",
+      "instrument": "NO TRADE",
+      "note": "unchanged observation - not re-journaled"
+     }
+    ],
+    "orders_placed": [],
+    "config_version": "cfg-fee37d4872"
+   },
+   "market_hours": {
+    "session_date": "2026-09-25",
+    "symbols_watched": [
+     "AMD",
+     "CRM",
+     "DELL",
+     "META",
+     "TMO"
+    ],
+    "orders_processed": 0,
+    "exits": 0,
+    "exit_actions": [],
+    "tracked_updated": 5,
+    "shadow_resolved": {
+     "checked": 0,
+     "resolved": 0,
+     "expired": 0,
+     "skipped_missing_data": 0
+    },
+    "scope": "all",
+    "quote_age_s_max": 234552.8,
+    "quotes_missing": []
+   }
+  },
+  {
+   "cycle_id": "2026-09-25T1050",
+   "et_time": "2026-09-25T10:50:00-04:00",
+   "session_type": "regular",
+   "allow_entries": true,
+   "premarket": {
+    "session_date": "2026-09-25",
+    "state": "ok",
+    "started_at": "2026-09-28T07:44:12.827152+00:00",
+    "cycle_id": "2026-09-25T1050",
+    "entries_allowed": true,
+    "provider_health": {
+     "checked_at": "2026-09-25T14:50:00+00:00",
+     "healthy": true,
+     "historical_replay": true,
+     "providers": {
+      "note": "historical replay -- live provider health has no meaning here"
+     }
+    },
+    "market_regime": null,
+    "sectors_considered": [
+     "communication",
+     "consumer_discretionary",
+     "health_care",
+     "materials",
+     "technology"
+    ],
+    "sector_ranking": [
+     {
+      "name": "communication",
+      "score": 0.0,
+      "rs": 0.0
+     },
+     {
+      "name": "consumer_discretionary",
+      "score": 0.0,
+      "rs": 0.0
+     },
+     {
+      "name": "health_care",
+      "score": 0.0,
+      "rs": 0.0
+     },
+     {
+      "name": "materials",
+      "score": 0.0,
+      "rs": 0.0
+     },
+     {
+      "name": "technology",
+      "score": 0.0,
+      "rs": 0.0
+     }
+    ],
+    "candidates": 22,
+    "finalists": [
+     {
+      "symbol": "META",
+      "strategy": "sector_relative_strength",
+      "score": 20.98,
+      "ret_1m": 34.97,
+      "sector_score": 0.0,
+      "direction": "LONG",
+      "why": "leader in leading sector communication (sector score +0.00), 1M +35.0%",
+      "sector": "communication",
+      "sector_name": "communication",
+      "sector_is_strong": true,
+      "as_of": "2026-09-24T20:00:00+00:00",
+      "scanner_rank": 1
+     },
+     {
+      "symbol": "AMD",
+      "strategy": "sector_relative_strength",
+      "score": 18.51,
+      "ret_1m": 30.84,
+      "sector_score": 0.0,
+      "direction": "LONG",
+      "why": "leader in leading sector technology (sector score +0.00), 1M +30.8%",
+      "sector": "technology",
+      "sector_name": "technology",
+      "sector_is_strong": true,
+      "as_of": "2026-09-24T20:00:00+00:00",
+      "scanner_rank": 2
+     },
+     {
+      "symbol": "DELL",
+      "strategy": "liquid_momentum",
+      "score": 12.55,
+      "rsi": 53.7,
+      "ret_1m": 15.57,
+      "rel_vol": 0.72,
+      "dollar_volume": 5940983247,
+      "direction": "LONG",
+      "why": "above 20/50-DMA, 1M +15.6%, RSI 53.7, $5941M/day",
+      "sector": "technology",
+      "sector_name": "technology",
+      "sector_is_strong": true,
+      "as_of": "2026-09-24T20:00:00+00:00",
+      "scanner_rank": 3
+     },
+     {
+      "symbol": "CRM",
+      "strategy": "sector_relative_strength",
+      "score": 9.51,
+      "ret_1m": 15.85,
+      "sector_score": 0.0,
+      "direction": "LONG",
+      "why": "leader in leading sector technology (sector score +0.00), 1M +15.9%",
+      "sector": "technology",
+      "sector_name": "technology",
+      "sector_is_strong": true,
+      "as_of": "2026-09-24T20:00:00+00:00",
+      "scanner_rank": 4
+     },
+     {
+      "symbol": "TMO",
+      "strategy": "liquid_momentum",
+      "score": 8.33,
+      "rsi": 77.2,
+      "ret_1m": 7.05,
+      "rel_vol": 0.98,
+      "dollar_volume": 1449844963,
+      "direction": "LONG",
+      "why": "above 20/50-DMA, 1M +7.1%, RSI 77.2, $1450M/day",
+      "sector": "health_care",
+      "sector_name": "health_care",
+      "sector_is_strong": true,
+      "as_of": "2026-09-24T20:00:00+00:00",
+      "scanner_rank": 5
+     }
+    ],
+    "evaluated": [
+     {
+      "symbol": "META",
+      "action": "MONITOR",
+      "signal_id": "sig_10bf2b82ea7a8cd7",
+      "instrument": "NO TRADE",
+      "note": "unchanged observation - not re-journaled"
+     },
+     {
+      "symbol": "AMD",
+      "action": "MONITOR",
+      "signal_id": "sig_6385c26dcc928bed",
+      "instrument": "NO TRADE",
+      "note": "unchanged observation - not re-journaled"
+     },
+     {
+      "symbol": "DELL",
+      "action": "MONITOR",
+      "signal_id": "sig_c2ea6f9964c6d984",
+      "instrument": "NO TRADE",
+      "note": "unchanged observation - not re-journaled"
+     },
+     {
+      "symbol": "CRM",
+      "action": "MONITOR",
+      "signal_id": "sig_6b0fc1d9ff183387",
+      "instrument": "NO TRADE",
+      "note": "unchanged observation - not re-journaled"
+     },
+     {
+      "symbol": "TMO",
+      "action": "MONITOR",
+      "signal_id": "sig_c47c05aa2a29ea90",
+      "instrument": "NO TRADE",
+      "note": "unchanged observation - not re-journaled"
+     }
+    ],
+    "orders_placed": [],
+    "config_version": "cfg-fee37d4872"
+   },
+   "market_hours": {
+    "session_date": "2026-09-25",
+    "symbols_watched": [
+     "AMD",
+     "CRM",
+     "DELL",
+     "META",
+     "TMO"
+    ],
+    "orders_processed": 0,
+    "exits": 0,
+    "exit_actions": [],
+    "tracked_updated": 5,
+    "shadow_resolved": {
+     "checked": 0,
+     "resolved": 0,
+     "expired": 0,
+     "skipped_missing_data": 0
+    },
+    "scope": "all",
+    "quote_age_s_max": 233652.9,
+    "quotes_missing": []
+   }
+  },
+  {
+   "cycle_id": "2026-09-25T1105",
+   "et_time": "2026-09-25T11:05:00-04:00",
+   "session_type": "regular",
+   "allow_entries": true,
+   "premarket": {
+    "session_date": "2026-09-25",
+    "state": "ok",
+    "started_at": "2026-09-28T07:44:12.880825+00:00",
+    "cycle_id": "2026-09-25T1105",
+    "entries_allowed": true,
+    "provider_health": {
+     "checked_at": "2026-09-25T15:05:00+00:00",
+     "healthy": true,
+     "historical_replay": true,
+     "providers": {
+      "note": "historical replay -- live provider health has no meaning here"
+     }
+    },
+    "market_regime": null,
+    "sectors_considered": [
+     "communication",
+     "consumer_discretionary",
+     "health_care",
+     "materials",
+     "technology"
+    ],
+    "sector_ranking": [
+     {
+      "name": "communication",
+      "score": 0.0,
+      "rs": 0.0
+     },
+     {
+      "name": "consumer_discretionary",
+      "score": 0.0,
+      "rs": 0.0
+     },
+     {
+      "name": "health_care",
+      "score": 0.0,
+      "rs": 0.0
+     },
+     {
+      "name": "materials",
+      "score": 0.0,
+      "rs": 0.0
+     },
+     {
+      "name": "technology",
+      "score": 0.0,
+      "rs": 0.0
+     }
+    ],
+    "candidates": 22,
+    "finalists": [
+     {
+      "symbol": "META",
+      "strategy": "sector_relative_strength",
+      "score": 20.98,
+      "ret_1m": 34.97,
+      "sector_score": 0.0,
+      "direction": "LONG",
+      "why": "leader in leading sector communication (sector score +0.00), 1M +35.0%",
+      "sector": "communication",
+      "sector_name": "communication",
+      "sector_is_strong": true,
+      "as_of": "2026-09-24T20:00:00+00:00",
+      "scanner_rank": 1
+     },
+     {
+      "symbol": "AMD",
+      "strategy": "sector_relative_strength",
+      "score": 18.51,
+      "ret_1m": 30.84,
+      "sector_score": 0.0,
+      "direction": "LONG",
+      "why": "leader in leading sector technology (sector score +0.00), 1M +30.8%",
+      "sector": "technology",
+      "sector_name": "technology",
+      "sector_is_strong": true,
+      "as_of": "2026-09-24T20:00:00+00:00",
+      "scanner_rank": 2
+     },
+     {
+      "symbol": "DELL",
+      "strategy": "liquid_momentum",
+      "score": 12.55,
+      "rsi": 53.7,
+      "ret_1m": 15.57,
+      "rel_vol": 0.72,
+      "dollar_volume": 5940983247,
+      "direction": "LONG",
+      "why": "above 20/50-DMA, 1M +15.6%, RSI 53.7, $5941M/day",
+      "sector": "technology",
+      "sector_name": "technology",
+      "sector_is_strong": true,
+      "as_of": "2026-09-24T20:00:00+00:00",
+      "scanner_rank": 3
+     },
+     {
+      "symbol": "CRM",
+      "strategy": "sector_relative_strength",
+      "score": 9.51,
+      "ret_1m": 15.85,
+      "sector_score": 0.0,
+      "direction": "LONG",
+      "why": "leader in leading sector technology (sector score +0.00), 1M +15.9%",
+      "sector": "technology",
+      "sector_name": "technology",
+      "sector_is_strong": true,
+      "as_of": "2026-09-24T20:00:00+00:00",
+      "scanner_rank": 4
+     },
+     {
+      "symbol": "TMO",
+      "strategy": "liquid_momentum",
+      "score": 8.33,
+      "rsi": 77.2,
+      "ret_1m": 7.05,
+      "rel_vol": 0.98,
+      "dollar_volume": 1449844963,
+      "direction": "LONG",
+      "why": "above 20/50-DMA, 1M +7.1%, RSI 77.2, $1450M/day",
+      "sector": "health_care",
+      "sector_name": "health_care",
+      "sector_is_strong": true,
+      "as_of": "2026-09-24T20:00:00+00:00",
+      "scanner_rank": 5
+     }
+    ],
+    "evaluated": [
+     {
+      "symbol": "META",
+      "action": "MONITOR",
+      "signal_id": "sig_10bf2b82ea7a8cd7",
+      "instrument": "NO TRADE",
+      "note": "unchanged observation - not re-journaled"
+     },
+     {
+      "symbol": "AMD",
+      "action": "MONITOR",
+      "signal_id": "sig_6385c26dcc928bed",
+      "instrument": "NO TRADE",
+      "note": "unchanged observation - not re-journaled"
+     },
+     {
+      "symbol": "DELL",
+      "action": "MONITOR",
+      "signal_id": "sig_c2ea6f9964c6d984",
+      "instrument": "NO TRADE",
+      "note": "unchanged observation - not re-journaled"
+     },
+     {
+      "symbol": "CRM",
+      "action": "MONITOR",
+      "signal_id": "sig_6b0fc1d9ff183387",
+      "instrument": "NO TRADE",
+      "note": "unchanged observation - not re-journaled"
+     },
+     {
+      "symbol": "TMO",
+      "action": "MONITOR",
+      "signal_id": "sig_c47c05aa2a29ea90",
+      "instrument": "NO TRADE",
+      "note": "unchanged observation - not re-journaled"
+     }
+    ],
+    "orders_placed": [],
+    "config_version": "cfg-fee37d4872"
+   },
+   "market_hours": {
+    "session_date": "2026-09-25",
+    "symbols_watched": [
+     "AMD",
+     "CRM",
+     "DELL",
+     "META",
+     "TMO"
+    ],
+    "orders_processed": 0,
+    "exits": 0,
+    "exit_actions": [],
+    "tracked_updated": 5,
+    "shadow_resolved": {
+     "checked": 0,
+     "resolved": 0,
+     "expired": 0,
+     "skipped_missing_data": 0
+    },
+    "scope": "all",
+    "quote_age_s_max": 232752.9,
+    "quotes_missing": []
+   }
+  },
+  {
+   "cycle_id": "2026-09-25T1120",
+   "et_time": "2026-09-25T11:20:00-04:00",
+   "session_type": "regular",
+   "allow_entries": true,
+   "premarket": {
+    "session_date": "2026-09-25",
+    "state": "ok",
+    "started_at": "2026-09-28T07:44:12.937371+00:00",
+    "cycle_id": "2026-09-25T1120",
+    "entries_allowed": true,
+    "provider_health": {
+     "checked_at": "2026-09-25T15:20:00+00:00",
+     "healthy": true,
+     "historical_replay": true,
+     "providers": {
+      "note": "historical replay -- live provider health has no meaning here"
+     }
+    },
+    "market_regime": null,
+    "sectors_considered": [
+     "communication",
+     "consumer_discretionary",
+     "health_care",
+     "materials",
+     "technology"
+    ],
+    "sector_ranking": [
+     {
+      "name": "communication",
+      "score": 0.0,
+      "rs": 0.0
+     },
+     {
+      "name": "consumer_discretionary",
+      "score": 0.0,
+      "rs": 0.0
+     },
+     {
+      "name": "health_care",
+      "score": 0.0,
+      "rs": 0.0
+     },
+     {
+      "name": "materials",
+      "score": 0.0,
+      "rs": 0.0
+     },
+     {
+      "name": "technology",
+      "score": 0.0,
+      "rs": 0.0
+     }
+    ],
+    "candidates": 22,
+    "finalists": [
+     {
+      "symbol": "META",
+      "strategy": "sector_relative_strength",
+      "score": 20.98,
+      "ret_1m": 34.97,
+      "sector_score": 0.0,
+      "direction": "LONG",
+      "why": "leader in leading sector communication (sector score +0.00), 1M +35.0%",
+      "sector": "communication",
+      "sector_name": "communication",
+      "sector_is_strong": true,
+      "as_of": "2026-09-24T20:00:00+00:00",
+      "scanner_rank": 1
+     },
+     {
+      "symbol": "AMD",
+      "strategy": "sector_relative_strength",
+      "score": 18.51,
+      "ret_1m": 30.84,
+      "sector_score": 0.0,
+      "direction": "LONG",
+      "why": "leader in leading sector technology (sector score +0.00), 1M +30.8%",
+      "sector": "technology",
+      "sector_name": "technology",
+      "sector_is_strong": true,
+      "as_of": "2026-09-24T20:00:00+00:00",
+      "scanner_rank": 2
+     },
+     {
+      "symbol": "DELL",
+      "strategy": "liquid_momentum",
+      "score": 12.55,
+      "rsi": 53.7,
+      "ret_1m": 15.57,
+      "rel_vol": 0.72,
+      "dollar_volume": 5940983247,
+      "direction": "LONG",
+      "why": "above 20/50-DMA, 1M +15.6%, RSI 53.7, $5941M/day",
+      "sector": "technology",
+      "sector_name": "technology",
+      "sector_is_strong": true,
+      "as_of": "2026-09-24T20:00:00+00:00",
+      "scanner_rank": 3
+     },
+     {
+      "symbol": "CRM",
+      "strategy": "sector_relative_strength",
+      "score": 9.51,
+      "ret_1m": 15.85,
+      "sector_score": 0.0,
+      "direction": "LONG",
+      "why": "leader in leading sector technology (sector score +0.00), 1M +15.9%",
+      "sector": "technology",
+      "sector_name": "technology",
+      "sector_is_strong": true,
+      "as_of": "2026-09-24T20:00:00+00:00",
+      "scanner_rank": 4
+     },
+     {
+      "symbol": "TMO",
+      "strategy": "liquid_momentum",
+      "score": 8.33,
+      "rsi": 77.2,
+      "ret_1m": 7.05,
+      "rel_vol": 0.98,
+      "dollar_volume": 1449844963,
+      "direction": "LONG",
+      "why": "above 20/50-DMA, 1M +7.1%, RSI 77.2, $1450M/day",
+      "sector": "health_care",
+      "sector_name": "health_care",
+      "sector_is_strong": true,
+      "as_of": "2026-09-24T20:00:00+00:00",
+      "scanner_rank": 5
+     }
+    ],
+    "evaluated": [
+     {
+      "symbol": "META",
+      "action": "MONITOR",
+      "signal_id": "sig_10bf2b82ea7a8cd7",
+      "instrument": "NO TRADE",
+      "note": "unchanged observation - not re-journaled"
+     },
+     {
+      "symbol": "AMD",
+      "action": "MONITOR",
+      "signal_id": "sig_6385c26dcc928bed",
+      "instrument": "NO TRADE",
+      "note": "unchanged observation - not re-journaled"
+     },
+     {
+      "symbol": "DELL",
+      "action": "MONITOR",
+      "signal_id": "sig_c2ea6f9964c6d984",
+      "instrument": "NO TRADE",
+      "note": "unchanged observation - not re-journaled"
+     },
+     {
+      "symbol": "CRM",
+      "action": "MONITOR",
+      "signal_id": "sig_6b0fc1d9ff183387",
+      "instrument": "NO TRADE",
+      "note": "unchanged observation - not re-journaled"
+     },
+     {
+      "symbol": "TMO",
+      "action": "MONITOR",
+      "signal_id": "sig_c47c05aa2a29ea90",
+      "instrument": "NO TRADE",
+      "note": "unchanged observation - not re-journaled"
+     }
+    ],
+    "orders_placed": [],
+    "config_version": "cfg-fee37d4872"
+   },
+   "market_hours": {
+    "session_date": "2026-09-25",
+    "symbols_watched": [
+     "AMD",
+     "CRM",
+     "DELL",
+     "META",
+     "TMO"
+    ],
+    "orders_processed": 0,
+    "exits": 0,
+    "exit_actions": [],
+    "tracked_updated": 5,
+    "shadow_resolved": {
+     "checked": 0,
+     "resolved": 0,
+     "expired": 0,
+     "skipped_missing_data": 0
+    },
+    "scope": "all",
+    "quote_age_s_max": 231853.0,
+    "quotes_missing": []
+   }
+  },
+  {
+   "cycle_id": "2026-09-25T1135",
+   "et_time": "2026-09-25T11:35:00-04:00",
+   "session_type": "regular",
+   "allow_entries": true,
+   "premarket": {
+    "session_date": "2026-09-25",
+    "state": "ok",
+    "started_at": "2026-09-28T07:44:12.994919+00:00",
+    "cycle_id": "2026-09-25T1135",
+    "entries_allowed": true,
+    "provider_health": {
+     "checked_at": "2026-09-25T15:35:00+00:00",
+     "healthy": true,
+     "historical_replay": true,
+     "providers": {
+      "note": "historical replay -- live provider health has no meaning here"
+     }
+    },
+    "market_regime": null,
+    "sectors_considered": [
+     "communication",
+     "consumer_discretionary",
+     "health_care",
+     "materials",
+     "technology"
+    ],
+    "sector_ranking": [
+     {
+      "name": "communication",
+      "score": 0.0,
+      "rs": 0.0
+     },
+     {
+      "name": "consumer_discretionary",
+      "score": 0.0,
+      "rs": 0.0
+     },
+     {
+      "name": "health_care",
+      "score": 0.0,
+      "rs": 0.0
+     },
+     {
+      "name": "materials",
+      "score": 0.0,
+      "rs": 0.0
+     },
+     {
+      "name": "technology",
+      "score": 0.0,
+      "rs": 0.0
+     }
+    ],
+    "candidates": 22,
+    "finalists": [
+     {
+      "symbol": "META",
+      "strategy": "sector_relative_strength",
+      "score": 20.98,
+      "ret_1m": 34.97,
+      "sector_score": 0.0,
+      "direction": "LONG",
+      "why": "leader in leading sector communication (sector score +0.00), 1M +35.0%",
+      "sector": "communication",
+      "sector_name": "communication",
+      "sector_is_strong": true,
+      "as_of": "2026-09-24T20:00:00+00:00",
+      "scanner_rank": 1
+     },
+     {
+      "symbol": "AMD",
+      "strategy": "sector_relative_strength",
+      "score": 18.51,
+      "ret_1m": 30.84,
+      "sector_score": 0.0,
+      "direction": "LONG",
+      "why": "leader in leading sector technology (sector score +0.00), 1M +30.8%",
+      "sector": "technology",
+      "sector_name": "technology",
+      "sector_is_strong": true,
+      "as_of": "2026-09-24T20:00:00+00:00",
+      "scanner_rank": 2
+     },
+     {
+      "symbol": "DELL",
+      "strategy": "liquid_momentum",
+      "score": 12.55,
+      "rsi": 53.7,
+      "ret_1m": 15.57,
+      "rel_vol": 0.72,
+      "dollar_volume": 5940983247,
+      "direction": "LONG",
+      "why": "above 20/50-DMA, 1M +15.6%, RSI 53.7, $5941M/day",
+      "sector": "technology",
+      "sector_name": "technology",
+      "sector_is_strong": true,
+      "as_of": "2026-09-24T20:00:00+00:00",
+      "scanner_rank": 3
+     },
+     {
+      "symbol": "CRM",
+      "strategy": "sector_relative_strength",
+      "score": 9.51,
+      "ret_1m": 15.85,
+      "sector_score": 0.0,
+      "direction": "LONG",
+      "why": "leader in leading sector technology (sector score +0.00), 1M +15.9%",
+      "sector": "technology",
+      "sector_name": "technology",
+      "sector_is_strong": true,
+      "as_of": "2026-09-24T20:00:00+00:00",
+      "scanner_rank": 4
+     },
+     {
+      "symbol": "TMO",
+      "strategy": "liquid_momentum",
+      "score": 8.33,
+      "rsi": 77.2,
+      "ret_1m": 7.05,
+      "rel_vol": 0.98,
+      "dollar_volume": 1449844963,
+      "direction": "LONG",
+      "why": "above 20/50-DMA, 1M +7.1%, RSI 77.2, $1450M/day",
+      "sector": "health_care",
+      "sector_name": "health_care",
+      "sector_is_strong": true,
+      "as_of": "2026-09-24T20:00:00+00:00",
+      "scanner_rank": 5
+     }
+    ],
+    "evaluated": [
+     {
+      "symbol": "META",
+      "action": "MONITOR",
+      "signal_id": "sig_10bf2b82ea7a8cd7",
+      "instrument": "NO TRADE",
+      "note": "unchanged observation - not re-journaled"
+     },
+     {
+      "symbol": "AMD",
+      "action": "MONITOR",
+      "signal_id": "sig_6385c26dcc928bed",
+      "instrument": "NO TRADE",
+      "note": "unchanged observation - not re-journaled"
+     },
+     {
+      "symbol": "DELL",
+      "action": "MONITOR",
+      "signal_id": "sig_c2ea6f9964c6d984",
+      "instrument": "NO TRADE",
+      "note": "unchanged observation - not re-journaled"
+     },
+     {
+      "symbol": "CRM",
+      "action": "MONITOR",
+      "signal_id": "sig_6b0fc1d9ff183387",
+      "instrument": "NO TRADE",
+      "note": "unchanged observation - not re-journaled"
+     },
+     {
+      "symbol": "TMO",
+      "action": "MONITOR",
+      "signal_id": "sig_c47c05aa2a29ea90",
+      "instrument": "NO TRADE",
+      "note": "unchanged observation - not re-journaled"
+     }
+    ],
+    "orders_placed": [],
+    "config_version": "cfg-fee37d4872"
+   },
+   "market_hours": {
+    "session_date": "2026-09-25",
+    "symbols_watched": [
+     "AMD",
+     "CRM",
+     "DELL",
+     "META",
+     "TMO"
+    ],
+    "orders_processed": 0,
+    "exits": 0,
+    "exit_actions": [],
+    "tracked_updated": 5,
+    "shadow_resolved": {
+     "checked": 0,
+     "resolved": 0,
+     "expired": 0,
+     "skipped_missing_data": 0
+    },
+    "scope": "all",
+    "quote_age_s_max": 230953.1,
+    "quotes_missing": []
+   }
+  },
+  {
+   "cycle_id": "2026-09-25T1150",
+   "et_time": "2026-09-25T11:50:00-04:00",
+   "session_type": "regular",
+   "allow_entries": true,
+   "premarket": {
+    "session_date": "2026-09-25",
+    "state": "ok",
+    "started_at": "2026-09-28T07:44:13.053452+00:00",
+    "cycle_id": "2026-09-25T1150",
+    "entries_allowed": true,
+    "provider_health": {
+     "checked_at": "2026-09-25T15:50:00+00:00",
+     "healthy": true,
+     "historical_replay": true,
+     "providers": {
+      "note": "historical replay -- live provider health has no meaning here"
+     }
+    },
+    "market_regime": null,
+    "sectors_considered": [
+     "communication",
+     "consumer_discretionary",
+     "health_care",
+     "materials",
+     "technology"
+    ],
+    "sector_ranking": [
+     {
+      "name": "communication",
+      "score": 0.0,
+      "rs": 0.0
+     },
+     {
+      "name": "consumer_discretionary",
+      "score": 0.0,
+      "rs": 0.0
+     },
+     {
+      "name": "health_care",
+      "score": 0.0,
+      "rs": 0.0
+     },
+     {
+      "name": "materials",
+      "score": 0.0,
+      "rs": 0.0
+     },
+     {
+      "name": "technology",
+      "score": 0.0,
+      "rs": 0.0
+     }
+    ],
+    "candidates": 22,
+    "finalists": [
+     {
+      "symbol": "META",
+      "strategy": "sector_relative_strength",
+      "score": 20.98,
+      "ret_1m": 34.97,
+      "sector_score": 0.0,
+      "direction": "LONG",
+      "why": "leader in leading sector communication (sector score +0.00), 1M +35.0%",
+      "sector": "communication",
+      "sector_name": "communication",
+      "sector_is_strong": true,
+      "as_of": "2026-09-24T20:00:00+00:00",
+      "scanner_rank": 1
+     },
+     {
+      "symbol": "AMD",
+      "strategy": "sector_relative_strength",
+      "score": 18.51,
+      "ret_1m": 30.84,
+      "sector_score": 0.0,
+      "direction": "LONG",
+      "why": "leader in leading sector technology (sector score +0.00), 1M +30.8%",
+      "sector": "technology",
+      "sector_name": "technology",
+      "sector_is_strong": true,
+      "as_of": "2026-09-24T20:00:00+00:00",
+      "scanner_rank": 2
+     },
+     {
+      "symbol": "DELL",
+      "strategy": "liquid_momentum",
+      "score": 12.55,
+      "rsi": 53.7,
+      "ret_1m": 15.57,
+      "rel_vol": 0.72,
+      "dollar_volume": 5940983247,
+      "direction": "LONG",
+      "why": "above 20/50-DMA, 1M +15.6%, RSI 53.7, $5941M/day",
+      "sector": "technology",
+      "sector_name": "technology",
+      "sector_is_strong": true,
+      "as_of": "2026-09-24T20:00:00+00:00",
+      "scanner_rank": 3
+     },
+     {
+      "symbol": "CRM",
+      "strategy": "sector_relative_strength",
+      "score": 9.51,
+      "ret_1m": 15.85,
+      "sector_score": 0.0,
+      "direction": "LONG",
+      "why": "leader in leading sector technology (sector score +0.00), 1M +15.9%",
+      "sector": "technology",
+      "sector_name": "technology",
+      "sector_is_strong": true,
+      "as_of": "2026-09-24T20:00:00+00:00",
+      "scanner_rank": 4
+     },
+     {
+      "symbol": "TMO",
+      "strategy": "liquid_momentum",
+      "score": 8.33,
+      "rsi": 77.2,
+      "ret_1m": 7.05,
+      "rel_vol": 0.98,
+      "dollar_volume": 1449844963,
+      "direction": "LONG",
+      "why": "above 20/50-DMA, 1M +7.1%, RSI 77.2, $1450M/day",
+      "sector": "health_care",
+      "sector_name": "health_care",
+      "sector_is_strong": true,
+      "as_of": "2026-09-24T20:00:00+00:00",
+      "scanner_rank": 5
+     }
+    ],
+    "evaluated": [
+     {
+      "symbol": "META",
+      "action": "MONITOR",
+      "signal_id": "sig_10bf2b82ea7a8cd7",
+      "instrument": "NO TRADE",
+      "note": "unchanged observation - not re-journaled"
+     },
+     {
+      "symbol": "AMD",
+      "action": "MONITOR",
+      "signal_id": "sig_6385c26dcc928bed",
+      "instrument": "NO TRADE",
+      "note": "unchanged observation - not re-journaled"
+     },
+     {
+      "symbol": "DELL",
+      "action": "MONITOR",
+      "signal_id": "sig_c2ea6f9964c6d984",
+      "instrument": "NO TRADE",
+      "note": "unchanged observation - not re-journaled"
+     },
+     {
+      "symbol": "CRM",
+      "action": "MONITOR",
+      "signal_id": "sig_6b0fc1d9ff183387",
+      "instrument": "NO TRADE",
+      "note": "unchanged observation - not re-journaled"
+     },
+     {
+      "symbol": "TMO",
+      "action": "MONITOR",
+      "signal_id": "sig_c47c05aa2a29ea90",
+      "instrument": "NO TRADE",
+      "note": "unchanged observation - not re-journaled"
+     }
+    ],
+    "orders_placed": [],
+    "config_version": "cfg-fee37d4872"
+   },
+   "market_hours": {
+    "session_date": "2026-09-25",
+    "symbols_watched": [
+     "AMD",
+     "CRM",
+     "DELL",
+     "META",
+     "TMO"
+    ],
+    "orders_processed": 0,
+    "exits": 0,
+    "exit_actions": [],
+    "tracked_updated": 5,
+    "shadow_resolved": {
+     "checked": 0,
+     "resolved": 0,
+     "expired": 0,
+     "skipped_missing_data": 0
+    },
+    "scope": "all",
+    "quote_age_s_max": 230053.1,
+    "quotes_missing": []
+   }
+  },
+  {
+   "cycle_id": "2026-09-25T1205",
+   "et_time": "2026-09-25T12:05:00-04:00",
+   "session_type": "regular",
+   "allow_entries": true,
+   "premarket": {
+    "session_date": "2026-09-25",
+    "state": "ok",
+    "started_at": "2026-09-28T07:44:13.111671+00:00",
+    "cycle_id": "2026-09-25T1205",
+    "entries_allowed": true,
+    "provider_health": {
+     "checked_at": "2026-09-25T16:05:00+00:00",
+     "healthy": true,
+     "historical_replay": true,
+     "providers": {
+      "note": "historical replay -- live provider health has no meaning here"
+     }
+    },
+    "market_regime": null,
+    "sectors_considered": [
+     "communication",
+     "consumer_discretionary",
+     "health_care",
+     "materials",
+     "technology"
+    ],
+    "sector_ranking": [
+     {
+      "name": "communication",
+      "score": 0.0,
+      "rs": 0.0
+     },
+     {
+      "name": "consumer_discretionary",
+      "score": 0.0,
+      "rs": 0.0
+     },
+     {
+      "name": "health_care",
+      "score": 0.0,
+      "rs": 0.0
+     },
+     {
+      "name": "materials",
+      "score": 0.0,
+      "rs": 0.0
+     },
+     {
+      "name": "technology",
+      "score": 0.0,
+      "rs": 0.0
+     }
+    ],
+    "candidates": 22,
+    "finalists": [
+     {
+      "symbol": "META",
+      "strategy": "sector_relative_strength",
+      "score": 20.98,
+      "ret_1m": 34.97,
+      "sector_score": 0.0,
+      "direction": "LONG",
+      "why": "leader in leading sector communication (sector score +0.00), 1M +35.0%",
+      "sector": "communication",
+      "sector_name": "communication",
+      "sector_is_strong": true,
+      "as_of": "2026-09-24T20:00:00+00:00",
+      "scanner_rank": 1
+     },
+     {
+      "symbol": "AMD",
+      "strategy": "sector_relative_strength",
+      "score": 18.51,
+      "ret_1m": 30.84,
+      "sector_score": 0.0,
+      "direction": "LONG",
+      "why": "leader in leading sector technology (sector score +0.00), 1M +30.8%",
+      "sector": "technology",
+      "sector_name": "technology",
+      "sector_is_strong": true,
+      "as_of": "2026-09-24T20:00:00+00:00",
+      "scanner_rank": 2
+     },
+     {
+      "symbol": "DELL",
+      "strategy": "liquid_momentum",
+      "score": 12.55,
+      "rsi": 53.7,
+      "ret_1m": 15.57,
+      "rel_vol": 0.72,
+      "dollar_volume": 5940983247,
+      "direction": "LONG",
+      "why": "above 20/50-DMA, 1M +15.6%, RSI 53.7, $5941M/day",
+      "sector": "technology",
+      "sector_name": "technology",
+      "sector_is_strong": true,
+      "as_of": "2026-09-24T20:00:00+00:00",
+      "scanner_rank": 3
+     },
+     {
+      "symbol": "CRM",
+      "strategy": "sector_relative_strength",
+      "score": 9.51,
+      "ret_1m": 15.85,
+      "sector_score": 0.0,
+      "direction": "LONG",
+      "why": "leader in leading sector technology (sector score +0.00), 1M +15.9%",
+      "sector": "technology",
+      "sector_name": "technology",
+      "sector_is_strong": true,
+      "as_of": "2026-09-24T20:00:00+00:00",
+      "scanner_rank": 4
+     },
+     {
+      "symbol": "TMO",
+      "strategy": "liquid_momentum",
+      "score": 8.33,
+      "rsi": 77.2,
+      "ret_1m": 7.05,
+      "rel_vol": 0.98,
+      "dollar_volume": 1449844963,
+      "direction": "LONG",
+      "why": "above 20/50-DMA, 1M +7.1%, RSI 77.2, $1450M/day",
+      "sector": "health_care",
+      "sector_name": "health_care",
+      "sector_is_strong": true,
+      "as_of": "2026-09-24T20:00:00+00:00",
+      "scanner_rank": 5
+     }
+    ],
+    "evaluated": [
+     {
+      "symbol": "META",
+      "action": "MONITOR",
+      "signal_id": "sig_10bf2b82ea7a8cd7",
+      "instrument": "NO TRADE",
+      "note": "unchanged observation - not re-journaled"
+     },
+     {
+      "symbol": "AMD",
+      "action": "MONITOR",
+      "signal_id": "sig_6385c26dcc928bed",
+      "instrument": "NO TRADE",
+      "note": "unchanged observation - not re-journaled"
+     },
+     {
+      "symbol": "DELL",
+      "action": "MONITOR",
+      "signal_id": "sig_c2ea6f9964c6d984",
+      "instrument": "NO TRADE",
+      "note": "unchanged observation - not re-journaled"
+     },
+     {
+      "symbol": "CRM",
+      "action": "MONITOR",
+      "signal_id": "sig_6b0fc1d9ff183387",
+      "instrument": "NO TRADE",
+      "note": "unchanged observation - not re-journaled"
+     },
+     {
+      "symbol": "TMO",
+      "action": "MONITOR",
+      "signal_id": "sig_c47c05aa2a29ea90",
+      "instrument": "NO TRADE",
+      "note": "unchanged observation - not re-journaled"
+     }
+    ],
+    "orders_placed": [],
+    "config_version": "cfg-fee37d4872"
+   },
+   "market_hours": {
+    "session_date": "2026-09-25",
+    "symbols_watched": [
+     "AMD",
+     "CRM",
+     "DELL",
+     "META",
+     "TMO"
+    ],
+    "orders_processed": 0,
+    "exits": 0,
+    "exit_actions": [],
+    "tracked_updated": 5,
+    "shadow_resolved": {
+     "checked": 0,
+     "resolved": 0,
+     "expired": 0,
+     "skipped_missing_data": 0
+    },
+    "scope": "all",
+    "quote_age_s_max": 229153.2,
+    "quotes_missing": []
+   }
+  },
+  {
+   "cycle_id": "2026-09-25T1220",
+   "et_time": "2026-09-25T12:20:00-04:00",
+   "session_type": "regular",
+   "allow_entries": true,
+   "premarket": {
+    "session_date": "2026-09-25",
+    "state": "ok",
+    "started_at": "2026-09-28T07:44:13.171268+00:00",
+    "cycle_id": "2026-09-25T1220",
+    "entries_allowed": true,
+    "provider_health": {
+     "checked_at": "2026-09-25T16:20:00+00:00",
+     "healthy": true,
+     "historical_replay": true,
+     "providers": {
+      "note": "historical replay -- live provider health has no meaning here"
+     }
+    },
+    "market_regime": null,
+    "sectors_considered": [
+     "communication",
+     "consumer_discretionary",
+     "health_care",
+     "materials",
+     "technology"
+    ],
+    "sector_ranking": [
+     {
+      "name": "communication",
+      "score": 0.0,
+      "rs": 0.0
+     },
+     {
+      "name": "consumer_discretionary",
+      "score": 0.0,
+      "rs": 0.0
+     },
+     {
+      "name": "health_care",
+      "score": 0.0,
+      "rs": 0.0
+     },
+     {
+      "name": "materials",
+      "score": 0.0,
+      "rs": 0.0
+     },
+     {
+      "name": "technology",
+      "score": 0.0,
+      "rs": 0.0
+     }
+    ],
+    "candidates": 22,
+    "finalists": [
+     {
+      "symbol": "META",
+      "strategy": "sector_relative_strength",
+      "score": 20.98,
+      "ret_1m": 34.97,
+      "sector_score": 0.0,
+      "direction": "LONG",
+      "why": "leader in leading sector communication (sector score +0.00), 1M +35.0%",
+      "sector": "communication",
+      "sector_name": "communication",
+      "sector_is_strong": true,
+      "as_of": "2026-09-24T20:00:00+00:00",
+      "scanner_rank": 1
+     },
+     {
+      "symbol": "AMD",
+      "strategy": "sector_relative_strength",
+      "score": 18.51,
+      "ret_1m": 30.84,
+      "sector_score": 0.0,
+      "direction": "LONG",
+      "why": "leader in leading sector technology (sector score +0.00), 1M +30.8%",
+      "sector": "technology",
+      "sector_name": "technology",
+      "sector_is_strong": true,
+      "as_of": "2026-09-24T20:00:00+00:00",
+      "scanner_rank": 2
+     },
+     {
+      "symbol": "DELL",
+      "strategy": "liquid_momentum",
+      "score": 12.55,
+      "rsi": 53.7,
+      "ret_1m": 15.57,
+      "rel_vol": 0.72,
+      "dollar_volume": 5940983247,
+      "direction": "LONG",
+      "why": "above 20/50-DMA, 1M +15.6%, RSI 53.7, $5941M/day",
+      "sector": "technology",
+      "sector_name": "technology",
+      "sector_is_strong": true,
+      "as_of": "2026-09-24T20:00:00+00:00",
+      "scanner_rank": 3
+     },
+     {
+      "symbol": "CRM",
+      "strategy": "sector_relative_strength",
+      "score": 9.51,
+      "ret_1m": 15.85,
+      "sector_score": 0.0,
+      "direction": "LONG",
+      "why": "leader in leading sector technology (sector score +0.00), 1M +15.9%",
+      "sector": "technology",
+      "sector_name": "technology",
+      "sector_is_strong": true,
+      "as_of": "2026-09-24T20:00:00+00:00",
+      "scanner_rank": 4
+     },
+     {
+      "symbol": "TMO",
+      "strategy": "liquid_momentum",
+      "score": 8.33,
+      "rsi": 77.2,
+      "ret_1m": 7.05,
+      "rel_vol": 0.98,
+      "dollar_volume": 1449844963,
+      "direction": "LONG",
+      "why": "above 20/50-DMA, 1M +7.1%, RSI 77.2, $1450M/day",
+      "sector": "health_care",
+      "sector_name": "health_care",
+      "sector_is_strong": true,
+      "as_of": "2026-09-24T20:00:00+00:00",
+      "scanner_rank": 5
+     }
+    ],
+    "evaluated": [
+     {
+      "symbol": "META",
+      "action": "MONITOR",
+      "signal_id": "sig_10bf2b82ea7a8cd7",
+      "instrument": "NO TRADE",
+      "note": "unchanged observation - not re-journaled"
+     },
+     {
+      "symbol": "AMD",
+      "action": "MONITOR",
+      "signal_id": "sig_6385c26dcc928bed",
+      "instrument": "NO TRADE",
+      "note": "unchanged observation - not re-journaled"
+     },
+     {
+      "symbol": "DELL",
+      "action": "MONITOR",
+      "signal_id": "sig_c2ea6f9964c6d984",
+      "instrument": "NO TRADE",
+      "note": "unchanged observation - not re-journaled"
+     },
+     {
+      "symbol": "CRM",
+      "action": "MONITOR",
+      "signal_id": "sig_6b0fc1d9ff183387",
+      "instrument": "NO TRADE",
+      "note": "unchanged observation - not re-journaled"
+     },
+     {
+      "symbol": "TMO",
+      "action": "MONITOR",
+      "signal_id": "sig_c47c05aa2a29ea90",
+      "instrument": "NO TRADE",
+      "note": "unchanged observation - not re-journaled"
+     }
+    ],
+    "orders_placed": [],
+    "config_version": "cfg-fee37d4872"
+   },
+   "market_hours": {
+    "session_date": "2026-09-25",
+    "symbols_watched": [
+     "AMD",
+     "CRM",
+     "DELL",
+     "META",
+     "TMO"
+    ],
+    "orders_processed": 0,
+    "exits": 0,
+    "exit_actions": [],
+    "tracked_updated": 5,
+    "shadow_resolved": {
+     "checked": 0,
+     "resolved": 0,
+     "expired": 0,
+     "skipped_missing_data": 0
+    },
+    "scope": "all",
+    "quote_age_s_max": 228253.2,
+    "quotes_missing": []
+   }
+  },
+  {
+   "cycle_id": "2026-09-25T1235",
+   "et_time": "2026-09-25T12:35:00-04:00",
+   "session_type": "regular",
+   "allow_entries": true,
+   "premarket": {
+    "session_date": "2026-09-25",
+    "state": "ok",
+    "started_at": "2026-09-28T07:44:13.228713+00:00",
+    "cycle_id": "2026-09-25T1235",
+    "entries_allowed": true,
+    "provider_health": {
+     "checked_at": "2026-09-25T16:35:00+00:00",
+     "healthy": true,
+     "historical_replay": true,
+     "providers": {
+      "note": "historical replay -- live provider health has no meaning here"
+     }
+    },
+    "market_regime": null,
+    "sectors_considered": [
+     "communication",
+     "consumer_discretionary",
+     "health_care",
+     "materials",
+     "technology"
+    ],
+    "sector_ranking": [
+     {
+      "name": "communication",
+      "score": 0.0,
+      "rs": 0.0
+     },
+     {
+      "name": "consumer_discretionary",
+      "score": 0.0,
+      "rs": 0.0
+     },
+     {
+      "name": "health_care",
+      "score": 0.0,
+      "rs": 0.0
+     },
+     {
+      "name": "materials",
+      "score": 0.0,
+      "rs": 0.0
+     },
+     {
+      "name": "technology",
+      "score": 0.0,
+      "rs": 0.0
+     }
+    ],
+    "candidates": 22,
+    "finalists": [
+     {
+      "symbol": "META",
+      "strategy": "sector_relative_strength",
+      "score": 20.98,
+      "ret_1m": 34.97,
+      "sector_score": 0.0,
+      "direction": "LONG",
+      "why": "leader in leading sector communication (sector score +0.00), 1M +35.0%",
+      "sector": "communication",
+      "sector_name": "communication",
+      "sector_is_strong": true,
+      "as_of": "2026-09-24T20:00:00+00:00",
+      "scanner_rank": 1
+     },
+     {
+      "symbol": "AMD",
+      "strategy": "sector_relative_strength",
+      "score": 18.51,
+      "ret_1m": 30.84,
+      "sector_score": 0.0,
+      "direction": "LONG",
+      "why": "leader in leading sector technology (sector score +0.00), 1M +30.8%",
+      "sector": "technology",
+      "sector_name": "technology",
+      "sector_is_strong": true,
+      "as_of": "2026-09-24T20:00:00+00:00",
+      "scanner_rank": 2
+     },
+     {
+      "symbol": "DELL",
+      "strategy": "liquid_momentum",
+      "score": 12.55,
+      "rsi": 53.7,
+      "ret_1m": 15.57,
+      "rel_vol": 0.72,
+      "dollar_volume": 5940983247,
+      "direction": "LONG",
+      "why": "above 20/50-DMA, 1M +15.6%, RSI 53.7, $5941M/day",
+      "sector": "technology",
+      "sector_name": "technology",
+      "sector_is_strong": true,
+      "as_of": "2026-09-24T20:00:00+00:00",
+      "scanner_rank": 3
+     },
+     {
+      "symbol": "CRM",
+      "strategy": "sector_relative_strength",
+      "score": 9.51,
+      "ret_1m": 15.85,
+      "sector_score": 0.0,
+      "direction": "LONG",
+      "why": "leader in leading sector technology (sector score +0.00), 1M +15.9%",
+      "sector": "technology",
+      "sector_name": "technology",
+      "sector_is_strong": true,
+      "as_of": "2026-09-24T20:00:00+00:00",
+      "scanner_rank": 4
+     },
+     {
+      "symbol": "TMO",
+      "strategy": "liquid_momentum",
+      "score": 8.33,
+      "rsi": 77.2,
+      "ret_1m": 7.05,
+      "rel_vol": 0.98,
+      "dollar_volume": 1449844963,
+      "direction": "LONG",
+      "why": "above 20/50-DMA, 1M +7.1%, RSI 77.2, $1450M/day",
+      "sector": "health_care",
+      "sector_name": "health_care",
+      "sector_is_strong": true,
+      "as_of": "2026-09-24T20:00:00+00:00",
+      "scanner_rank": 5
+     }
+    ],
+    "evaluated": [
+     {
+      "symbol": "META",
+      "action": "MONITOR",
+      "signal_id": "sig_10bf2b82ea7a8cd7",
+      "instrument": "NO TRADE",
+      "note": "unchanged observation - not re-journaled"
+     },
+     {
+      "symbol": "AMD",
+      "action": "MONITOR",
+      "signal_id": "sig_6385c26dcc928bed",
+      "instrument": "NO TRADE",
+      "note": "unchanged observation - not re-journaled"
+     },
+     {
+      "symbol": "DELL",
+      "action": "MONITOR",
+      "signal_id": "sig_c2ea6f9964c6d984",
+      "instrument": "NO TRADE",
+      "note": "unchanged observation - not re-journaled"
+     },
+     {
+      "symbol": "CRM",
+      "action": "MONITOR",
+      "signal_id": "sig_6b0fc1d9ff183387",
+      "instrument": "NO TRADE",
+      "note": "unchanged observation - not re-journaled"
+     },
+     {
+      "symbol": "TMO",
+      "action": "MONITOR",
+      "signal_id": "sig_c47c05aa2a29ea90",
+      "instrument": "NO TRADE",
+      "note": "unchanged observation - not re-journaled"
+     }
+    ],
+    "orders_placed": [],
+    "config_version": "cfg-fee37d4872"
+   },
+   "market_hours": {
+    "session_date": "2026-09-25",
+    "symbols_watched": [
+     "AMD",
+     "CRM",
+     "DELL",
+     "META",
+     "TMO"
+    ],
+    "orders_processed": 0,
+    "exits": 0,
+    "exit_actions": [],
+    "tracked_updated": 5,
+    "shadow_resolved": {
+     "checked": 0,
+     "resolved": 0,
+     "expired": 0,
+     "skipped_missing_data": 0
+    },
+    "scope": "all",
+    "quote_age_s_max": 227353.3,
+    "quotes_missing": []
+   }
+  },
+  {
+   "cycle_id": "2026-09-25T1250",
+   "et_time": "2026-09-25T12:50:00-04:00",
+   "session_type": "regular",
+   "allow_entries": true,
+   "premarket": {
+    "session_date": "2026-09-25",
+    "state": "ok",
+    "started_at": "2026-09-28T07:44:13.287172+00:00",
+    "cycle_id": "2026-09-25T1250",
+    "entries_allowed": true,
+    "provider_health": {
+     "checked_at": "2026-09-25T16:50:00+00:00",
+     "healthy": true,
+     "historical_replay": true,
+     "providers": {
+      "note": "historical replay -- live provider health has no meaning here"
+     }
+    },
+    "market_regime": null,
+    "sectors_considered": [
+     "communication",
+     "consumer_discretionary",
+     "health_care",
+     "materials",
+     "technology"
+    ],
+    "sector_ranking": [
+     {
+      "name": "communication",
+      "score": 0.0,
+      "rs": 0.0
+     },
+     {
+      "name": "consumer_discretionary",
+      "score": 0.0,
+      "rs": 0.0
+     },
+     {
+      "name": "health_care",
+      "score": 0.0,
+      "rs": 0.0
+     },
+     {
+      "name": "materials",
+      "score": 0.0,
+      "rs": 0.0
+     },
+     {
+      "name": "technology",
+      "score": 0.0,
+      "rs": 0.0
+     }
+    ],
+    "candidates": 22,
+    "finalists": [
+     {
+      "symbol": "META",
+      "strategy": "sector_relative_strength",
+      "score": 20.98,
+      "ret_1m": 34.97,
+      "sector_score": 0.0,
+      "direction": "LONG",
+      "why": "leader in leading sector communication (sector score +0.00), 1M +35.0%",
+      "sector": "communication",
+      "sector_name": "communication",
+      "sector_is_strong": true,
+      "as_of": "2026-09-24T20:00:00+00:00",
+      "scanner_rank": 1
+     },
+     {
+      "symbol": "AMD",
+      "strategy": "sector_relative_strength",
+      "score": 18.51,
+      "ret_1m": 30.84,
+      "sector_score": 0.0,
+      "direction": "LONG",
+      "why": "leader in leading sector technology (sector score +0.00), 1M +30.8%",
+      "sector": "technology",
+      "sector_name": "technology",
+      "sector_is_strong": true,
+      "as_of": "2026-09-24T20:00:00+00:00",
+      "scanner_rank": 2
+     },
+     {
+      "symbol": "DELL",
+      "strategy": "liquid_momentum",
+      "score": 12.55,
+      "rsi": 53.7,
+      "ret_1m": 15.57,
+      "rel_vol": 0.72,
+      "dollar_volume": 5940983247,
+      "direction": "LONG",
+      "why": "above 20/50-DMA, 1M +15.6%, RSI 53.7, $5941M/day",
+      "sector": "technology",
+      "sector_name": "technology",
+      "sector_is_strong": true,
+      "as_of": "2026-09-24T20:00:00+00:00",
+      "scanner_rank": 3
+     },
+     {
+      "symbol": "CRM",
+      "strategy": "sector_relative_strength",
+      "score": 9.51,
+      "ret_1m": 15.85,
+      "sector_score": 0.0,
+      "direction": "LONG",
+      "why": "leader in leading sector technology (sector score +0.00), 1M +15.9%",
+      "sector": "technology",
+      "sector_name": "technology",
+      "sector_is_strong": true,
+      "as_of": "2026-09-24T20:00:00+00:00",
+      "scanner_rank": 4
+     },
+     {
+      "symbol": "TMO",
+      "strategy": "liquid_momentum",
+      "score": 8.33,
+      "rsi": 77.2,
+      "ret_1m": 7.05,
+      "rel_vol": 0.98,
+      "dollar_volume": 1449844963,
+      "direction": "LONG",
+      "why": "above 20/50-DMA, 1M +7.1%, RSI 77.2, $1450M/day",
+      "sector": "health_care",
+      "sector_name": "health_care",
+      "sector_is_strong": true,
+      "as_of": "2026-09-24T20:00:00+00:00",
+      "scanner_rank": 5
+     }
+    ],
+    "evaluated": [
+     {
+      "symbol": "META",
+      "action": "MONITOR",
+      "signal_id": "sig_10bf2b82ea7a8cd7",
+      "instrument": "NO TRADE",
+      "note": "unchanged observation - not re-journaled"
+     },
+     {
+      "symbol": "AMD",
+      "action": "MONITOR",
+      "signal_id": "sig_6385c26dcc928bed",
+      "instrument": "NO TRADE",
+      "note": "unchanged observation - not re-journaled"
+     },
+     {
+      "symbol": "DELL",
+      "action": "MONITOR",
+      "signal_id": "sig_c2ea6f9964c6d984",
+      "instrument": "NO TRADE",
+      "note": "unchanged observation - not re-journaled"
+     },
+     {
+      "symbol": "CRM",
+      "action": "MONITOR",
+      "signal_id": "sig_6b0fc1d9ff183387",
+      "instrument": "NO TRADE",
+      "note": "unchanged observation - not re-journaled"
+     },
+     {
+      "symbol": "TMO",
+      "action": "MONITOR",
+      "signal_id": "sig_c47c05aa2a29ea90",
+      "instrument": "NO TRADE",
+      "note": "unchanged observation - not re-journaled"
+     }
+    ],
+    "orders_placed": [],
+    "config_version": "cfg-fee37d4872"
+   },
+   "market_hours": {
+    "session_date": "2026-09-25",
+    "symbols_watched": [
+     "AMD",
+     "CRM",
+     "DELL",
+     "META",
+     "TMO"
+    ],
+    "orders_processed": 0,
+    "exits": 0,
+    "exit_actions": [],
+    "tracked_updated": 5,
+    "shadow_resolved": {
+     "checked": 0,
+     "resolved": 0,
+     "expired": 0,
+     "skipped_missing_data": 0
+    },
+    "scope": "all",
+    "quote_age_s_max": 226453.3,
+    "quotes_missing": []
+   }
+  },
+  {
+   "cycle_id": "2026-09-25T1305",
+   "et_time": "2026-09-25T13:05:00-04:00",
+   "session_type": "regular",
+   "allow_entries": true,
+   "premarket": {
+    "session_date": "2026-09-25",
+    "state": "ok",
+    "started_at": "2026-09-28T07:44:13.347505+00:00",
+    "cycle_id": "2026-09-25T1305",
+    "entries_allowed": true,
+    "provider_health": {
+     "checked_at": "2026-09-25T17:05:00+00:00",
+     "healthy": true,
+     "historical_replay": true,
+     "providers": {
+      "note": "historical replay -- live provider health has no meaning here"
+     }
+    },
+    "market_regime": null,
+    "sectors_considered": [
+     "communication",
+     "consumer_discretionary",
+     "health_care",
+     "materials",
+     "technology"
+    ],
+    "sector_ranking": [
+     {
+      "name": "communication",
+      "score": 0.0,
+      "rs": 0.0
+     },
+     {
+      "name": "consumer_discretionary",
+      "score": 0.0,
+      "rs": 0.0
+     },
+     {
+      "name": "health_care",
+      "score": 0.0,
+      "rs": 0.0
+     },
+     {
+      "name": "materials",
+      "score": 0.0,
+      "rs": 0.0
+     },
+     {
+      "name": "technology",
+      "score": 0.0,
+      "rs": 0.0
+     }
+    ],
+    "candidates": 22,
+    "finalists": [
+     {
+      "symbol": "META",
+      "strategy": "sector_relative_strength",
+      "score": 20.98,
+      "ret_1m": 34.97,
+      "sector_score": 0.0,
+      "direction": "LONG",
+      "why": "leader in leading sector communication (sector score +0.00), 1M +35.0%",
+      "sector": "communication",
+      "sector_name": "communication",
+      "sector_is_strong": true,
+      "as_of": "2026-09-24T20:00:00+00:00",
+      "scanner_rank": 1
+     },
+     {
+      "symbol": "AMD",
+      "strategy": "sector_relative_strength",
+      "score": 18.51,
+      "ret_1m": 30.84,
+      "sector_score": 0.0,
+      "direction": "LONG",
+      "why": "leader in leading sector technology (sector score +0.00), 1M +30.8%",
+      "sector": "technology",
+      "sector_name": "technology",
+      "sector_is_strong": true,
+      "as_of": "2026-09-24T20:00:00+00:00",
+      "scanner_rank": 2
+     },
+     {
+      "symbol": "DELL",
+      "strategy": "liquid_momentum",
+      "score": 12.55,
+      "rsi": 53.7,
+      "ret_1m": 15.57,
+      "rel_vol": 0.72,
+      "dollar_volume": 5940983247,
+      "direction": "LONG",
+      "why": "above 20/50-DMA, 1M +15.6%, RSI 53.7, $5941M/day",
+      "sector": "technology",
+      "sector_name": "technology",
+      "sector_is_strong": true,
+      "as_of": "2026-09-24T20:00:00+00:00",
+      "scanner_rank": 3
+     },
+     {
+      "symbol": "CRM",
+      "strategy": "sector_relative_strength",
+      "score": 9.51,
+      "ret_1m": 15.85,
+      "sector_score": 0.0,
+      "direction": "LONG",
+      "why": "leader in leading sector technology (sector score +0.00), 1M +15.9%",
+      "sector": "technology",
+      "sector_name": "technology",
+      "sector_is_strong": true,
+      "as_of": "2026-09-24T20:00:00+00:00",
+      "scanner_rank": 4
+     },
+     {
+      "symbol": "TMO",
+      "strategy": "liquid_momentum",
+      "score": 8.33,
+      "rsi": 77.2,
+      "ret_1m": 7.05,
+      "rel_vol": 0.98,
+      "dollar_volume": 1449844963,
+      "direction": "LONG",
+      "why": "above 20/50-DMA, 1M +7.1%, RSI 77.2, $1450M/day",
+      "sector": "health_care",
+      "sector_name": "health_care",
+      "sector_is_strong": true,
+      "as_of": "2026-09-24T20:00:00+00:00",
+      "scanner_rank": 5
+     }
+    ],
+    "evaluated": [
+     {
+      "symbol": "META",
+      "action": "MONITOR",
+      "signal_id": "sig_10bf2b82ea7a8cd7",
+      "instrument": "NO TRADE",
+      "note": "unchanged observation - not re-journaled"
+     },
+     {
+      "symbol": "AMD",
+      "action": "MONITOR",
+      "signal_id": "sig_6385c26dcc928bed",
+      "instrument": "NO TRADE",
+      "note": "unchanged observation - not re-journaled"
+     },
+     {
+      "symbol": "DELL",
+      "action": "MONITOR",
+      "signal_id": "sig_c2ea6f9964c6d984",
+      "instrument": "NO TRADE",
+      "note": "unchanged observation - not re-journaled"
+     },
+     {
+      "symbol": "CRM",
+      "action": "MONITOR",
+      "signal_id": "sig_6b0fc1d9ff183387",
+      "instrument": "NO TRADE",
+      "note": "unchanged observation - not re-journaled"
+     },
+     {
+      "symbol": "TMO",
+      "action": "MONITOR",
+      "signal_id": "sig_c47c05aa2a29ea90",
+      "instrument": "NO TRADE",
+      "note": "unchanged observation - not re-journaled"
+     }
+    ],
+    "orders_placed": [],
+    "config_version": "cfg-fee37d4872"
+   },
+   "market_hours": {
+    "session_date": "2026-09-25",
+    "symbols_watched": [
+     "AMD",
+     "CRM",
+     "DELL",
+     "META",
+     "TMO"
+    ],
+    "orders_processed": 0,
+    "exits": 0,
+    "exit_actions": [],
+    "tracked_updated": 5,
+    "shadow_resolved": {
+     "checked": 0,
+     "resolved": 0,
+     "expired": 0,
+     "skipped_missing_data": 0
+    },
+    "scope": "all",
+    "quote_age_s_max": 225553.4,
+    "quotes_missing": []
+   }
+  },
+  {
+   "cycle_id": "2026-09-25T1320",
+   "et_time": "2026-09-25T13:20:00-04:00",
+   "session_type": "regular",
+   "allow_entries": true,
+   "premarket": {
+    "session_date": "2026-09-25",
+    "state": "ok",
+    "started_at": "2026-09-28T07:44:13.408925+00:00",
+    "cycle_id": "2026-09-25T1320",
+    "entries_allowed": true,
+    "provider_health": {
+     "checked_at": "2026-09-25T17:20:00+00:00",
+     "healthy": true,
+     "historical_replay": true,
+     "providers": {
+      "note": "historical replay -- live provider health has no meaning here"
+     }
+    },
+    "market_regime": null,
+    "sectors_considered": [
+     "communication",
+     "consumer_discretionary",
+     "health_care",
+     "materials",
+     "technology"
+    ],
+    "sector_ranking": [
+     {
+      "name": "communication",
+      "score": 0.0,
+      "rs": 0.0
+     },
+     {
+      "name": "consumer_discretionary",
+      "score": 0.0,
+      "rs": 0.0
+     },
+     {
+      "name": "health_care",
+      "score": 0.0,
+      "rs": 0.0
+     },
+     {
+      "name": "materials",
+      "score": 0.0,
+      "rs": 0.0
+     },
+     {
+      "name": "technology",
+      "score": 0.0,
+      "rs": 0.0
+     }
+    ],
+    "candidates": 22,
+    "finalists": [
+     {
+      "symbol": "META",
+      "strategy": "sector_relative_strength",
+      "score": 20.98,
+      "ret_1m": 34.97,
+      "sector_score": 0.0,
+      "direction": "LONG",
+      "why": "leader in leading sector communication (sector score +0.00), 1M +35.0%",
+      "sector": "communication",
+      "sector_name": "communication",
+      "sector_is_strong": true,
+      "as_of": "2026-09-24T20:00:00+00:00",
+      "scanner_rank": 1
+     },
+     {
+      "symbol": "AMD",
+      "strategy": "sector_relative_strength",
+      "score": 18.51,
+      "ret_1m": 30.84,
+      "sector_score": 0.0,
+      "direction": "LONG",
+      "why": "leader in leading sector technology (sector score +0.00), 1M +30.8%",
+      "sector": "technology",
+      "sector_name": "technology",
+      "sector_is_strong": true,
+      "as_of": "2026-09-24T20:00:00+00:00",
+      "scanner_rank": 2
+     },
+     {
+      "symbol": "DELL",
+      "strategy": "liquid_momentum",
+      "score": 12.55,
+      "rsi": 53.7,
+      "ret_1m": 15.57,
+      "rel_vol": 0.72,
+      "dollar_volume": 5940983247,
+      "direction": "LONG",
+      "why": "above 20/50-DMA, 1M +15.6%, RSI 53.7, $5941M/day",
+      "sector": "technology",
+      "sector_name": "technology",
+      "sector_is_strong": true,
+      "as_of": "2026-09-24T20:00:00+00:00",
+      "scanner_rank": 3
+     },
+     {
+      "symbol": "CRM",
+      "strategy": "sector_relative_strength",
+      "score": 9.51,
+      "ret_1m": 15.85,
+      "sector_score": 0.0,
+      "direction": "LONG",
+      "why": "leader in leading sector technology (sector score +0.00), 1M +15.9%",
+      "sector": "technology",
+      "sector_name": "technology",
+      "sector_is_strong": true,
+      "as_of": "2026-09-24T20:00:00+00:00",
+      "scanner_rank": 4
+     },
+     {
+      "symbol": "TMO",
+      "strategy": "liquid_momentum",
+      "score": 8.33,
+      "rsi": 77.2,
+      "ret_1m": 7.05,
+      "rel_vol": 0.98,
+      "dollar_volume": 1449844963,
+      "direction": "LONG",
+      "why": "above 20/50-DMA, 1M +7.1%, RSI 77.2, $1450M/day",
+      "sector": "health_care",
+      "sector_name": "health_care",
+      "sector_is_strong": true,
+      "as_of": "2026-09-24T20:00:00+00:00",
+      "scanner_rank": 5
+     }
+    ],
+    "evaluated": [
+     {
+      "symbol": "META",
+      "action": "MONITOR",
+      "signal_id": "sig_10bf2b82ea7a8cd7",
+      "instrument": "NO TRADE",
+      "note": "unchanged observation - not re-journaled"
+     },
+     {
+      "symbol": "AMD",
+      "action": "MONITOR",
+      "signal_id": "sig_6385c26dcc928bed",
+      "instrument": "NO TRADE",
+      "note": "unchanged observation - not re-journaled"
+     },
+     {
+      "symbol": "DELL",
+      "action": "MONITOR",
+      "signal_id": "sig_c2ea6f9964c6d984",
+      "instrument": "NO TRADE",
+      "note": "unchanged observation - not re-journaled"
+     },
+     {
+      "symbol": "CRM",
+      "action": "MONITOR",
+      "signal_id": "sig_6b0fc1d9ff183387",
+      "instrument": "NO TRADE",
+      "note": "unchanged observation - not re-journaled"
+     },
+     {
+      "symbol": "TMO",
+      "action": "MONITOR",
+      "signal_id": "sig_c47c05aa2a29ea90",
+      "instrument": "NO TRADE",
+      "note": "unchanged observation - not re-journaled"
+     }
+    ],
+    "orders_placed": [],
+    "config_version": "cfg-fee37d4872"
+   },
+   "market_hours": {
+    "session_date": "2026-09-25",
+    "symbols_watched": [
+     "AMD",
+     "CRM",
+     "DELL",
+     "META",
+     "TMO"
+    ],
+    "orders_processed": 0,
+    "exits": 0,
+    "exit_actions": [],
+    "tracked_updated": 5,
+    "shadow_resolved": {
+     "checked": 0,
+     "resolved": 0,
+     "expired": 0,
+     "skipped_missing_data": 0
+    },
+    "scope": "all",
+    "quote_age_s_max": 224653.5,
+    "quotes_missing": []
+   }
+  },
+  {
+   "cycle_id": "2026-09-25T1335",
+   "et_time": "2026-09-25T13:35:00-04:00",
+   "session_type": "regular",
+   "allow_entries": true,
+   "premarket": {
+    "session_date": "2026-09-25",
+    "state": "ok",
+    "started_at": "2026-09-28T07:44:13.468732+00:00",
+    "cycle_id": "2026-09-25T1335",
+    "entries_allowed": true,
+    "provider_health": {
+     "checked_at": "2026-09-25T17:35:00+00:00",
+     "healthy": true,
+     "historical_replay": true,
+     "providers": {
+      "note": "historical replay -- live provider health has no meaning here"
+     }
+    },
+    "market_regime": null,
+    "sectors_considered": [
+     "communication",
+     "consumer_discretionary",
+     "health_care",
+     "materials",
+     "technology"
+    ],
+    "sector_ranking": [
+     {
+      "name": "communication",
+      "score": 0.0,
+      "rs": 0.0
+     },
+     {
+      "name": "consumer_discretionary",
+      "score": 0.0,
+      "rs": 0.0
+     },
+     {
+      "name": "health_care",
+      "score": 0.0,
+      "rs": 0.0
+     },
+     {
+      "name": "materials",
+      "score": 0.0,
+      "rs": 0.0
+     },
+     {
+      "name": "technology",
+      "score": 0.0,
+      "rs": 0.0
+     }
+    ],
+    "candidates": 22,
+    "finalists": [
+     {
+      "symbol": "META",
+      "strategy": "sector_relative_strength",
+      "score": 20.98,
+      "ret_1m": 34.97,
+      "sector_score": 0.0,
+      "direction": "LONG",
+      "why": "leader in leading sector communication (sector score +0.00), 1M +35.0%",
+      "sector": "communication",
+      "sector_name": "communication",
+      "sector_is_strong": true,
+      "as_of": "2026-09-24T20:00:00+00:00",
+      "scanner_rank": 1
+     },
+     {
+      "symbol": "AMD",
+      "strategy": "sector_relative_strength",
+      "score": 18.51,
+      "ret_1m": 30.84,
+      "sector_score": 0.0,
+      "direction": "LONG",
+      "why": "leader in leading sector technology (sector score +0.00), 1M +30.8%",
+      "sector": "technology",
+      "sector_name": "technology",
+      "sector_is_strong": true,
+      "as_of": "2026-09-24T20:00:00+00:00",
+      "scanner_rank": 2
+     },
+     {
+      "symbol": "DELL",
+      "strategy": "liquid_momentum",
+      "score": 12.55,
+      "rsi": 53.7,
+      "ret_1m": 15.57,
+      "rel_vol": 0.72,
+      "dollar_volume": 5940983247,
+      "direction": "LONG",
+      "why": "above 20/50-DMA, 1M +15.6%, RSI 53.7, $5941M/day",
+      "sector": "technology",
+      "sector_name": "technology",
+      "sector_is_strong": true,
+      "as_of": "2026-09-24T20:00:00+00:00",
+      "scanner_rank": 3
+     },
+     {
+      "symbol": "CRM",
+      "strategy": "sector_relative_strength",
+      "score": 9.51,
+      "ret_1m": 15.85,
+      "sector_score": 0.0,
+      "direction": "LONG",
+      "why": "leader in leading sector technology (sector score +0.00), 1M +15.9%",
+      "sector": "technology",
+      "sector_name": "technology",
+      "sector_is_strong": true,
+      "as_of": "2026-09-24T20:00:00+00:00",
+      "scanner_rank": 4
+     },
+     {
+      "symbol": "TMO",
+      "strategy": "liquid_momentum",
+      "score": 8.33,
+      "rsi": 77.2,
+      "ret_1m": 7.05,
+      "rel_vol": 0.98,
+      "dollar_volume": 1449844963,
+      "direction": "LONG",
+      "why": "above 20/50-DMA, 1M +7.1%, RSI 77.2, $1450M/day",
+      "sector": "health_care",
+      "sector_name": "health_care",
+      "sector_is_strong": true,
+      "as_of": "2026-09-24T20:00:00+00:00",
+      "scanner_rank": 5
+     }
+    ],
+    "evaluated": [
+     {
+      "symbol": "META",
+      "action": "MONITOR",
+      "signal_id": "sig_10bf2b82ea7a8cd7",
+      "instrument": "NO TRADE",
+      "note": "unchanged observation - not re-journaled"
+     },
+     {
+      "symbol": "AMD",
+      "action": "MONITOR",
+      "signal_id": "sig_6385c26dcc928bed",
+      "instrument": "NO TRADE",
+      "note": "unchanged observation - not re-journaled"
+     },
+     {
+      "symbol": "DELL",
+      "action": "MONITOR",
+      "signal_id": "sig_c2ea6f9964c6d984",
+      "instrument": "NO TRADE",
+      "note": "unchanged observation - not re-journaled"
+     },
+     {
+      "symbol": "CRM",
+      "action": "MONITOR",
+      "signal_id": "sig_6b0fc1d9ff183387",
+      "instrument": "NO TRADE",
+      "note": "unchanged observation - not re-journaled"
+     },
+     {
+      "symbol": "TMO",
+      "action": "MONITOR",
+      "signal_id": "sig_c47c05aa2a29ea90",
+      "instrument": "NO TRADE",
+      "note": "unchanged observation - not re-journaled"
+     }
+    ],
+    "orders_placed": [],
+    "config_version": "cfg-fee37d4872"
+   },
+   "market_hours": {
+    "session_date": "2026-09-25",
+    "symbols_watched": [
+     "AMD",
+     "CRM",
+     "DELL",
+     "META",
+     "TMO"
+    ],
+    "orders_processed": 0,
+    "exits": 0,
+    "exit_actions": [],
+    "tracked_updated": 5,
+    "shadow_resolved": {
+     "checked": 0,
+     "resolved": 0,
+     "expired": 0,
+     "skipped_missing_data": 0
+    },
+    "scope": "all",
+    "quote_age_s_max": 223753.5,
+    "quotes_missing": []
+   }
+  },
+  {
+   "cycle_id": "2026-09-25T1350",
+   "et_time": "2026-09-25T13:50:00-04:00",
+   "session_type": "regular",
+   "allow_entries": true,
+   "premarket": {
+    "session_date": "2026-09-25",
+    "state": "ok",
+    "started_at": "2026-09-28T07:44:13.528720+00:00",
+    "cycle_id": "2026-09-25T1350",
+    "entries_allowed": true,
+    "provider_health": {
+     "checked_at": "2026-09-25T17:50:00+00:00",
+     "healthy": true,
+     "historical_replay": true,
+     "providers": {
+      "note": "historical replay -- live provider health has no meaning here"
+     }
+    },
+    "market_regime": null,
+    "sectors_considered": [
+     "communication",
+     "consumer_discretionary",
+     "health_care",
+     "materials",
+     "technology"
+    ],
+    "sector_ranking": [
+     {
+      "name": "communication",
+      "score": 0.0,
+      "rs": 0.0
+     },
+     {
+      "name": "consumer_discretionary",
+      "score": 0.0,
+      "rs": 0.0
+     },
+     {
+      "name": "health_care",
+      "score": 0.0,
+      "rs": 0.0
+     },
+     {
+      "name": "materials",
+      "score": 0.0,
+      "rs": 0.0
+     },
+     {
+      "name": "technology",
+      "score": 0.0,
+      "rs": 0.0
+     }
+    ],
+    "candidates": 22,
+    "finalists": [
+     {
+      "symbol": "META",
+      "strategy": "sector_relative_strength",
+      "score": 20.98,
+      "ret_1m": 34.97,
+      "sector_score": 0.0,
+      "direction": "LONG",
+      "why": "leader in leading sector communication (sector score +0.00), 1M +35.0%",
+      "sector": "communication",
+      "sector_name": "communication",
+      "sector_is_strong": true,
+      "as_of": "2026-09-24T20:00:00+00:00",
+      "scanner_rank": 1
+     },
+     {
+      "symbol": "AMD",
+      "strategy": "sector_relative_strength",
+      "score": 18.51,
+      "ret_1m": 30.84,
+      "sector_score": 0.0,
+      "direction": "LONG",
+      "why": "leader in leading sector technology (sector score +0.00), 1M +30.8%",
+      "sector": "technology",
+      "sector_name": "technology",
+      "sector_is_strong": true,
+      "as_of": "2026-09-24T20:00:00+00:00",
+      "scanner_rank": 2
+     },
+     {
+      "symbol": "DELL",
+      "strategy": "liquid_momentum",
+      "score": 12.55,
+      "rsi": 53.7,
+      "ret_1m": 15.57,
+      "rel_vol": 0.72,
+      "dollar_volume": 5940983247,
+      "direction": "LONG",
+      "why": "above 20/50-DMA, 1M +15.6%, RSI 53.7, $5941M/day",
+      "sector": "technology",
+      "sector_name": "technology",
+      "sector_is_strong": true,
+      "as_of": "2026-09-24T20:00:00+00:00",
+      "scanner_rank": 3
+     },
+     {
+      "symbol": "CRM",
+      "strategy": "sector_relative_strength",
+      "score": 9.51,
+      "ret_1m": 15.85,
+      "sector_score": 0.0,
+      "direction": "LONG",
+      "why": "leader in leading sector technology (sector score +0.00), 1M +15.9%",
+      "sector": "technology",
+      "sector_name": "technology",
+      "sector_is_strong": true,
+      "as_of": "2026-09-24T20:00:00+00:00",
+      "scanner_rank": 4
+     },
+     {
+      "symbol": "TMO",
+      "strategy": "liquid_momentum",
+      "score": 8.33,
+      "rsi": 77.2,
+      "ret_1m": 7.05,
+      "rel_vol": 0.98,
+      "dollar_volume": 1449844963,
+      "direction": "LONG",
+      "why": "above 20/50-DMA, 1M +7.1%, RSI 77.2, $1450M/day",
+      "sector": "health_care",
+      "sector_name": "health_care",
+      "sector_is_strong": true,
+      "as_of": "2026-09-24T20:00:00+00:00",
+      "scanner_rank": 5
+     }
+    ],
+    "evaluated": [
+     {
+      "symbol": "META",
+      "action": "MONITOR",
+      "signal_id": "sig_10bf2b82ea7a8cd7",
+      "instrument": "NO TRADE",
+      "note": "unchanged observation - not re-journaled"
+     },
+     {
+      "symbol": "AMD",
+      "action": "MONITOR",
+      "signal_id": "sig_6385c26dcc928bed",
+      "instrument": "NO TRADE",
+      "note": "unchanged observation - not re-journaled"
+     },
+     {
+      "symbol": "DELL",
+      "action": "MONITOR",
+      "signal_id": "sig_c2ea6f9964c6d984",
+      "instrument": "NO TRADE",
+      "note": "unchanged observation - not re-journaled"
+     },
+     {
+      "symbol": "CRM",
+      "action": "MONITOR",
+      "signal_id": "sig_6b0fc1d9ff183387",
+      "instrument": "NO TRADE",
+      "note": "unchanged observation - not re-journaled"
+     },
+     {
+      "symbol": "TMO",
+      "action": "MONITOR",
+      "signal_id": "sig_c47c05aa2a29ea90",
+      "instrument": "NO TRADE",
+      "note": "unchanged observation - not re-journaled"
+     }
+    ],
+    "orders_placed": [],
+    "config_version": "cfg-fee37d4872"
+   },
+   "market_hours": {
+    "session_date": "2026-09-25",
+    "symbols_watched": [
+     "AMD",
+     "CRM",
+     "DELL",
+     "META",
+     "TMO"
+    ],
+    "orders_processed": 0,
+    "exits": 0,
+    "exit_actions": [],
+    "tracked_updated": 5,
+    "shadow_resolved": {
+     "checked": 0,
+     "resolved": 0,
+     "expired": 0,
+     "skipped_missing_data": 0
+    },
+    "scope": "all",
+    "quote_age_s_max": 222853.6,
+    "quotes_missing": []
+   }
+  },
+  {
+   "cycle_id": "2026-09-25T1405",
+   "et_time": "2026-09-25T14:05:00-04:00",
+   "session_type": "regular",
+   "allow_entries": true,
+   "premarket": {
+    "session_date": "2026-09-25",
+    "state": "ok",
+    "started_at": "2026-09-28T07:44:13.589035+00:00",
+    "cycle_id": "2026-09-25T1405",
+    "entries_allowed": true,
+    "provider_health": {
+     "checked_at": "2026-09-25T18:05:00+00:00",
+     "healthy": true,
+     "historical_replay": true,
+     "providers": {
+      "note": "historical replay -- live provider health has no meaning here"
+     }
+    },
+    "market_regime": null,
+    "sectors_considered": [
+     "communication",
+     "consumer_discretionary",
+     "health_care",
+     "materials",
+     "technology"
+    ],
+    "sector_ranking": [
+     {
+      "name": "communication",
+      "score": 0.0,
+      "rs": 0.0
+     },
+     {
+      "name": "consumer_discretionary",
+      "score": 0.0,
+      "rs": 0.0
+     },
+     {
+      "name": "health_care",
+      "score": 0.0,
+      "rs": 0.0
+     },
+     {
+      "name": "materials",
+      "score": 0.0,
+      "rs": 0.0
+     },
+     {
+      "name": "technology",
+      "score": 0.0,
+      "rs": 0.0
+     }
+    ],
+    "candidates": 22,
+    "finalists": [
+     {
+      "symbol": "META",
+      "strategy": "sector_relative_strength",
+      "score": 20.98,
+      "ret_1m": 34.97,
+      "sector_score": 0.0,
+      "direction": "LONG",
+      "why": "leader in leading sector communication (sector score +0.00), 1M +35.0%",
+      "sector": "communication",
+      "sector_name": "communication",
+      "sector_is_strong": true,
+      "as_of": "2026-09-24T20:00:00+00:00",
+      "scanner_rank": 1
+     },
+     {
+      "symbol": "AMD",
+      "strategy": "sector_relative_strength",
+      "score": 18.51,
+      "ret_1m": 30.84,
+      "sector_score": 0.0,
+      "direction": "LONG",
+      "why": "leader in leading sector technology (sector score +0.00), 1M +30.8%",
+      "sector": "technology",
+      "sector_name": "technology",
+      "sector_is_strong": true,
+      "as_of": "2026-09-24T20:00:00+00:00",
+      "scanner_rank": 2
+     },
+     {
+      "symbol": "DELL",
+      "strategy": "liquid_momentum",
+      "score": 12.55,
+      "rsi": 53.7,
+      "ret_1m": 15.57,
+      "rel_vol": 0.72,
+      "dollar_volume": 5940983247,
+      "direction": "LONG",
+      "why": "above 20/50-DMA, 1M +15.6%, RSI 53.7, $5941M/day",
+      "sector": "technology",
+      "sector_name": "technology",
+      "sector_is_strong": true,
+      "as_of": "2026-09-24T20:00:00+00:00",
+      "scanner_rank": 3
+     },
+     {
+      "symbol": "CRM",
+      "strategy": "sector_relative_strength",
+      "score": 9.51,
+      "ret_1m": 15.85,
+      "sector_score": 0.0,
+      "direction": "LONG",
+      "why": "leader in leading sector technology (sector score +0.00), 1M +15.9%",
+      "sector": "technology",
+      "sector_name": "technology",
+      "sector_is_strong": true,
+      "as_of": "2026-09-24T20:00:00+00:00",
+      "scanner_rank": 4
+     },
+     {
+      "symbol": "TMO",
+      "strategy": "liquid_momentum",
+      "score": 8.33,
+      "rsi": 77.2,
+      "ret_1m": 7.05,
+      "rel_vol": 0.98,
+      "dollar_volume": 1449844963,
+      "direction": "LONG",
+      "why": "above 20/50-DMA, 1M +7.1%, RSI 77.2, $1450M/day",
+      "sector": "health_care",
+      "sector_name": "health_care",
+      "sector_is_strong": true,
+      "as_of": "2026-09-24T20:00:00+00:00",
+      "scanner_rank": 5
+     }
+    ],
+    "evaluated": [
+     {
+      "symbol": "META",
+      "action": "MONITOR",
+      "signal_id": "sig_10bf2b82ea7a8cd7",
+      "instrument": "NO TRADE",
+      "note": "unchanged observation - not re-journaled"
+     },
+     {
+      "symbol": "AMD",
+      "action": "MONITOR",
+      "signal_id": "sig_6385c26dcc928bed",
+      "instrument": "NO TRADE",
+      "note": "unchanged observation - not re-journaled"
+     },
+     {
+      "symbol": "DELL",
+      "action": "MONITOR",
+      "signal_id": "sig_c2ea6f9964c6d984",
+      "instrument": "NO TRADE",
+      "note": "unchanged observation - not re-journaled"
+     },
+     {
+      "symbol": "CRM",
+      "action": "MONITOR",
+      "signal_id": "sig_6b0fc1d9ff183387",
+      "instrument": "NO TRADE",
+      "note": "unchanged observation - not re-journaled"
+     },
+     {
+      "symbol": "TMO",
+      "action": "MONITOR",
+      "signal_id": "sig_c47c05aa2a29ea90",
+      "instrument": "NO TRADE",
+      "note": "unchanged observation - not re-journaled"
+     }
+    ],
+    "orders_placed": [],
+    "config_version": "cfg-fee37d4872"
+   },
+   "market_hours": {
+    "session_date": "2026-09-25",
+    "symbols_watched": [
+     "AMD",
+     "CRM",
+     "DELL",
+     "META",
+     "TMO"
+    ],
+    "orders_processed": 0,
+    "exits": 0,
+    "exit_actions": [],
+    "tracked_updated": 5,
+    "shadow_resolved": {
+     "checked": 0,
+     "resolved": 0,
+     "expired": 0,
+     "skipped_missing_data": 0
+    },
+    "scope": "all",
+    "quote_age_s_max": 221953.7,
+    "quotes_missing": []
+   }
+  },
+  {
+   "cycle_id": "2026-09-25T1420",
+   "et_time": "2026-09-25T14:20:00-04:00",
+   "session_type": "regular",
+   "allow_entries": true,
+   "premarket": {
+    "session_date": "2026-09-25",
+    "state": "ok",
+    "started_at": "2026-09-28T07:44:13.653166+00:00",
+    "cycle_id": "2026-09-25T1420",
+    "entries_allowed": true,
+    "provider_health": {
+     "checked_at": "2026-09-25T18:20:00+00:00",
+     "healthy": true,
+     "historical_replay": true,
+     "providers": {
+      "note": "historical replay -- live provider health has no meaning here"
+     }
+    },
+    "market_regime": null,
+    "sectors_considered": [
+     "communication",
+     "consumer_discretionary",
+     "health_care",
+     "materials",
+     "technology"
+    ],
+    "sector_ranking": [
+     {
+      "name": "communication",
+      "score": 0.0,
+      "rs": 0.0
+     },
+     {
+      "name": "consumer_discretionary",
+      "score": 0.0,
+      "rs": 0.0
+     },
+     {
+      "name": "health_care",
+      "score": 0.0,
+      "rs": 0.0
+     },
+     {
+      "name": "materials",
+      "score": 0.0,
+      "rs": 0.0
+     },
+     {
+      "name": "technology",
+      "score": 0.0,
+      "rs": 0.0
+     }
+    ],
+    "candidates": 22,
+    "finalists": [
+     {
+      "symbol": "META",
+      "strategy": "sector_relative_strength",
+      "score": 20.98,
+      "ret_1m": 34.97,
+      "sector_score": 0.0,
+      "direction": "LONG",
+      "why": "leader in leading sector communication (sector score +0.00), 1M +35.0%",
+      "sector": "communication",
+      "sector_name": "communication",
+      "sector_is_strong": true,
+      "as_of": "2026-09-24T20:00:00+00:00",
+      "scanner_rank": 1
+     },
+     {
+      "symbol": "AMD",
+      "strategy": "sector_relative_strength",
+      "score": 18.51,
+      "ret_1m": 30.84,
+      "sector_score": 0.0,
+      "direction": "LONG",
+      "why": "leader in leading sector technology (sector score +0.00), 1M +30.8%",
+      "sector": "technology",
+      "sector_name": "technology",
+      "sector_is_strong": true,
+      "as_of": "2026-09-24T20:00:00+00:00",
+      "scanner_rank": 2
+     },
+     {
+      "symbol": "DELL",
+      "strategy": "liquid_momentum",
+      "score": 12.55,
+      "rsi": 53.7,
+      "ret_1m": 15.57,
+      "rel_vol": 0.72,
+      "dollar_volume": 5940983247,
+      "direction": "LONG",
+      "why": "above 20/50-DMA, 1M +15.6%, RSI 53.7, $5941M/day",
+      "sector": "technology",
+      "sector_name": "technology",
+      "sector_is_strong": true,
+      "as_of": "2026-09-24T20:00:00+00:00",
+      "scanner_rank": 3
+     },
+     {
+      "symbol": "CRM",
+      "strategy": "sector_relative_strength",
+      "score": 9.51,
+      "ret_1m": 15.85,
+      "sector_score": 0.0,
+      "direction": "LONG",
+      "why": "leader in leading sector technology (sector score +0.00), 1M +15.9%",
+      "sector": "technology",
+      "sector_name": "technology",
+      "sector_is_strong": true,
+      "as_of": "2026-09-24T20:00:00+00:00",
+      "scanner_rank": 4
+     },
+     {
+      "symbol": "TMO",
+      "strategy": "liquid_momentum",
+      "score": 8.33,
+      "rsi": 77.2,
+      "ret_1m": 7.05,
+      "rel_vol": 0.98,
+      "dollar_volume": 1449844963,
+      "direction": "LONG",
+      "why": "above 20/50-DMA, 1M +7.1%, RSI 77.2, $1450M/day",
+      "sector": "health_care",
+      "sector_name": "health_care",
+      "sector_is_strong": true,
+      "as_of": "2026-09-24T20:00:00+00:00",
+      "scanner_rank": 5
+     }
+    ],
+    "evaluated": [
+     {
+      "symbol": "META",
+      "action": "MONITOR",
+      "signal_id": "sig_10bf2b82ea7a8cd7",
+      "instrument": "NO TRADE",
+      "note": "unchanged observation - not re-journaled"
+     },
+     {
+      "symbol": "AMD",
+      "action": "MONITOR",
+      "signal_id": "sig_6385c26dcc928bed",
+      "instrument": "NO TRADE",
+      "note": "unchanged observation - not re-journaled"
+     },
+     {
+      "symbol": "DELL",
+      "action": "MONITOR",
+      "signal_id": "sig_c2ea6f9964c6d984",
+      "instrument": "NO TRADE",
+      "note": "unchanged observation - not re-journaled"
+     },
+     {
+      "symbol": "CRM",
+      "action": "MONITOR",
+      "signal_id": "sig_6b0fc1d9ff183387",
+      "instrument": "NO TRADE",
+      "note": "unchanged observation - not re-journaled"
+     },
+     {
+      "symbol": "TMO",
+      "action": "MONITOR",
+      "signal_id": "sig_c47c05aa2a29ea90",
+      "instrument": "NO TRADE",
+      "note": "unchanged observation - not re-journaled"
+     }
+    ],
+    "orders_placed": [],
+    "config_version": "cfg-fee37d4872"
+   },
+   "market_hours": {
+    "session_date": "2026-09-25",
+    "symbols_watched": [
+     "AMD",
+     "CRM",
+     "DELL",
+     "META",
+     "TMO"
+    ],
+    "orders_processed": 0,
+    "exits": 0,
+    "exit_actions": [],
+    "tracked_updated": 5,
+    "shadow_resolved": {
+     "checked": 0,
+     "resolved": 0,
+     "expired": 0,
+     "skipped_missing_data": 0
+    },
+    "scope": "all",
+    "quote_age_s_max": 221053.7,
+    "quotes_missing": []
+   }
+  },
+  {
+   "cycle_id": "2026-09-25T1435",
+   "et_time": "2026-09-25T14:35:00-04:00",
+   "session_type": "regular",
+   "allow_entries": true,
+   "premarket": {
+    "session_date": "2026-09-25",
+    "state": "ok",
+    "started_at": "2026-09-28T07:44:13.712417+00:00",
+    "cycle_id": "2026-09-25T1435",
+    "entries_allowed": true,
+    "provider_health": {
+     "checked_at": "2026-09-25T18:35:00+00:00",
+     "healthy": true,
+     "historical_replay": true,
+     "providers": {
+      "note": "historical replay -- live provider health has no meaning here"
+     }
+    },
+    "market_regime": null,
+    "sectors_considered": [
+     "communication",
+     "consumer_discretionary",
+     "health_care",
+     "materials",
+     "technology"
+    ],
+    "sector_ranking": [
+     {
+      "name": "communication",
+      "score": 0.0,
+      "rs": 0.0
+     },
+     {
+      "name": "consumer_discretionary",
+      "score": 0.0,
+      "rs": 0.0
+     },
+     {
+      "name": "health_care",
+      "score": 0.0,
+      "rs": 0.0
+     },
+     {
+      "name": "materials",
+      "score": 0.0,
+      "rs": 0.0
+     },
+     {
+      "name": "technology",
+      "score": 0.0,
+      "rs": 0.0
+     }
+    ],
+    "candidates": 22,
+    "finalists": [
+     {
+      "symbol": "META",
+      "strategy": "sector_relative_strength",
+      "score": 20.98,
+      "ret_1m": 34.97,
+      "sector_score": 0.0,
+      "direction": "LONG",
+      "why": "leader in leading sector communication (sector score +0.00), 1M +35.0%",
+      "sector": "communication",
+      "sector_name": "communication",
+      "sector_is_strong": true,
+      "as_of": "2026-09-24T20:00:00+00:00",
+      "scanner_rank": 1
+     },
+     {
+      "symbol": "AMD",
+      "strategy": "sector_relative_strength",
+      "score": 18.51,
+      "ret_1m": 30.84,
+      "sector_score": 0.0,
+      "direction": "LONG",
+      "why": "leader in leading sector technology (sector score +0.00), 1M +30.8%",
+      "sector": "technology",
+      "sector_name": "technology",
+      "sector_is_strong": true,
+      "as_of": "2026-09-24T20:00:00+00:00",
+      "scanner_rank": 2
+     },
+     {
+      "symbol": "DELL",
+      "strategy": "liquid_momentum",
+      "score": 12.55,
+      "rsi": 53.7,
+      "ret_1m": 15.57,
+      "rel_vol": 0.72,
+      "dollar_volume": 5940983247,
+      "direction": "LONG",
+      "why": "above 20/50-DMA, 1M +15.6%, RSI 53.7, $5941M/day",
+      "sector": "technology",
+      "sector_name": "technology",
+      "sector_is_strong": true,
+      "as_of": "2026-09-24T20:00:00+00:00",
+      "scanner_rank": 3
+     },
+     {
+      "symbol": "CRM",
+      "strategy": "sector_relative_strength",
+      "score": 9.51,
+      "ret_1m": 15.85,
+      "sector_score": 0.0,
+      "direction": "LONG",
+      "why": "leader in leading sector technology (sector score +0.00), 1M +15.9%",
+      "sector": "technology",
+      "sector_name": "technology",
+      "sector_is_strong": true,
+      "as_of": "2026-09-24T20:00:00+00:00",
+      "scanner_rank": 4
+     },
+     {
+      "symbol": "TMO",
+      "strategy": "liquid_momentum",
+      "score": 8.33,
+      "rsi": 77.2,
+      "ret_1m": 7.05,
+      "rel_vol": 0.98,
+      "dollar_volume": 1449844963,
+      "direction": "LONG",
+      "why": "above 20/50-DMA, 1M +7.1%, RSI 77.2, $1450M/day",
+      "sector": "health_care",
+      "sector_name": "health_care",
+      "sector_is_strong": true,
+      "as_of": "2026-09-24T20:00:00+00:00",
+      "scanner_rank": 5
+     }
+    ],
+    "evaluated": [
+     {
+      "symbol": "META",
+      "action": "MONITOR",
+      "signal_id": "sig_10bf2b82ea7a8cd7",
+      "instrument": "NO TRADE",
+      "note": "unchanged observation - not re-journaled"
+     },
+     {
+      "symbol": "AMD",
+      "action": "MONITOR",
+      "signal_id": "sig_6385c26dcc928bed",
+      "instrument": "NO TRADE",
+      "note": "unchanged observation - not re-journaled"
+     },
+     {
+      "symbol": "DELL",
+      "action": "MONITOR",
+      "signal_id": "sig_c2ea6f9964c6d984",
+      "instrument": "NO TRADE",
+      "note": "unchanged observation - not re-journaled"
+     },
+     {
+      "symbol": "CRM",
+      "action": "MONITOR",
+      "signal_id": "sig_6b0fc1d9ff183387",
+      "instrument": "NO TRADE",
+      "note": "unchanged observation - not re-journaled"
+     },
+     {
+      "symbol": "TMO",
+      "action": "MONITOR",
+      "signal_id": "sig_c47c05aa2a29ea90",
+      "instrument": "NO TRADE",
+      "note": "unchanged observation - not re-journaled"
+     }
+    ],
+    "orders_placed": [],
+    "config_version": "cfg-fee37d4872"
+   },
+   "market_hours": {
+    "session_date": "2026-09-25",
+    "symbols_watched": [
+     "AMD",
+     "CRM",
+     "DELL",
+     "META",
+     "TMO"
+    ],
+    "orders_processed": 0,
+    "exits": 0,
+    "exit_actions": [],
+    "tracked_updated": 5,
+    "shadow_resolved": {
+     "checked": 0,
+     "resolved": 0,
+     "expired": 0,
+     "skipped_missing_data": 0
+    },
+    "scope": "all",
+    "quote_age_s_max": 220153.8,
+    "quotes_missing": []
+   }
+  },
+  {
+   "cycle_id": "2026-09-25T1450",
+   "et_time": "2026-09-25T14:50:00-04:00",
+   "session_type": "regular",
+   "allow_entries": true,
+   "premarket": {
+    "session_date": "2026-09-25",
+    "state": "ok",
+    "started_at": "2026-09-28T07:44:13.772380+00:00",
+    "cycle_id": "2026-09-25T1450",
+    "entries_allowed": true,
+    "provider_health": {
+     "checked_at": "2026-09-25T18:50:00+00:00",
+     "healthy": true,
+     "historical_replay": true,
+     "providers": {
+      "note": "historical replay -- live provider health has no meaning here"
+     }
+    },
+    "market_regime": null,
+    "sectors_considered": [
+     "communication",
+     "consumer_discretionary",
+     "health_care",
+     "materials",
+     "technology"
+    ],
+    "sector_ranking": [
+     {
+      "name": "communication",
+      "score": 0.0,
+      "rs": 0.0
+     },
+     {
+      "name": "consumer_discretionary",
+      "score": 0.0,
+      "rs": 0.0
+     },
+     {
+      "name": "health_care",
+      "score": 0.0,
+      "rs": 0.0
+     },
+     {
+      "name": "materials",
+      "score": 0.0,
+      "rs": 0.0
+     },
+     {
+      "name": "technology",
+      "score": 0.0,
+      "rs": 0.0
+     }
+    ],
+    "candidates": 22,
+    "finalists": [
+     {
+      "symbol": "META",
+      "strategy": "sector_relative_strength",
+      "score": 20.98,
+      "ret_1m": 34.97,
+      "sector_score": 0.0,
+      "direction": "LONG",
+      "why": "leader in leading sector communication (sector score +0.00), 1M +35.0%",
+      "sector": "communication",
+      "sector_name": "communication",
+      "sector_is_strong": true,
+      "as_of": "2026-09-24T20:00:00+00:00",
+      "scanner_rank": 1
+     },
+     {
+      "symbol": "AMD",
+      "strategy": "sector_relative_strength",
+      "score": 18.51,
+      "ret_1m": 30.84,
+      "sector_score": 0.0,
+      "direction": "LONG",
+      "why": "leader in leading sector technology (sector score +0.00), 1M +30.8%",
+      "sector": "technology",
+      "sector_name": "technology",
+      "sector_is_strong": true,
+      "as_of": "2026-09-24T20:00:00+00:00",
+      "scanner_rank": 2
+     },
+     {
+      "symbol": "DELL",
+      "strategy": "liquid_momentum",
+      "score": 12.55,
+      "rsi": 53.7,
+      "ret_1m": 15.57,
+      "rel_vol": 0.72,
+      "dollar_volume": 5940983247,
+      "direction": "LONG",
+      "why": "above 20/50-DMA, 1M +15.6%, RSI 53.7, $5941M/day",
+      "sector": "technology",
+      "sector_name": "technology",
+      "sector_is_strong": true,
+      "as_of": "2026-09-24T20:00:00+00:00",
+      "scanner_rank": 3
+     },
+     {
+      "symbol": "CRM",
+      "strategy": "sector_relative_strength",
+      "score": 9.51,
+      "ret_1m": 15.85,
+      "sector_score": 0.0,
+      "direction": "LONG",
+      "why": "leader in leading sector technology (sector score +0.00), 1M +15.9%",
+      "sector": "technology",
+      "sector_name": "technology",
+      "sector_is_strong": true,
+      "as_of": "2026-09-24T20:00:00+00:00",
+      "scanner_rank": 4
+     },
+     {
+      "symbol": "TMO",
+      "strategy": "liquid_momentum",
+      "score": 8.33,
+      "rsi": 77.2,
+      "ret_1m": 7.05,
+      "rel_vol": 0.98,
+      "dollar_volume": 1449844963,
+      "direction": "LONG",
+      "why": "above 20/50-DMA, 1M +7.1%, RSI 77.2, $1450M/day",
+      "sector": "health_care",
+      "sector_name": "health_care",
+      "sector_is_strong": true,
+      "as_of": "2026-09-24T20:00:00+00:00",
+      "scanner_rank": 5
+     }
+    ],
+    "evaluated": [
+     {
+      "symbol": "META",
+      "action": "MONITOR",
+      "signal_id": "sig_10bf2b82ea7a8cd7",
+      "instrument": "NO TRADE",
+      "note": "unchanged observation - not re-journaled"
+     },
+     {
+      "symbol": "AMD",
+      "action": "MONITOR",
+      "signal_id": "sig_6385c26dcc928bed",
+      "instrument": "NO TRADE",
+      "note": "unchanged observation - not re-journaled"
+     },
+     {
+      "symbol": "DELL",
+      "action": "MONITOR",
+      "signal_id": "sig_c2ea6f9964c6d984",
+      "instrument": "NO TRADE",
+      "note": "unchanged observation - not re-journaled"
+     },
+     {
+      "symbol": "CRM",
+      "action": "MONITOR",
+      "signal_id": "sig_6b0fc1d9ff183387",
+      "instrument": "NO TRADE",
+      "note": "unchanged observation - not re-journaled"
+     },
+     {
+      "symbol": "TMO",
+      "action": "MONITOR",
+      "signal_id": "sig_c47c05aa2a29ea90",
+      "instrument": "NO TRADE",
+      "note": "unchanged observation - not re-journaled"
+     }
+    ],
+    "orders_placed": [],
+    "config_version": "cfg-fee37d4872"
+   },
+   "market_hours": {
+    "session_date": "2026-09-25",
+    "symbols_watched": [
+     "AMD",
+     "CRM",
+     "DELL",
+     "META",
+     "TMO"
+    ],
+    "orders_processed": 0,
+    "exits": 0,
+    "exit_actions": [],
+    "tracked_updated": 5,
+    "shadow_resolved": {
+     "checked": 0,
+     "resolved": 0,
+     "expired": 0,
+     "skipped_missing_data": 0
+    },
+    "scope": "all",
+    "quote_age_s_max": 219253.8,
+    "quotes_missing": []
+   }
+  },
+  {
+   "cycle_id": "2026-09-25T1505",
+   "et_time": "2026-09-25T15:05:00-04:00",
+   "session_type": "post_cutoff",
+   "allow_entries": false,
+   "premarket": {
+    "session_date": "2026-09-25",
+    "state": "ok",
+    "started_at": "2026-09-28T07:44:13.834463+00:00",
+    "cycle_id": "2026-09-25T1505",
+    "entries_allowed": false,
+    "provider_health": {
+     "checked_at": "2026-09-25T19:05:00+00:00",
+     "healthy": true,
+     "historical_replay": true,
+     "providers": {
+      "note": "historical replay -- live provider health has no meaning here"
+     }
+    },
+    "market_regime": null,
+    "sectors_considered": [
+     "communication",
+     "consumer_discretionary",
+     "health_care",
+     "materials",
+     "technology"
+    ],
+    "sector_ranking": [
+     {
+      "name": "communication",
+      "score": 0.0,
+      "rs": 0.0
+     },
+     {
+      "name": "consumer_discretionary",
+      "score": 0.0,
+      "rs": 0.0
+     },
+     {
+      "name": "health_care",
+      "score": 0.0,
+      "rs": 0.0
+     },
+     {
+      "name": "materials",
+      "score": 0.0,
+      "rs": 0.0
+     },
+     {
+      "name": "technology",
+      "score": 0.0,
+      "rs": 0.0
+     }
+    ],
+    "candidates": 22,
+    "finalists": [
+     {
+      "symbol": "META",
+      "strategy": "sector_relative_strength",
+      "score": 20.98,
+      "ret_1m": 34.97,
+      "sector_score": 0.0,
+      "direction": "LONG",
+      "why": "leader in leading sector communication (sector score +0.00), 1M +35.0%",
+      "sector": "communication",
+      "sector_name": "communication",
+      "sector_is_strong": true,
+      "as_of": "2026-09-24T20:00:00+00:00",
+      "scanner_rank": 1
+     },
+     {
+      "symbol": "AMD",
+      "strategy": "sector_relative_strength",
+      "score": 18.51,
+      "ret_1m": 30.84,
+      "sector_score": 0.0,
+      "direction": "LONG",
+      "why": "leader in leading sector technology (sector score +0.00), 1M +30.8%",
+      "sector": "technology",
+      "sector_name": "technology",
+      "sector_is_strong": true,
+      "as_of": "2026-09-24T20:00:00+00:00",
+      "scanner_rank": 2
+     },
+     {
+      "symbol": "DELL",
+      "strategy": "liquid_momentum",
+      "score": 12.55,
+      "rsi": 53.7,
+      "ret_1m": 15.57,
+      "rel_vol": 0.72,
+      "dollar_volume": 5940983247,
+      "direction": "LONG",
+      "why": "above 20/50-DMA, 1M +15.6%, RSI 53.7, $5941M/day",
+      "sector": "technology",
+      "sector_name": "technology",
+      "sector_is_strong": true,
+      "as_of": "2026-09-24T20:00:00+00:00",
+      "scanner_rank": 3
+     },
+     {
+      "symbol": "CRM",
+      "strategy": "sector_relative_strength",
+      "score": 9.51,
+      "ret_1m": 15.85,
+      "sector_score": 0.0,
+      "direction": "LONG",
+      "why": "leader in leading sector technology (sector score +0.00), 1M +15.9%",
+      "sector": "technology",
+      "sector_name": "technology",
+      "sector_is_strong": true,
+      "as_of": "2026-09-24T20:00:00+00:00",
+      "scanner_rank": 4
+     },
+     {
+      "symbol": "TMO",
+      "strategy": "liquid_momentum",
+      "score": 8.33,
+      "rsi": 77.2,
+      "ret_1m": 7.05,
+      "rel_vol": 0.98,
+      "dollar_volume": 1449844963,
+      "direction": "LONG",
+      "why": "above 20/50-DMA, 1M +7.1%, RSI 77.2, $1450M/day",
+      "sector": "health_care",
+      "sector_name": "health_care",
+      "sector_is_strong": true,
+      "as_of": "2026-09-24T20:00:00+00:00",
+      "scanner_rank": 5
+     }
+    ],
+    "evaluated": [
+     {
+      "symbol": "META",
+      "action": "MONITOR",
+      "signal_id": "sig_10bf2b82ea7a8cd7",
+      "instrument": "NO TRADE",
+      "note": "entries disabled (post_cutoff) - observation only"
+     },
+     {
+      "symbol": "AMD",
+      "action": "MONITOR",
+      "signal_id": "sig_6385c26dcc928bed",
+      "instrument": "NO TRADE",
+      "note": "entries disabled (post_cutoff) - observation only"
+     },
+     {
+      "symbol": "DELL",
+      "action": "MONITOR",
+      "signal_id": "sig_c2ea6f9964c6d984",
+      "instrument": "NO TRADE",
+      "note": "entries disabled (post_cutoff) - observation only"
+     },
+     {
+      "symbol": "CRM",
+      "action": "MONITOR",
+      "signal_id": "sig_6b0fc1d9ff183387",
+      "instrument": "NO TRADE",
+      "note": "entries disabled (post_cutoff) - observation only"
+     },
+     {
+      "symbol": "TMO",
+      "action": "MONITOR",
+      "signal_id": "sig_c47c05aa2a29ea90",
+      "instrument": "NO TRADE",
+      "note": "entries disabled (post_cutoff) - observation only"
+     }
+    ],
+    "orders_placed": [],
+    "config_version": "cfg-fee37d4872"
+   },
+   "market_hours": {
+    "session_date": "2026-09-25",
+    "symbols_watched": [
+     "AMD",
+     "CRM",
+     "DELL",
+     "META",
+     "TMO"
+    ],
+    "orders_processed": 0,
+    "exits": 0,
+    "exit_actions": [],
+    "tracked_updated": 5,
+    "shadow_resolved": {
+     "checked": 0,
+     "resolved": 0,
+     "expired": 0,
+     "skipped_missing_data": 0
+    },
+    "scope": "all",
+    "quote_age_s_max": 218353.9,
+    "quotes_missing": []
+   }
+  },
+  {
+   "cycle_id": "2026-09-25T1520",
+   "et_time": "2026-09-25T15:20:00-04:00",
+   "session_type": "post_cutoff",
+   "allow_entries": false,
+   "premarket": {
+    "session_date": "2026-09-25",
+    "state": "ok",
+    "started_at": "2026-09-28T07:44:13.898992+00:00",
+    "cycle_id": "2026-09-25T1520",
+    "entries_allowed": false,
+    "provider_health": {
+     "checked_at": "2026-09-25T19:20:00+00:00",
+     "healthy": true,
+     "historical_replay": true,
+     "providers": {
+      "note": "historical replay -- live provider health has no meaning here"
+     }
+    },
+    "market_regime": null,
+    "sectors_considered": [
+     "communication",
+     "consumer_discretionary",
+     "health_care",
+     "materials",
+     "technology"
+    ],
+    "sector_ranking": [
+     {
+      "name": "communication",
+      "score": 0.0,
+      "rs": 0.0
+     },
+     {
+      "name": "consumer_discretionary",
+      "score": 0.0,
+      "rs": 0.0
+     },
+     {
+      "name": "health_care",
+      "score": 0.0,
+      "rs": 0.0
+     },
+     {
+      "name": "materials",
+      "score": 0.0,
+      "rs": 0.0
+     },
+     {
+      "name": "technology",
+      "score": 0.0,
+      "rs": 0.0
+     }
+    ],
+    "candidates": 22,
+    "finalists": [
+     {
+      "symbol": "META",
+      "strategy": "sector_relative_strength",
+      "score": 20.98,
+      "ret_1m": 34.97,
+      "sector_score": 0.0,
+      "direction": "LONG",
+      "why": "leader in leading sector communication (sector score +0.00), 1M +35.0%",
+      "sector": "communication",
+      "sector_name": "communication",
+      "sector_is_strong": true,
+      "as_of": "2026-09-24T20:00:00+00:00",
+      "scanner_rank": 1
+     },
+     {
+      "symbol": "AMD",
+      "strategy": "sector_relative_strength",
+      "score": 18.51,
+      "ret_1m": 30.84,
+      "sector_score": 0.0,
+      "direction": "LONG",
+      "why": "leader in leading sector technology (sector score +0.00), 1M +30.8%",
+      "sector": "technology",
+      "sector_name": "technology",
+      "sector_is_strong": true,
+      "as_of": "2026-09-24T20:00:00+00:00",
+      "scanner_rank": 2
+     },
+     {
+      "symbol": "DELL",
+      "strategy": "liquid_momentum",
+      "score": 12.55,
+      "rsi": 53.7,
+      "ret_1m": 15.57,
+      "rel_vol": 0.72,
+      "dollar_volume": 5940983247,
+      "direction": "LONG",
+      "why": "above 20/50-DMA, 1M +15.6%, RSI 53.7, $5941M/day",
+      "sector": "technology",
+      "sector_name": "technology",
+      "sector_is_strong": true,
+      "as_of": "2026-09-24T20:00:00+00:00",
+      "scanner_rank": 3
+     },
+     {
+      "symbol": "CRM",
+      "strategy": "sector_relative_strength",
+      "score": 9.51,
+      "ret_1m": 15.85,
+      "sector_score": 0.0,
+      "direction": "LONG",
+      "why": "leader in leading sector technology (sector score +0.00), 1M +15.9%",
+      "sector": "technology",
+      "sector_name": "technology",
+      "sector_is_strong": true,
+      "as_of": "2026-09-24T20:00:00+00:00",
+      "scanner_rank": 4
+     },
+     {
+      "symbol": "TMO",
+      "strategy": "liquid_momentum",
+      "score": 8.33,
+      "rsi": 77.2,
+      "ret_1m": 7.05,
+      "rel_vol": 0.98,
+      "dollar_volume": 1449844963,
+      "direction": "LONG",
+      "why": "above 20/50-DMA, 1M +7.1%, RSI 77.2, $1450M/day",
+      "sector": "health_care",
+      "sector_name": "health_care",
+      "sector_is_strong": true,
+      "as_of": "2026-09-24T20:00:00+00:00",
+      "scanner_rank": 5
+     }
+    ],
+    "evaluated": [
+     {
+      "symbol": "META",
+      "action": "MONITOR",
+      "signal_id": "sig_10bf2b82ea7a8cd7",
+      "instrument": "NO TRADE",
+      "note": "entries disabled (post_cutoff) - observation only"
+     },
+     {
+      "symbol": "AMD",
+      "action": "MONITOR",
+      "signal_id": "sig_6385c26dcc928bed",
+      "instrument": "NO TRADE",
+      "note": "entries disabled (post_cutoff) - observation only"
+     },
+     {
+      "symbol": "DELL",
+      "action": "MONITOR",
+      "signal_id": "sig_c2ea6f9964c6d984",
+      "instrument": "NO TRADE",
+      "note": "entries disabled (post_cutoff) - observation only"
+     },
+     {
+      "symbol": "CRM",
+      "action": "MONITOR",
+      "signal_id": "sig_6b0fc1d9ff183387",
+      "instrument": "NO TRADE",
+      "note": "entries disabled (post_cutoff) - observation only"
+     },
+     {
+      "symbol": "TMO",
+      "action": "MONITOR",
+      "signal_id": "sig_c47c05aa2a29ea90",
+      "instrument": "NO TRADE",
+      "note": "entries disabled (post_cutoff) - observation only"
+     }
+    ],
+    "orders_placed": [],
+    "config_version": "cfg-fee37d4872"
+   },
+   "market_hours": {
+    "session_date": "2026-09-25",
+    "symbols_watched": [
+     "AMD",
+     "CRM",
+     "DELL",
+     "META",
+     "TMO"
+    ],
+    "orders_processed": 0,
+    "exits": 0,
+    "exit_actions": [],
+    "tracked_updated": 5,
+    "shadow_resolved": {
+     "checked": 0,
+     "resolved": 0,
+     "expired": 0,
+     "skipped_missing_data": 0
+    },
+    "scope": "all",
+    "quote_age_s_max": 217454.0,
+    "quotes_missing": []
+   }
+  },
+  {
+   "cycle_id": "2026-09-25T1535",
+   "et_time": "2026-09-25T15:35:00-04:00",
+   "session_type": "post_cutoff",
+   "allow_entries": false,
+   "premarket": {
+    "session_date": "2026-09-25",
+    "state": "ok",
+    "started_at": "2026-09-28T07:44:13.960368+00:00",
+    "cycle_id": "2026-09-25T1535",
+    "entries_allowed": false,
+    "provider_health": {
+     "checked_at": "2026-09-25T19:35:00+00:00",
+     "healthy": true,
+     "historical_replay": true,
+     "providers": {
+      "note": "historical replay -- live provider health has no meaning here"
+     }
+    },
+    "market_regime": null,
+    "sectors_considered": [
+     "communication",
+     "consumer_discretionary",
+     "health_care",
+     "materials",
+     "technology"
+    ],
+    "sector_ranking": [
+     {
+      "name": "communication",
+      "score": 0.0,
+      "rs": 0.0
+     },
+     {
+      "name": "consumer_discretionary",
+      "score": 0.0,
+      "rs": 0.0
+     },
+     {
+      "name": "health_care",
+      "score": 0.0,
+      "rs": 0.0
+     },
+     {
+      "name": "materials",
+      "score": 0.0,
+      "rs": 0.0
+     },
+     {
+      "name": "technology",
+      "score": 0.0,
+      "rs": 0.0
+     }
+    ],
+    "candidates": 22,
+    "finalists": [
+     {
+      "symbol": "META",
+      "strategy": "sector_relative_strength",
+      "score": 20.98,
+      "ret_1m": 34.97,
+      "sector_score": 0.0,
+      "direction": "LONG",
+      "why": "leader in leading sector communication (sector score +0.00), 1M +35.0%",
+      "sector": "communication",
+      "sector_name": "communication",
+      "sector_is_strong": true,
+      "as_of": "2026-09-24T20:00:00+00:00",
+      "scanner_rank": 1
+     },
+     {
+      "symbol": "AMD",
+      "strategy": "sector_relative_strength",
+      "score": 18.51,
+      "ret_1m": 30.84,
+      "sector_score": 0.0,
+      "direction": "LONG",
+      "why": "leader in leading sector technology (sector score +0.00), 1M +30.8%",
+      "sector": "technology",
+      "sector_name": "technology",
+      "sector_is_strong": true,
+      "as_of": "2026-09-24T20:00:00+00:00",
+      "scanner_rank": 2
+     },
+     {
+      "symbol": "DELL",
+      "strategy": "liquid_momentum",
+      "score": 12.55,
+      "rsi": 53.7,
+      "ret_1m": 15.57,
+      "rel_vol": 0.72,
+      "dollar_volume": 5940983247,
+      "direction": "LONG",
+      "why": "above 20/50-DMA, 1M +15.6%, RSI 53.7, $5941M/day",
+      "sector": "technology",
+      "sector_name": "technology",
+      "sector_is_strong": true,
+      "as_of": "2026-09-24T20:00:00+00:00",
+      "scanner_rank": 3
+     },
+     {
+      "symbol": "CRM",
+      "strategy": "sector_relative_strength",
+      "score": 9.51,
+      "ret_1m": 15.85,
+      "sector_score": 0.0,
+      "direction": "LONG",
+      "why": "leader in leading sector technology (sector score +0.00), 1M +15.9%",
+      "sector": "technology",
+      "sector_name": "technology",
+      "sector_is_strong": true,
+      "as_of": "2026-09-24T20:00:00+00:00",
+      "scanner_rank": 4
+     },
+     {
+      "symbol": "TMO",
+      "strategy": "liquid_momentum",
+      "score": 8.33,
+      "rsi": 77.2,
+      "ret_1m": 7.05,
+      "rel_vol": 0.98,
+      "dollar_volume": 1449844963,
+      "direction": "LONG",
+      "why": "above 20/50-DMA, 1M +7.1%, RSI 77.2, $1450M/day",
+      "sector": "health_care",
+      "sector_name": "health_care",
+      "sector_is_strong": true,
+      "as_of": "2026-09-24T20:00:00+00:00",
+      "scanner_rank": 5
+     }
+    ],
+    "evaluated": [
+     {
+      "symbol": "META",
+      "action": "MONITOR",
+      "signal_id": "sig_10bf2b82ea7a8cd7",
+      "instrument": "NO TRADE",
+      "note": "entries disabled (post_cutoff) - observation only"
+     },
+     {
+      "symbol": "AMD",
+      "action": "MONITOR",
+      "signal_id": "sig_6385c26dcc928bed",
+      "instrument": "NO TRADE",
+      "note": "entries disabled (post_cutoff) - observation only"
+     },
+     {
+      "symbol": "DELL",
+      "action": "MONITOR",
+      "signal_id": "sig_c2ea6f9964c6d984",
+      "instrument": "NO TRADE",
+      "note": "entries disabled (post_cutoff) - observation only"
+     },
+     {
+      "symbol": "CRM",
+      "action": "MONITOR",
+      "signal_id": "sig_6b0fc1d9ff183387",
+      "instrument": "NO TRADE",
+      "note": "entries disabled (post_cutoff) - observation only"
+     },
+     {
+      "symbol": "TMO",
+      "action": "MONITOR",
+      "signal_id": "sig_c47c05aa2a29ea90",
+      "instrument": "NO TRADE",
+      "note": "entries disabled (post_cutoff) - observation only"
+     }
+    ],
+    "orders_placed": [],
+    "config_version": "cfg-fee37d4872"
+   },
+   "market_hours": {
+    "session_date": "2026-09-25",
+    "symbols_watched": [
+     "AMD",
+     "CRM",
+     "DELL",
+     "META",
+     "TMO"
+    ],
+    "orders_processed": 0,
+    "exits": 0,
+    "exit_actions": [],
+    "tracked_updated": 5,
+    "shadow_resolved": {
+     "checked": 0,
+     "resolved": 0,
+     "expired": 0,
+     "skipped_missing_data": 0
+    },
+    "scope": "all",
+    "quote_age_s_max": 216554.0,
+    "quotes_missing": []
+   }
+  },
+  {
+   "cycle_id": "2026-09-25T1550",
+   "et_time": "2026-09-25T15:50:00-04:00",
+   "session_type": "post_cutoff",
+   "allow_entries": false,
+   "premarket": {
+    "session_date": "2026-09-25",
+    "state": "ok",
+    "started_at": "2026-09-28T07:44:14.021403+00:00",
+    "cycle_id": "2026-09-25T1550",
+    "entries_allowed": false,
+    "provider_health": {
+     "checked_at": "2026-09-25T19:50:00+00:00",
+     "healthy": true,
+     "historical_replay": true,
+     "providers": {
+      "note": "historical replay -- live provider health has no meaning here"
+     }
+    },
+    "market_regime": null,
+    "sectors_considered": [
+     "communication",
+     "consumer_discretionary",
+     "health_care",
+     "materials",
+     "technology"
+    ],
+    "sector_ranking": [
+     {
+      "name": "communication",
+      "score": 0.0,
+      "rs": 0.0
+     },
+     {
+      "name": "consumer_discretionary",
+      "score": 0.0,
+      "rs": 0.0
+     },
+     {
+      "name": "health_care",
+      "score": 0.0,
+      "rs": 0.0
+     },
+     {
+      "name": "materials",
+      "score": 0.0,
+      "rs": 0.0
+     },
+     {
+      "name": "technology",
+      "score": 0.0,
+      "rs": 0.0
+     }
+    ],
+    "candidates": 22,
+    "finalists": [
+     {
+      "symbol": "META",
+      "strategy": "sector_relative_strength",
+      "score": 20.98,
+      "ret_1m": 34.97,
+      "sector_score": 0.0,
+      "direction": "LONG",
+      "why": "leader in leading sector communication (sector score +0.00), 1M +35.0%",
+      "sector": "communication",
+      "sector_name": "communication",
+      "sector_is_strong": true,
+      "as_of": "2026-09-24T20:00:00+00:00",
+      "scanner_rank": 1
+     },
+     {
+      "symbol": "AMD",
+      "strategy": "sector_relative_strength",
+      "score": 18.51,
+      "ret_1m": 30.84,
+      "sector_score": 0.0,
+      "direction": "LONG",
+      "why": "leader in leading sector technology (sector score +0.00), 1M +30.8%",
+      "sector": "technology",
+      "sector_name": "technology",
+      "sector_is_strong": true,
+      "as_of": "2026-09-24T20:00:00+00:00",
+      "scanner_rank": 2
+     },
+     {
+      "symbol": "DELL",
+      "strategy": "liquid_momentum",
+      "score": 12.55,
+      "rsi": 53.7,
+      "ret_1m": 15.57,
+      "rel_vol": 0.72,
+      "dollar_volume": 5940983247,
+      "direction": "LONG",
+      "why": "above 20/50-DMA, 1M +15.6%, RSI 53.7, $5941M/day",
+      "sector": "technology",
+      "sector_name": "technology",
+      "sector_is_strong": true,
+      "as_of": "2026-09-24T20:00:00+00:00",
+      "scanner_rank": 3
+     },
+     {
+      "symbol": "CRM",
+      "strategy": "sector_relative_strength",
+      "score": 9.51,
+      "ret_1m": 15.85,
+      "sector_score": 0.0,
+      "direction": "LONG",
+      "why": "leader in leading sector technology (sector score +0.00), 1M +15.9%",
+      "sector": "technology",
+      "sector_name": "technology",
+      "sector_is_strong": true,
+      "as_of": "2026-09-24T20:00:00+00:00",
+      "scanner_rank": 4
+     },
+     {
+      "symbol": "TMO",
+      "strategy": "liquid_momentum",
+      "score": 8.33,
+      "rsi": 77.2,
+      "ret_1m": 7.05,
+      "rel_vol": 0.98,
+      "dollar_volume": 1449844963,
+      "direction": "LONG",
+      "why": "above 20/50-DMA, 1M +7.1%, RSI 77.2, $1450M/day",
+      "sector": "health_care",
+      "sector_name": "health_care",
+      "sector_is_strong": true,
+      "as_of": "2026-09-24T20:00:00+00:00",
+      "scanner_rank": 5
+     }
+    ],
+    "evaluated": [
+     {
+      "symbol": "META",
+      "action": "MONITOR",
+      "signal_id": "sig_10bf2b82ea7a8cd7",
+      "instrument": "NO TRADE",
+      "note": "entries disabled (post_cutoff) - observation only"
+     },
+     {
+      "symbol": "AMD",
+      "action": "MONITOR",
+      "signal_id": "sig_6385c26dcc928bed",
+      "instrument": "NO TRADE",
+      "note": "entries disabled (post_cutoff) - observation only"
+     },
+     {
+      "symbol": "DELL",
+      "action": "MONITOR",
+      "signal_id": "sig_c2ea6f9964c6d984",
+      "instrument": "NO TRADE",
+      "note": "entries disabled (post_cutoff) - observation only"
+     },
+     {
+      "symbol": "CRM",
+      "action": "MONITOR",
+      "signal_id": "sig_6b0fc1d9ff183387",
+      "instrument": "NO TRADE",
+      "note": "entries disabled (post_cutoff) - observation only"
+     },
+     {
+      "symbol": "TMO",
+      "action": "MONITOR",
+      "signal_id": "sig_c47c05aa2a29ea90",
+      "instrument": "NO TRADE",
+      "note": "entries disabled (post_cutoff) - observation only"
+     }
+    ],
+    "orders_placed": [],
+    "config_version": "cfg-fee37d4872"
+   },
+   "market_hours": {
+    "session_date": "2026-09-25",
+    "symbols_watched": [
+     "AMD",
+     "CRM",
+     "DELL",
+     "META",
+     "TMO"
+    ],
+    "orders_processed": 0,
+    "exits": 0,
+    "exit_actions": [],
+    "tracked_updated": 5,
+    "shadow_resolved": {
+     "checked": 0,
+     "resolved": 0,
+     "expired": 0,
+     "skipped_missing_data": 0
+    },
+    "scope": "all",
+    "quote_age_s_max": 215654.1,
+    "quotes_missing": []
+   }
+  }
+ ],
+ "account_timeline_final": {
+  "session_date": "2026-09-25",
+  "ledger": "historical_h5_artifacts_run",
+  "starting_equity": 504.66,
+  "starting_cash": 504.66,
+  "cash": 504.66,
+  "positions_value": 0.0,
+  "available_cash": 504.66,
+  "buying_power": 404.66,
+  "margin_enabled": false,
+  "shorting_allowed": false,
+  "fractional_shares": true,
+  "capital_utilization_pct": 0.0,
+  "equity": 504.66,
+  "peak_equity": 504.66,
+  "drawdown_pct": 0.0,
+  "drawdown_usd": 0.0,
+  "realized_pnl": 0,
+  "fees_paid": 0,
+  "unrealized_pnl": 0.0,
+  "open_positions": 0,
+  "entries_today": 0,
+  "day_pnl": 0,
+  "day_loss_used_pct": 0.0,
+  "sector_positions": {},
+  "sector_value": {},
+  "correlation_positions": {},
+  "cooldown": {
+   "active": false,
+   "consecutive_losses": 0,
+   "until": null
+  },
+  "open": [],
+  "pending_orders": [],
+  "closed": []
+ },
+ "comparison_table": [
+  {
+   "symbol": "DELL",
+   "forward_classification": "TRADEABLE",
+   "historical_classification": "MONITOR",
+   "forward_action": "entered",
+   "historical_action": "not_entered (entries disabled (post_cutoff) - observation only)",
+   "difference_reason": "CAPABILITY_DIFFERENCE",
+   "notes": "reached MONITOR, never TRADEABLE: capped by the `data_quality` SOFT gate at overall coverage ~0.536, just under the 0.55 minimum -- a STRUCTURAL ceiling under PRICE_TREND_ONLY_V1 (fundamentals/news/analyst/filings/macro/options categories are permanently at 0% coverage), not specific to this symbol or date. See H5_FORWARD_REPRODUCTION.md for the full diagnosis. This means NO symbol can reach TRADEABLE in this replay today, so downstream capacity/sector/daily-cap mechanics (the actual point of the DELL/AAPL sector conflict and the TMO/MSFT daily-cap block) cannot be exercised end-to-end by this specific replay run."
+  },
+  {
+   "symbol": "META",
+   "forward_classification": "TRADEABLE",
+   "historical_classification": "MONITOR",
+   "forward_action": "entered",
+   "historical_action": "not_entered (entries disabled (post_cutoff) - observation only)",
+   "difference_reason": "CAPABILITY_DIFFERENCE",
+   "notes": "reached MONITOR, never TRADEABLE: capped by the `data_quality` SOFT gate at overall coverage ~0.536, just under the 0.55 minimum -- a STRUCTURAL ceiling under PRICE_TREND_ONLY_V1 (fundamentals/news/analyst/filings/macro/options categories are permanently at 0% coverage), not specific to this symbol or date. See H5_FORWARD_REPRODUCTION.md for the full diagnosis. This means NO symbol can reach TRADEABLE in this replay today, so downstream capacity/sector/daily-cap mechanics (the actual point of the DELL/AAPL sector conflict and the TMO/MSFT daily-cap block) cannot be exercised end-to-end by this specific replay run."
+  },
+  {
+   "symbol": "AAPL",
+   "forward_classification": "TRADEABLE",
+   "historical_classification": "never_a_candidate",
+   "forward_action": "not_entered_capacity",
+   "historical_action": "never_a_candidate",
+   "difference_reason": "PRICE_DATA_DIFFERENCE",
+   "notes": "never became a scanner candidate in the replay under the real Yahoo-sourced price/volume series for this date -- either the real technical setup genuinely differed from whatever the forward session's live provider mix (60% tradingview/40% yahoo, per the acceptance doc) saw, or Yahoo's own bars differ enough from that mix to change which strategy scores fire; not independently verified further in this pass."
+  },
+  {
+   "symbol": "TMO",
+   "forward_classification": "TRADEABLE",
+   "historical_classification": "MONITOR",
+   "forward_action": "not_entered_capacity",
+   "historical_action": "not_entered (entries disabled (post_cutoff) - observation only)",
+   "difference_reason": "CAPABILITY_DIFFERENCE",
+   "notes": "reached MONITOR, never TRADEABLE: capped by the `data_quality` SOFT gate at overall coverage ~0.536, just under the 0.55 minimum -- a STRUCTURAL ceiling under PRICE_TREND_ONLY_V1 (fundamentals/news/analyst/filings/macro/options categories are permanently at 0% coverage), not specific to this symbol or date. See H5_FORWARD_REPRODUCTION.md for the full diagnosis. This means NO symbol can reach TRADEABLE in this replay today, so downstream capacity/sector/daily-cap mechanics (the actual point of the DELL/AAPL sector conflict and the TMO/MSFT daily-cap block) cannot be exercised end-to-end by this specific replay run."
+  },
+  {
+   "symbol": "MSFT",
+   "forward_classification": "TRADEABLE",
+   "historical_classification": "never_a_candidate",
+   "forward_action": "not_entered_capacity",
+   "historical_action": "never_a_candidate",
+   "difference_reason": "PRICE_DATA_DIFFERENCE",
+   "notes": "never became a scanner candidate in the replay under the real Yahoo-sourced price/volume series for this date -- either the real technical setup genuinely differed from whatever the forward session's live provider mix (60% tradingview/40% yahoo, per the acceptance doc) saw, or Yahoo's own bars differ enough from that mix to change which strategy scores fire; not independently verified further in this pass."
+  },
+  {
+   "symbol": "TSLA",
+   "forward_classification": "MONITOR",
+   "historical_classification": "never_a_candidate",
+   "forward_action": "not_entered_cutoff",
+   "historical_action": "never_a_candidate",
+   "difference_reason": "PRICE_DATA_DIFFERENCE",
+   "notes": "never became a scanner candidate in the replay under the real Yahoo-sourced price/volume series for this date -- either the real technical setup genuinely differed from whatever the forward session's live provider mix (60% tradingview/40% yahoo, per the acceptance doc) saw, or Yahoo's own bars differ enough from that mix to change which strategy scores fire; not independently verified further in this pass."
+  },
+  {
+   "symbol": "AMD",
+   "forward_classification": "MONITOR",
+   "historical_classification": "MONITOR",
+   "forward_action": "not_entered_generic",
+   "historical_action": "not_entered (entries disabled (post_cutoff) - observation only)",
+   "difference_reason": "MATCH",
+   "notes": "neither the forward session nor the replay reached TRADEABLE for this symbol."
+  },
+  {
+   "symbol": "CRM",
+   "forward_classification": "MONITOR",
+   "historical_classification": "MONITOR",
+   "forward_action": "not_entered_generic",
+   "historical_action": "not_entered (entries disabled (post_cutoff) - observation only)",
+   "difference_reason": "MATCH",
+   "notes": "neither the forward session nor the replay reached TRADEABLE for this symbol."
+  },
+  {
+   "symbol": "NVDA",
+   "forward_classification": "MONITOR",
+   "historical_classification": "never_a_candidate",
+   "forward_action": "not_entered_generic",
+   "historical_action": "never_a_candidate",
+   "difference_reason": "PRICE_DATA_DIFFERENCE",
+   "notes": "never became a scanner candidate in the replay under the real Yahoo-sourced price/volume series for this date -- either the real technical setup genuinely differed from whatever the forward session's live provider mix (60% tradingview/40% yahoo, per the acceptance doc) saw, or Yahoo's own bars differ enough from that mix to change which strategy scores fire; not independently verified further in this pass."
+  },
+  {
+   "symbol": "FCX",
+   "forward_classification": "MONITOR",
+   "historical_classification": "never_a_candidate",
+   "forward_action": "not_entered_generic",
+   "historical_action": "never_a_candidate",
+   "difference_reason": "PRICE_DATA_DIFFERENCE",
+   "notes": "never became a scanner candidate in the replay under the real Yahoo-sourced price/volume series for this date -- either the real technical setup genuinely differed from whatever the forward session's live provider mix (60% tradingview/40% yahoo, per the acceptance doc) saw, or Yahoo's own bars differ enough from that mix to change which strategy scores fire; not independently verified further in this pass."
+  },
+  {
+   "symbol": "NEM",
+   "forward_classification": "MONITOR",
+   "historical_classification": "never_a_candidate",
+   "forward_action": "not_entered_generic",
+   "historical_action": "never_a_candidate",
+   "difference_reason": "PRICE_DATA_DIFFERENCE",
+   "notes": "never became a scanner candidate in the replay under the real Yahoo-sourced price/volume series for this date -- either the real technical setup genuinely differed from whatever the forward session's live provider mix (60% tradingview/40% yahoo, per the acceptance doc) saw, or Yahoo's own bars differ enough from that mix to change which strategy scores fire; not independently verified further in this pass."
+  },
+  {
+   "symbol": "VRTX",
+   "forward_classification": "MONITOR",
+   "historical_classification": "never_a_candidate",
+   "forward_action": "not_entered_generic",
+   "historical_action": "never_a_candidate",
+   "difference_reason": "PRICE_DATA_DIFFERENCE",
+   "notes": "never became a scanner candidate in the replay under the real Yahoo-sourced price/volume series for this date -- either the real technical setup genuinely differed from whatever the forward session's live provider mix (60% tradingview/40% yahoo, per the acceptance doc) saw, or Yahoo's own bars differ enough from that mix to change which strategy scores fire; not independently verified further in this pass."
+  }
+ ],
+ "mechanical_equivalence": {
+  "cycles_run": 27,
+  "cycles_completed_ok": 27,
+  "no_exception_raised": true,
+  "lookahead_guard": "structural (HistoricalMarketProvider._visible(); see test_h2_clock_and_lookahead.py)",
+  "chronology": "single shared HistoricalClock drove both decision and execution providers in strict cycle order; HistoricalClock.set() refuses to move backward",
+  "session_rules": "exact 27-cycle schedule (schedule.py) matches the documented forward cadence (premarket_prep/regular/post_cutoff, allow_entries per cycle)",
+  "state_persistence": "verified by test_replay_capacity_state_persists_across_cycles (unchanged-observation idempotency only fires when prior-cycle ledger state is genuinely visible to a later cycle)",
+  "determinism": "verified by test_replay_is_deterministic_same_run_twice",
+  "production_isolation": "verified by test_no_production_ledger_touched_by_the_replay"
+ },
+ "decision_equivalence": {
+  "rows": 12,
+  "by_difference_reason": {
+   "CAPABILITY_DIFFERENCE": 3,
+   "PRICE_DATA_DIFFERENCE": 7,
+   "MATCH": 2
+  },
+  "capability_difference_symbols": [
+   "DELL",
+   "META",
+   "TMO"
+  ],
+  "unexplained": []
+ }
+}
