@@ -1,0 +1,66 @@
+{
+ "dataset_id": "HIST001_SMOKE_2024_01_5M",
+ "source": "huggingface",
+ "revision": "f17c0b0c3cf6a455994f93d6a85e76274172ab03",
+ "symbols": [
+  "AAPL",
+  "ADBE",
+  "AMD",
+  "AVGO",
+  "CRM",
+  "CSCO",
+  "DELL",
+  "MSFT",
+  "NVDA",
+  "ORCL"
+ ],
+ "start": "2024-01-01",
+ "end": "2024-02-01",
+ "timeframe": "5m",
+ "rows": 28139,
+ "sha256": "85658327636120661ea42665705d38ac0035c8625e7195226b40612d99a55184",
+ "parquet_path": "equities\\HIST001_SMOKE_2024_01_5M.parquet",
+ "parquet_sha256": "8c8017dbd54af1f0b731c8ea04e19aab91b30c430ace4e96eeb95df2ac324b84",
+ "validation": {
+  "rows": 28139,
+  "symbols": [
+   "AAPL",
+   "ADBE",
+   "AMD",
+   "AVGO",
+   "CRM",
+   "CSCO",
+   "DELL",
+   "MSFT",
+   "NVDA",
+   "ORCL"
+  ],
+  "ok": true,
+  "failures": {}
+ },
+ "created_at": "2026-09-28T22:47:48+00:00",
+ "notes": "HIST-001 smoke stage: fabhaus/equities_5m_stockprices @ f17c0b0c3cf6a455994f93d6a85e76274172ab03, shard 2024-01.jsonl, streamed+filtered to the 10-symbol technology smoke universe (never the full shard persisted).",
+ "hf_repository": "fabhaus/equities_5m_stockprices",
+ "hf_revision": "f17c0b0c3cf6a455994f93d6a85e76274172ab03",
+ "upstream_files": [
+  "2024-01.jsonl"
+ ],
+ "upstream_sha256": {
+  "2024-01.jsonl": "3015bdf4f320357d19b60eb2075e7e044464d17d61b3f4e8cab7dcb50d30ea6a"
+ },
+ "selected_columns": [
+  "symbol",
+  "datetime",
+  "date",
+  "unix_timestamp",
+  "open",
+  "high",
+  "low",
+  "close",
+  "volume",
+  "trade_count"
+ ],
+ "adapter_version": "hist001-smoke-2024-01.1",
+ "capability_fingerprint": null,
+ "volume_trust": "RELATIVE_ONLY"
+}

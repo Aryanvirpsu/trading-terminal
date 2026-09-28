@@ -1,0 +1,50 @@
+{
+ "dataset_id": "fabhaus/equities_5m_stockprices",
+ "revision": "f17c0b0c3cf6a455994f93d6a85e76274172ab03",
+ "shard": "2024-01.jsonl",
+ "shard_url": "https://huggingface.co/datasets/fabhaus/equities_5m_stockprices/resolve/f17c0b0c3cf6a455994f93d6a85e76274172ab03/2024-01.jsonl",
+ "upstream_content_length": "15633792596",
+ "upstream_etag": "\"3015bdf4f320357d19b60eb2075e7e044464d17d61b3f4e8cab7dcb50d30ea6a\"",
+ "downloaded_bytes": 15633792596,
+ "downloaded_sha256": "42bfafae95204c53ec3472a80683ced8699c6d4b444f1dd8f171adce45f34553",
+ "rows_seen_total": 9199183,
+ "rows_kept": 28139,
+ "symbol_counts": {
+  "DELL": 1980,
+  "NVDA": 3949,
+  "MSFT": 3680,
+  "CSCO": 2337,
+  "ORCL": 2192,
+  "ADBE": 1994,
+  "AAPL": 3909,
+  "AMD": 3960,
+  "AVGO": 2023,
+  "CRM": 2115
+ },
+ "selected_columns": [
+  "symbol",
+  "datetime",
+  "date",
+  "unix_timestamp",
+  "open",
+  "high",
+  "low",
+  "close",
+  "volume",
+  "trade_count"
+ ],
+ "symbols_requested": [
+  "AAPL",
+  "ADBE",
+  "AMD",
+  "AVGO",
+  "CRM",
+  "CSCO",
+  "DELL",
+  "MSFT",
+  "NVDA",
+  "ORCL"
+ ],
+ "fetch_seconds": 227.3,
+ "fetch_method": "streamed HTTP GET (Range not needed -- full shard streamed and filtered on the fly, never held in full in memory or written unfiltered to disk)"
+}
