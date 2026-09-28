@@ -22,7 +22,7 @@ Run its tests: `python -m pytest tests/historical -q` (add `-m "not network"` to
 | **H3** | Wire the historical provider into the real scanner/decision-engine data-fetch points (adapters only, no duplicated logic) | **Done.** See below |
 | **H4** | Corporate-action layer, capability fingerprint, reproducibility check, thin execution reuse (real risk/broker/fills/journal against an isolated ledger) | **Done.** See below |
 | **H5** | Reproduce the known 2026-09-25 Ubuntu forward session | **Done — PASS WITH DOCUMENTED CAPABILITY DIFFERENCES.** `research/historical/reports/H5_FORWARD_REPRODUCTION.md` |
-| **H5.5** | Unlock one more historical evidence family to cross the data_quality ceiling | **Macro (`_fam_macro`) implemented and tested; blocked only on a real `FRED_API_KEY` to fetch real data and rerun H5.** See below |
+| **H5.5** | Unlock one more historical evidence family to cross the data_quality ceiling | **Done. Real macro replay crosses the floor in real replay behavior; DELL/META/TMO reach TRADEABLE under `PRICE_TREND_MACRO_V1`, unchanged thresholds.** `research/historical/reports/H55_MACRO_REPLAY.md` |
 | **H6** | Causal outcome engine (target/stop/ambiguous, MFE/MAE, hypothetical candidates) | **Done.** `outcomes.py`, 13 tests + 3 integration tests |
 | **H7** | One canonical event/observation/decision/trade identity system | **Done.** `event_identity.py`, 7 tests |
 | **H8** | Walk-forward orchestration with a holdout that cannot be casually spent | **Done.** `walkforward.py`, 12 tests |
@@ -177,44 +177,45 @@ capability fingerprint, on any symbol or date**. This is a quantified constraint
 not a defect in H5.
 
 **H5 passed.** Per the project's own ordering: H4 execution → H5 (done) → H6-H9 (done, see below) →
-H5.5 (macro implemented, blocked on a real API key) → HIST-001 Champion baseline → CH-001/capacity/ranking
-experiments. No profitability experiment may run before HIST-001 exists, and HIST-001 itself must carry the
-`data_quality`-ceiling caveat above until H5.5 (or another evidence family) closes it and H5 is rerun.
+H5.5 (done) → **HIST-001 Champion baseline is now unblocked** → CH-001/capacity/ranking experiments.
+HIST-001 must still carry the AMD/`PRICE_DATA_DIFFERENCE` caveats H5.5 disclosed (see below).
 
-## H5.5 (macro implemented; blocked on a real FRED_API_KEY)
+## H5.5 (done — real macro replay crosses the data_quality floor in real replay behavior)
 
-Investigated the H5 ceiling before implementing anything, per the user's own instruction. **Correction to
-the original framing**: `data_quality`'s `"fundamentals"` category (weight 0.35) is never populated by
-`decision_engine.py` at all — not historically, not in live production either; there is no
-`_fam_fundamentals`. Wiring it would mean inventing a new production data path, out of scope for a lab that
-exists to replay how AVDI already decides. Pinned down directly against the real source in
-`tests/historical/test_h55_macro.py`, not just asserted.
+Full report: `research/historical/reports/H55_MACRO_REPLAY.md`. Investigated the H5 ceiling before
+implementing anything, per the user's own instruction.
 
-What actually maps onto the user's "fundamentals/filings" and "macro" instincts: `_fam_filings` (SEC EDGAR,
-weight 0.2 effective) and `_fam_macro` (FRED, weight 0.2 effective) — both real, live-wired families
-already in `FAMILIES_WITHOUT_HISTORICAL_REPLAY`, simply stubbed for historical replay. Checked directly
-against `lab/data_quality.py`'s real arithmetic: replaying **either one alone, in full,** raises
-`PRICE_TREND_ONLY_V1`'s 0.536 to 0.588 — comfortably past the unchanged 0.55 floor. Macro goes first: one
-shared time series per date (yield curve + VIX) versus filings' need for a real, dated, per-symbol SEC
-filing history — cheaper for the identical structural gain, and FRED's four relevant series (DGS10, DGS2,
-VIXCLS, FEDFUNDS) are daily and never revised, so no ALFRED-vintage complexity is needed for them
-specifically.
+**Correction to the original framing**: `data_quality`'s `"fundamentals"` category (weight 0.35) is never
+populated by `decision_engine.py` at all — not historically, not in live production either; there is no
+`_fam_fundamentals`. What actually maps onto the user's "fundamentals/filings" and "macro" instincts:
+`_fam_filings` (SEC EDGAR) and `_fam_macro` (FRED) — both real, live-wired families already in
+`FAMILIES_WITHOUT_HISTORICAL_REPLAY`, simply stubbed for historical replay. Macro was implemented first
+(cheaper: one shared time series per date vs. filings' per-symbol SEC history, for the identical structural
+gain).
 
-`macro.py`: `MacroHistory.as_of()` is lookahead-safe (respects a 1-business-day publication lag, the same
-discipline `HistoricalMarketProvider` already applies to price bars); `historical_macro_signal()`
-reimplements `lab/fred.py`'s own yield-curve-tilt + VIX arithmetic against it. `avdi_adapter.py`'s
-`HistoricalAVDIContext` gains an optional `macro_history` param — when given, `_fam_macro` is genuinely
-replayed instead of stubbed; omitting it (every existing caller) is unchanged.
+`macro.py`: real ALFRED vintage semantics (`MacroHistory.latest_value_as_of()`, proven against the
+directive's own revision example — X before a revision, Y at/after, never Y early), `historical_macro_signal()`
+reproducing `lab/fred.py`'s exact arithmetic. A real `FRED_API_KEY` was supplied and used only as an
+in-process env var (never written to disk/logged/committed); fetching real data corrected two
+assumptions the mechanism-only build had made — the real `output_type=2` vintage-column date format needed
+normalizing to ISO, and FEDFUNDS turned out to be monthly, not daily, as originally guessed (irrelevant to
+the signal either way, since FEDFUNDS is dead weight in the real formula — but the record is now the
+verified fact, not the guess). Zero revisions found in the real data for DGS10/DGS2/VIXCLS, consistent with
+the `SERIES_INTEGRITY` verdict.
 
-**Blocked**: `fetch_fred_history()`/`build_macro_history()` need a real `FRED_API_KEY` (free, self-serve at
-fred.stlouisfed.org) to pull actual historical observations — this environment has none configured, and
-obtaining one requires an account signup this session should not do on the user's behalf. All 12
-`test_h55_macro.py` tests pass against synthetic/fixture data and the real `data_quality.py`/
-`decision_engine.py` arithmetic; nothing here has made a real FRED network call yet. Once a key is
-supplied: fetch real history for the `KNOWN_FORWARD_2026_09_25` date range, pass it as `macro_history=` to
-the H5 replay, regenerate the capability fingerprint (a new tag, e.g. `PRICE_TREND_MACRO_V1` — not yet
-added to `capability.py`, since no fingerprint should be minted before the family it names is actually
-exercised against real data), and rerun H5 to see whether real Champion TRADEABLEs emerge naturally.
+**The rerun, in real replay behavior (not static arithmetic)**: under `PRICE_TREND_MACRO_V1`, DELL, META,
+and TMO — the exact three symbols H5 found capped by the ceiling — now reach **TRADEABLE**, through the
+real, unmodified `evaluate()`/`data_quality.py`/`decision_engine.py` code, with the 0.55 floor untouched.
+DELL's own `data_quality` crosses `0.536 → 0.575` in the same process, same instant, with only the dataset
+switched in. One new divergence surfaced and was investigated rather than hidden: **AMD**, which stayed
+MONITOR-only in the forward session, now also reaches TRADEABLE — because macro evidence is symbol-agnostic
+(it lifts every symbol whose own technicals are otherwise strong enough that day, not only the ones the
+forward session happened to trade); classified `PRICE_DATA_DIFFERENCE`, most likely explained by AMD's real
+Yahoo-sourced technicals differing from the forward session's own live provider mix, not independently
+confirmed. Zero `UNKNOWN`/`REPLAY_BUG` rows either before or after.
+
+`KNOWN_FORWARD_2026_09_25_MACRO` (116 rows, ~12KB total) is committed alongside its manifest, grepped
+directly for the API key text (zero occurrences in either file) — this rerun is reproducible without a key.
 
 ## H6-H9 (done — built in parallel with H5.5, since none require the data_quality ceiling to be closed first)
 

@@ -1,0 +1,22 @@
+{
+ "dataset_id": "KNOWN_FORWARD_2026_09_25_MACRO",
+ "source": "FRED",
+ "series_ids": [
+  "DGS10",
+  "DGS2",
+  "FEDFUNDS",
+  "VIXCLS"
+ ],
+ "retrieval_date": "2026-09-28",
+ "api_version": "fred/series/observations?output_type=2",
+ "date_range": [
+  "2026-08-01",
+  "2026-09-26"
+ ],
+ "row_count": 116,
+ "vintage_semantics": "output_type=2 (every historical vintage per observation_date); latest_value_as_of(T) selects the most recent observation_date whose active vintage window [realtime_start, realtime_end] contains T",
+ "local_sha256": "888a6b2c40d472f3d3e6d91f45dbf57de691be8b7fc7ba67ad6c9a33ee0152a4",
+ "adapter_version": "2026-09-28.1",
+ "parquet_path": "KNOWN_FORWARD_2026_09_25_MACRO.parquet",
+ "notes": "Real FRED fetch for the KNOWN_FORWARD_2026_09_25 known-forward reproduction (H5.5)."
+}

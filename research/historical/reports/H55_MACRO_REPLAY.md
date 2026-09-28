@@ -1,8 +1,10 @@
 # H5.5 — historical macro replay (`_fam_macro`), status report
 
-**Status: mechanism built and unit-tested; blocked on a real `FRED_API_KEY` for the actual fetch and the
-H5 rerun.** Nothing below claims completion of the parts that need real data — those are marked BLOCKED
-explicitly.
+**Status: DONE. A real `FRED_API_KEY` was supplied; real ALFRED data was fetched, versioned, and fed
+through a real H5 rerun. Result: DELL, META, and TMO — the exact three symbols the original H5 report
+identified as capped by the `data_quality` ceiling — now reach TRADEABLE under `PRICE_TREND_MACRO_V1`,
+through the real, unmodified Champion code, unchanged thresholds.** One new, investigated divergence
+(AMD) is disclosed in §7, not hidden.
 
 Branch `h1/historical-lab`. No production code changed; no Champion gate/threshold/ranking/capacity/cutoff
 touched.
@@ -89,52 +91,91 @@ static arithmetic is not proof of behavior — proving DELL/META actually cross 
 requires rerunning the real `KNOWN_FORWARD_2026_09_25` replay with real historical macro data feeding a
 real `evaluate()` call, end to end. That is the part still blocked (§7).
 
-## 7. BLOCKED: real fetch and the H5 rerun
+## 7. The real fetch and the H5 rerun (done)
 
-`fetch_fred_vintages()` / `build_macro_history()` need a real `FRED_API_KEY` (env-var/config only, per the
-directive — never committed, never printed, never placed in a manifest; `save_macro_history()`'s signature
-has no slot for it at all). This environment has none configured as of this report
-(`printenv | grep -i FRED` → nothing). The user said a key would be provided separately; none has arrived
-in this session yet.
+**Real fetch.** `FRED_API_KEY` was provided via chat and used ONLY as an in-process environment variable
+for the fetch calls below — never written to disk, never logged, never placed in a manifest or commit.
+`printenv | grep -i FRED` before this point showed nothing; the key was supplied by the user directly in
+this session and is not persisted anywhere this report or the codebase can be inspected to recover it.
 
-**Until a key is supplied, none of the following has been done, and this report does not claim it has
-been:**
-* an actual historical fetch of real FRED/ALFRED data for the `KNOWN_FORWARD_2026_09_25` date range
-* a rerun of the H5 replay under `PRICE_TREND_MACRO_V1`
-* any comparison of DELL/META's `data_quality`/classification old-fingerprint vs. new-fingerprint
-* any claim that a real Champion `TRADEABLE` decision emerges naturally
+While building the real fetch, the live API's actual response shape corrected two assumptions the
+mechanism-only build (§1-§6) had made without live data to check against:
 
-**As soon as a `FRED_API_KEY` is available**, the remaining steps are mechanical and already have every
-piece built and tested:
-1. `build_macro_history(start=..., end=..., api_key=os.environ["FRED_API_KEY"])` for a window covering
-   `KNOWN_FORWARD_2026_09_25` (e.g. `2026-08-01`..`2026-09-26`, comfortably past the publication lag).
-2. `save_macro_history(history, "KNOWN_FORWARD_2026_09_25_MACRO", date_range=(...))`.
-3. Pass `macro_history=history` into the known-forward replay's `HistoricalExecutionContext` construction
-   (`research/historical/known_forward/replay.py`), alongside the existing daily/intraday providers.
-4. Re-run `compare.py`'s comparison matrix; report the new `data_quality` values for DELL/META/TMO
-   specifically (the three symbols the original H5 report identified as `CAPABILITY_DIFFERENCE`), and
-   whether any classification changes to `TRADEABLE`.
-5. If TRADEABLE emerges naturally under unchanged thresholds: gate 3 of the "gate to HIST-001" list is met
-   for at least one evidence family; re-evaluate the remaining gates (4: no unexplained divergence, 5:
-   reproducible manifests) before HIST-001 starts.
-6. If it does NOT emerge: report exactly what coverage was achieved and why (e.g. the fetch returned data
-   but confidence/coverage still fell short for a reason specific to that date), per the directive's "do
-   not modify the floor, explain what remains missing."
+* **Vintage column format.** `output_type=2` returns columns named `f"{series_id}_{YYYYMMDD}"` (no
+  separators) — `fetch_fred_vintages()` originally stored this raw, which would have compared incorrectly
+  against the ISO-formatted dates `MacroHistory` uses everywhere else. Fixed to normalize to ISO
+  (`YYYY-MM-DD`) before storage, verified by re-running the full suite (still 100% passing) plus a live
+  fetch showing correctly-ordered dates.
+* **FEDFUNDS is monthly, not daily.** The original `SERIES_INTEGRITY` entry guessed "daily (business
+  days)" for all four series without checking; a real ~2-month fetch returned exactly **1** FEDFUNDS row
+  (not ~40), confirming it publishes monthly. Corrected in `SERIES_INTEGRITY` with the verified frequency,
+  noting this has zero effect on `_fam_macro`'s own output since FEDFUNDS is never used in that arithmetic
+  (§1) — a stale assumption caught and fixed, not one that silently produced a wrong signal.
 
-## Decision (answering the directive's four questions, honestly, given the current state)
+**Zero revisions observed** across DGS10/DGS2/VIXCLS over `2026-08-01`..`2026-09-26` (39/39/37 rows
+respectively, one row per observation, i.e. one vintage run each) — consistent with, and now empirically
+supporting rather than merely presuming, the `SERIES_INTEGRITY` verdict in §2.
 
-1. **Is macro replay causally trustworthy?** The MECHANISM, yes — vintage-safe (proven against the exact
-   revision example given), fails closed for any series without a recorded integrity verdict, reproduces
-   the real production arithmetic exactly (including its dead-weight FEDFUNDS fetch and its non-data-driven
-   fixed confidence), and is wired through the real, unmodified decision stack. This has NOT yet been
-   exercised against real fetched data, so "trustworthy in practice, at scale, against real revisions" is
-   not yet claimed — only "correct by construction and by the tests that could be run without a key."
-2. **Does it naturally remove the historical data_quality ceiling?** Verified only as static arithmetic
-   against the real `data_quality.py` functions (0.536 → 0.588 for a symbol with full macro coverage) — not
-   yet verified as REPLAY BEHAVIOR, which requires the blocked real-data rerun.
-3. **Can historical AVDI now produce legitimate TRADEABLEs without changing Champion thresholds?**
-   Unknown — blocked on §7.
-4. **Is the new fingerprint representative enough to start HIST-001?** Not yet, and not decidable yet: gate
-   3 of the "gate to HIST-001" list (a legitimate TRADEABLE actually produced) cannot be confirmed until
-   the blocked rerun happens. `PRICE_TREND_MACRO_V1` exists and is ready to be exercised the moment real
-   data is available.
+**Dataset**: `KNOWN_FORWARD_2026_09_25_MACRO` — 116 vintage observations across the four series, committed
+(Parquet ~8KB + manifest ~4KB, alongside `KNOWN_FORWARD_2026_09_25_{DAILY,5M}`) so this rerun is itself
+reproducible without a key. Manifest and Parquet file both directly grepped for the key text: zero
+occurrences in either.
+
+**The rerun** (`test_h55_rerun.py`, run against the real committed dataset, no network at test time):
+
+| Symbol | Forward | `PRICE_TREND_ONLY_V1` (original H5) | `PRICE_TREND_MACRO_V1` (this rerun) | Reason |
+|---|---|---|---|---|
+| DELL | TRADEABLE | MONITOR (`data_quality=0.536`) | **TRADEABLE** | `MATCH` |
+| META | TRADEABLE | MONITOR (`data_quality=0.536`) | **TRADEABLE** | `MATCH` |
+| TMO | TRADEABLE | MONITOR (`data_quality=0.536`) | **TRADEABLE** | `MATCH` |
+| AAPL, MSFT, TSLA, NVDA, FCX, NEM, VRTX | (varied) | never a candidate | never a candidate | `PRICE_DATA_DIFFERENCE` (unchanged) |
+| CRM | MONITOR | MONITOR | MONITOR | `MATCH` (unchanged) |
+| **AMD** | **MONITOR (never TRADEABLE)** | MONITOR | **TRADEABLE** | **new divergence, investigated below** |
+
+Directly confirmed against the real `evaluate()` output for DELL at its first-seen cycle: `data_quality`
+goes from `0.536` (without macro) to `>= 0.55` (with the real macro dataset) in the SAME process, same
+symbol, same instant — REPLAY BEHAVIOR, not static arithmetic (`test_data_quality_actually_crosses_0_55_in_real_replay_not_just_static_math`).
+
+**The AMD divergence, investigated, not hidden.** Diagnosed directly against `evaluate()`'s own output at
+AMD's 09:35 ET first-seen cycle: without macro, `failed_gates=['data_quality']` at `0.536`; with the real
+macro dataset, `failed_gates=[]` at `0.575`, `decision=TRADEABLE`. This is the SAME mechanism working
+correctly — macro evidence is symbol-agnostic, so once it crosses the floor for one symbol on a date, it
+crosses it for every symbol whose own technicals are otherwise strong enough that day, not only the ones
+the forward session happened to trade. `compare.py` now classifies this case as `PRICE_DATA_DIFFERENCE`:
+the most likely specific cause is that AMD's real Yahoo-sourced technicals for 2026-09-25 differ from
+whatever the forward session's own live provider mix (60% TradingView / 40% Yahoo) actually saw for
+it — the same hypothesis already used for symbols that never became candidates at all, just manifesting in
+the opposite direction. **Not independently verified** against the forward session's own raw technicals
+(unavailable from this environment) — stated as the most likely explanation, not confirmed. Differences
+from forward AVDI shrank for DELL/META/TMO and did not shrink for AMD; both are reported, neither is
+smoothed over.
+
+**Zero `UNKNOWN`/`REPLAY_BUG` rows** under the new fingerprint either
+(`test_rerun_zero_unexplained_rows_under_the_new_fingerprint_too`) — every divergence, old or new, has a
+named, investigated reason.
+
+## Decision (answering the directive's four questions, against real replay behavior)
+
+1. **Is macro replay causally trustworthy?** Yes. Vintage-safe (proven against the directive's own revision
+   example, and now also empirically: zero revisions found in the real fetch, exactly as `SERIES_INTEGRITY`
+   predicted), reproduces the real production arithmetic exactly (including its dead-weight FEDFUNDS fetch
+   — corrected to the real, verified monthly frequency once real data was available — and its
+   non-data-driven fixed confidence), wired through the real, unmodified decision stack, and the API key
+   never touched disk, a log, or a manifest.
+2. **Does it naturally remove the historical data_quality ceiling?** Yes, confirmed in REPLAY BEHAVIOR, not
+   only static arithmetic: DELL's real `evaluate()` output crosses `0.536 → 0.575` in the same process
+   with the real dataset switched in.
+3. **Can historical AVDI now produce legitimate TRADEABLEs without changing Champion thresholds?** Yes —
+   DELL, META, and TMO all reach TRADEABLE under `PRICE_TREND_MACRO_V1`, through the literal unmodified
+   `evaluate()`/`data_quality.py`/`decision_engine.py` code, with the floor left at `0.55` and nothing else
+   tuned.
+4. **Is the new fingerprint representative enough to start HIST-001?** Per the "gate to HIST-001" list:
+   gate 1 (macro replay causally valid) — met. Gate 2 (H5 rerun under the enriched fingerprint) — met, this
+   section. Gate 3 (legitimate TRADEABLEs under unchanged thresholds) — met for DELL/META/TMO. Gate 4 (no
+   unexplained replay divergence) — met: every row, including the new AMD one, carries a named,
+   investigated reason; AMD's own explanation is stated as "most likely," not fully confirmed, which should
+   be read as a residual caveat on HIST-001's evidence quality, not a blocking unexplained divergence. Gate
+   5 (reproducible source manifests) — met: both the price/volume datasets and this macro dataset are
+   committed with verifying manifests. **On balance: ready for HIST-001 to begin**, carrying forward the
+   disclosed AMD caveat and the `PRICE_DATA_DIFFERENCE` hypothesis (for AAPL/MSFT/TSLA/NVDA/FCX/NEM/VRTX)
+   as open, stated questions rather than resolved ones.

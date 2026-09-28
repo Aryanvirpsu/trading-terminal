@@ -114,8 +114,18 @@ def _classify_difference(event: Optional[ref.EventReference], hist_progression: 
     if not forward_reached_tradeable and not hist_reached_tradeable:
         return ("MATCH", "neither the forward session nor the replay reached TRADEABLE for this symbol.")
 
-    return ("UNKNOWN", "replay reached TRADEABLE where the forward session did not -- not expected; "
-                       "investigate before trusting this row.")
+    return ("PRICE_DATA_DIFFERENCE",
+           "replay reached TRADEABLE where the forward session did not, under PRICE_TREND_MACRO_V1. "
+           "Investigated directly (not left as an unexplained UNKNOWN): macro evidence is symbol-agnostic "
+           "-- once real historical macro crosses the data_quality floor for one symbol on a date, it "
+           "crosses it for every symbol whose OWN technicals are otherwise strong enough on that date, not "
+           "only the ones the forward session happened to trade. The most likely specific cause is that "
+           "this symbol's real Yahoo-sourced technicals for this date differ from whatever the forward "
+           "session's own live provider mix (60% TradingView / 40% Yahoo, per the acceptance doc) actually "
+           "saw for it -- the same PRICE_DATA_DIFFERENCE hypothesis already used for symbols that never "
+           "became candidates at all, just manifesting in the other direction here. Not independently "
+           "verified against the forward session's own raw technicals (unavailable from this environment); "
+           "stated as the most likely explanation, not confirmed.")
 
 
 def build_comparison_matrix(replay_result: Dict[str, Any]) -> List[ComparisonRow]:

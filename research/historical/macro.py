@@ -109,9 +109,15 @@ SERIES_INTEGRITY: Dict[str, Dict[str, str]] = {
     "VIXCLS": {"verdict": "ACCEPTED", "release_frequency": "daily (business days)",
               "revision_frequency": "none observed/expected (daily index close)",
               "publication_lag": "~1 business day", "timezone_semantics": "US business date, no intraday time"},
-    "FEDFUNDS": {"verdict": "ACCEPTED", "release_frequency": "daily (business days)",
-                "revision_frequency": "none observed/expected (daily effective rate)",
-                "publication_lag": "~1 business day", "timezone_semantics": "US business date, no intraday time"},
+    # Corrected against a real fetch (see H55_MACRO_REPLAY.md): FEDFUNDS is MONTHLY, not daily -- an
+    # initial, unverified assumption here said "daily," which a real ~2-month window's fetch disproved (1
+    # row, dated the 1st of the month, not ~40). Kept ACCEPTED because it is never used in the _fam_macro
+    # arithmetic at all (see Part 1) -- its release cadence cannot affect a signal that never reads it -- but
+    # the frequency claim itself is now the verified one, not the original guess.
+    "FEDFUNDS": {"verdict": "ACCEPTED", "release_frequency": "monthly (verified against a real fetch; "
+                "irrelevant to _fam_macro's own output since this series is unused there)",
+                "revision_frequency": "none observed in a real ~2-month fetch",
+                "publication_lag": "observed ~1 month after the reference month", "timezone_semantics": "US calendar month, no intraday time"},
 }
 
 
@@ -206,24 +212,58 @@ def historical_macro_signal(history: MacroHistory, as_of_date: dt.date, directio
 # ── Real fetch (needs a real FRED_API_KEY; never exercised by the default test suite) ─────────────────────
 
 def fetch_fred_vintages(series_id: str, start: str, end: str, *, api_key: str) -> List[Dict[str, Any]]:
-    """ALFRED-style: every historical vintage of `series_id` between `start`/`end` (`output_type=2`), so a
-    genuine revision (should one exist for these series) is captured rather than silently collapsed to
-    today's current value. The key is used ONLY as a URL query parameter here -- never returned, logged, or
-    stored by this function or any caller in this module."""
+    """ALFRED-style: every historical vintage of `series_id` between `start`/`end`, so a genuine revision
+    (should one exist for these series) is captured rather than silently collapsed to today's current
+    value. The key is used ONLY as a URL query parameter here -- never returned, logged, or stored by this
+    function or any caller in this module.
+
+    Real API shape (`output_type=2`, confirmed against the live endpoint): each observation row has a
+    `"date"` (the observation_date) plus one column PER VINTAGE DATE within the query's own
+    `realtime_start..realtime_end` window, named `f"{series_id}_{vintage_date}"` -- e.g.
+    `{"date": "2026-09-01", "DGS10_20260902": "4.79", "DGS10_20260903": "4.79", ...}`. A vintage column's
+    date is when THAT value became FRED's current answer; if the value never changes across consecutive
+    vintage columns (true for DGS10/DGS2/VIXCLS/FEDFUNDS in every sample checked), they collapse into one
+    run. `realtime_start` is set a few days before `start` (these series publish ~1 business day after
+    their own observation date, per SERIES_INTEGRITY) so the TRUE first vintage for the earliest requested
+    observation is never cut off; `realtime_end` is today (the retrieval date) -- the query's own real-time
+    window, not a claim about how long any of these series stays unrevised. FRED caps the number of
+    distinct vintage dates it will return per call (~2000), so this is only safe for a bounded date range,
+    not decades of history in one call -- exactly the historical-replay use case this module is for."""
     if not api_key:
         raise ValueError("fetch_fred_vintages requires a real FRED_API_KEY -- none was given")
+    rt_start = (dt.date.fromisoformat(start) - dt.timedelta(days=7)).isoformat()
+    rt_end = dt.datetime.now(dt.timezone.utc).date().isoformat()
     url = (f"https://api.stlouisfed.org/fred/series/observations?series_id={series_id}"
           f"&api_key={api_key}&file_type=json&output_type=2"
+          f"&realtime_start={rt_start}&realtime_end={rt_end}"
           f"&observation_start={start}&observation_end={end}")
     with urllib.request.urlopen(urllib.request.Request(url, headers={"User-Agent": "avdi-historical-lab"}),
                                 timeout=30) as resp:
         data = json.load(resp)
-    out = []
-    for o in data.get("observations", []):
-        if o.get("value") in (".", None):
+
+    def _iso(vintage_raw: str) -> str:
+        # column suffixes come back as raw "YYYYMMDD" (no separators) -- normalize to ISO so
+        # MacroHistory's plain string comparisons (realtime_start <= as_of <= realtime_end) are correct.
+        return f"{vintage_raw[0:4]}-{vintage_raw[4:6]}-{vintage_raw[6:8]}"
+
+    prefix = f"{series_id}_"
+    out: List[Dict[str, Any]] = []
+    for row in data.get("observations", []):
+        obs_date = row["date"]
+        pairs = sorted(((_iso(k[len(prefix):]), v) for k, v in row.items() if k.startswith(prefix)),
+                       key=lambda kv: kv[0])
+        pairs = [(vd, v) for vd, v in pairs if v not in (".", None)]
+        if not pairs:
             continue
-        out.append({"observation_date": o["date"], "realtime_start": o.get("realtime_start", o["date"]),
-                   "realtime_end": o.get("realtime_end", o["date"]), "value": float(o["value"])})
+        run_start, run_val = pairs[0]
+        for i in range(1, len(pairs)):
+            vd, v = pairs[i]
+            if v != run_val:
+                out.append({"observation_date": obs_date, "realtime_start": run_start,
+                           "realtime_end": pairs[i - 1][0], "value": float(run_val)})
+                run_start, run_val = vd, v
+        out.append({"observation_date": obs_date, "realtime_start": run_start,
+                   "realtime_end": "9999-12-31", "value": float(run_val)})
     return out
 
 
