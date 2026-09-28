@@ -30,6 +30,7 @@ from unittest import mock
 
 from .clock import HistoricalClock
 from .guards import assert_not_production_host
+from .macro import MacroHistory, historical_macro_signal
 from .provider import HistoricalMarketProvider
 
 _ROOT = Path(__file__).resolve().parents[2]
@@ -146,10 +147,15 @@ class HistoricalAVDIContext:
     instance per clock tick; cheap (no disk I/O of its own beyond what `provider` already loaded)."""
 
     def __init__(self, provider: HistoricalMarketProvider, *, neutral_sector: Union[str, Sequence[str]] = "technology",
-                execution_provider: Optional[HistoricalMarketProvider] = None):
+                execution_provider: Optional[HistoricalMarketProvider] = None,
+                macro_history: Optional["MacroHistory"] = None):
         assert_not_production_host()
         self.provider = provider
         self.clock: HistoricalClock = provider.clock
+        # H5.5: when given, decision_engine._fam_macro is replayed for real (see macro.py) instead of
+        # stubbed -- the one FAMILIES_WITHOUT_HISTORICAL_REPLAY entry this closes. None (the default)
+        # keeps H3/H4/H5's original behavior (macro stubbed) for every existing caller.
+        self.macro_history = macro_history
         # H5: one or more sector keys to treat as "strong" (equal, unranked membership -- see
         # _patched_rank_sectors). A single string is normalized to a one-element list for backward
         # compatibility with H3's original single-sector design.
@@ -251,6 +257,13 @@ class HistoricalAVDIContext:
         self.calls.append({"fn": "decision_engine._safe_regime", "clock_now": self.clock.now.isoformat()})
         return None                                       # -> _fam_regime() degrades to zero-confidence, unchanged
 
+    def _patched_fam_macro(self, direction: str):
+        # H5.5: real historical macro replay (see macro.py's module docstring for the point-in-time
+        # rationale) -- only installed when self.macro_history is given; see __enter__.
+        self.calls.append({"fn": "decision_engine._fam_macro", "direction": direction,
+                           "clock_now": self.clock.now.isoformat()})
+        return historical_macro_signal(self.macro_history, self.clock.now.date(), direction)
+
     def _patched_enabled_strategies(self):
         # H5 blocker #6 (volume_trust.py): whichever strategies the REAL config would enable, minus any
         # that need absolute dollar-volume this provider's source can't honestly supply. Patched here (not
@@ -283,6 +296,9 @@ class HistoricalAVDIContext:
         p(mock.patch.object(freshness, "bar_age_seconds", self._patched_bar_age_seconds))
         p(mock.patch.object(market_regime, "session_state", self._patched_session_state))
         for name in FAMILIES_WITHOUT_HISTORICAL_REPLAY:
+            if name == "_fam_macro" and self.macro_history is not None:
+                p(mock.patch.object(de, name, self._patched_fam_macro))    # H5.5: real replay, not a stub
+                continue
             p(mock.patch.object(de, name, (lambda n: lambda *a, **k: de._fam_stub(n))(name)))
         p(mock.patch.object(de.ss, "_pick_option_idea", lambda *a, **k: None))
         p(mock.patch.object(halts, "is_halted", lambda s: False))       # no historical halt feed yet (disclosed)
