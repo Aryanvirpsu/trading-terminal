@@ -48,3 +48,30 @@ anything beyond replaying the last few days.**
   re-verifiable against its manifest.
 * The market data provider cannot return, or be asked for, information timestamped after its bound
   clock's current instant — an explicit request for the future raises, it is never silently clamped.
+
+## H3 (done)
+
+`avdi_adapter.py` (`HistoricalAVDIContext`) patches AVDI's own existing seams — `strategies._bars`,
+`strategies.rank_sectors`, `decision_engine._load_analysis`, `_safe_regime`, the 7 `_fam_*` families with
+no historical replay (routed to the production `_fam_stub` — the SAME zero-confidence contract the live
+system already uses when a source is down), `ss._pick_option_idea`, `halts.is_halted` — then runs
+`strategies.scan()` and `decision_engine.evaluate()` completely unchanged. `_load_analysis`'s replacement
+reuses `lab.fallback_ta`'s own `_rsi`/`_atr` pure helpers (only the data FETCH is substituted, since
+`fallback_ta.analysis()` calls yfinance directly with no injection seam and is production code that must
+not be touched).
+
+Verified (`tests/historical/test_h3_avdi_wiring.py`, 4 tests):
+* a deterministic, no-network fixture proves the real `decision_engine.evaluate()`'s own `price` field and
+  the real `_fam_trend()` never reflect information later than the clock, ARE identical when queried twice
+  at the same instant, and DO change correctly once the clock genuinely advances past a planted price move;
+* an explicit request for the future is refused THROUGH the adapter (not just at the raw provider);
+* patches restore exactly on context exit;
+* the real-data acceptance smoke test (network) runs the literal 8 acceptance steps against a real 5-symbol
+  Yahoo daily sample: real scanner, real decision path, captured finalists/labels, a second independent
+  clock/context at an earlier instant, no exception, no lookahead.
+
+Disclosed limitation: sector breadth/rotation and 7 of the decision engine's 9 evidence families (catalyst,
+short interest, filings, options flow, social, analyst, macro) have no historical replay yet and are
+neutralised to zero confidence for every historical run — only the price-derived trend/momentum family and
+the risk/regime family (itself neutral when no regime is supplied) carry real signal today. A historical
+decision label should be read with that in mind until more evidence families are wired.
