@@ -126,6 +126,12 @@ class SeriesIntegrityError(RuntimeError):
     silently treat an unreviewed series as historically safe."""
 
 
+class MacroCoverageError(RuntimeError):
+    """Raised by `assert_macro_coverage` when a MacroHistory does not have real data covering the full
+    requested range -- see that function's docstring. Distinct from SeriesIntegrityError (an unreviewed
+    series) -- this is a reviewed series with an actual date-coverage gap in this specific dataset."""
+
+
 @dataclasses.dataclass(frozen=True)
 class VintageObservation:
     series_id: str
@@ -171,6 +177,23 @@ class MacroHistory:
     def __len__(self) -> int:
         return sum(len(v) for v in self._by_series.values())
 
+    def coverage_gaps(self, start: dt.date, end: dt.date, *,
+                      required_series: Tuple[str, ...] = ("DGS10", "DGS2", "VIXCLS")) -> Dict[str, List[str]]:
+        """For each of `required_series` (default: the three series `_fam_macro`'s own arithmetic actually
+        reads -- FEDFUNDS is excluded here since it is never used in that arithmetic, see Part 1 of this
+        module's docstring), which calendar dates in [start, end] have NO value knowable by that date at
+        all. A gap here means a historical run covering this range would silently fall back to
+        conf=0/dir=0 for that date-series, indistinguishable from "no FRED key" -- exactly what
+        `assert_macro_coverage` exists to catch before a run starts, not after."""
+        gaps: Dict[str, List[str]] = {sid: [] for sid in required_series}
+        d = start
+        while d <= end:
+            for sid in required_series:
+                if self.latest_value_as_of(sid, d) is None:
+                    gaps[sid].append(d.isoformat())
+            d += dt.timedelta(days=1)
+        return {sid: dates for sid, dates in gaps.items() if dates}
+
 
 def historical_macro_signal(history: MacroHistory, as_of_date: dt.date, direction: str = "LONG") -> Dict[str, Any]:
     """Reproduces `lab/fred.py`'s EXACT arithmetic (see Part 1 above), against `MacroHistory`'s
@@ -207,6 +230,28 @@ def historical_macro_signal(history: MacroHistory, as_of_date: dt.date, directio
     return {"family": "macro-rates", "dir": round(d, 2), "conf": 0.5,
            "detail": f"as of {as_of_date.isoformat()}: curve {round(spread, 2) if spread is not None else None} "
                      f"VIX {vix_v} -> {read}"}
+
+
+def assert_macro_coverage(macro_history: Optional[MacroHistory], start: dt.date, end: dt.date) -> None:
+    """A HIST-001 (or any) run labelled `PRICE_TREND_MACRO_V1` must not start if its macro store is absent
+    or incomplete over the run's own [start, end] -- the directive's own explicit requirement, so a run can
+    never silently degrade to `PRICE_TREND_ONLY_V1`'s behavior while still claiming the macro tag. Raises
+    `MacroCoverageError` (absent history) or reports the exact gap dates found (incomplete). A caller that
+    genuinely wants `PRICE_TREND_ONLY_V1` simply never calls this -- it is not invoked implicitly."""
+    if macro_history is None:
+        raise MacroCoverageError(
+            f"PRICE_TREND_MACRO_V1 run requires a macro_history covering {start}..{end}, but none was "
+            f"given -- pass a real MacroHistory (built via build_macro_history/load_macro_history) or use "
+            f"PRICE_TREND_ONLY_V1 explicitly instead of silently running without macro")
+    gaps = macro_history.coverage_gaps(start, end)
+    if gaps:
+        total_gap_days = sum(len(v) for v in gaps.values())
+        sample = {sid: dates[:3] for sid, dates in gaps.items()}
+        raise MacroCoverageError(
+            f"PRICE_TREND_MACRO_V1 run's macro_history has {total_gap_days} date-series gap(s) over "
+            f"{start}..{end} (sample: {sample}) -- refusing to start rather than silently fall back to "
+            f"conf=0/dir=0 for the missing dates while still claiming the macro tag. Fetch a wider "
+            f"date range (build_macro_history) before retrying.")
 
 
 # ── Real fetch (needs a real FRED_API_KEY; never exercised by the default test suite) ─────────────────────
