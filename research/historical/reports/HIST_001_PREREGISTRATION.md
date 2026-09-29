@@ -175,3 +175,109 @@ committed at §1's git commit.
 
 *Amendments, if any become necessary, are appended below as new dated sections and never edit the text
 above.*
+
+## Amendment 1 — 2026-09-29 — Medium stage exact parameters (committed BEFORE Medium results are computed)
+
+Per the post-Smoke directive: Smoke is accepted as PIPELINE VALIDATED (not a Champion profitability verdict).
+Before Medium, three structural gaps were closed (committed separately, ahead of this amendment, on
+`h1/historical-lab`): (1) an explicit `warmup_start`/`evaluation_start`/`evaluation_end` split, with every
+cycle/observation/event tagged by phase and only `evaluation`-phase observations counted in reported metrics;
+(2) real macro data threaded into the replay, with `assert_macro_coverage()` refusing to start a
+`PRICE_TREND_MACRO_V1` run whose macro store doesn't cover the full range; (3) full decision-time capture
+(price/stop/target/quantity/sector/quote/account-state) for every evaluated symbol, not just executed ones,
+so a blocked TRADEABLE's counterfactual is actually resolvable. This amendment fixes Medium's exact
+parameters — universe, dates, dataset IDs and hashes — **before** `run_baseline()` is invoked for Medium.
+
+**Git commit at this amendment**: `1a03e17d42bffe54760e8ab602876fb04e737a54` (branch `h1/historical-lab`).
+
+### A1.1 Universe (50-100 symbols, deterministic — directive sec 6)
+
+The **entire** pre-registered 90-symbol `dashboard/sector_map.py` universe (§2 above), across all 11
+sectors — not a hand-picked subset. Using the whole pre-registered universe removes any subset-selection
+judgment call entirely: nothing here is chosen based on which symbols looked like they'd perform well.
+
+One symbol, **`BRK-B`, has zero rows in the fabhaus source** for this six-month window (0 of 1,164,068 kept
+rows) — most likely a ticker-format mismatch (fabhaus may key Berkshire differently, e.g. without the
+hyphen) rather than genuine absence, not investigated further at this stage. This is disclosed, not silently
+dropped: `BRK-B` remains in the requested universe and dataset manifests; it simply produces no decisions
+because it has no data, exactly like any other symbol with a real data gap. **Effective universe with data:
+89 symbols.**
+
+### A1.2 Dates — this is the canonical meaning of "3-month Medium" (directive sec 2)
+
+| Field | Value |
+|---|---|
+| `warmup_start` | `2024-01-01` |
+| `evaluation_start` | `2024-04-01` |
+| `evaluation_end` | `2024-06-30` |
+
+Warm-up (2024-01-01 .. 2024-03-31) comfortably clears the empirically-confirmed 55-trading-day floor
+(`research/historical/hist001/warmup.py:required_warmup_daily_bars()`, probed against the real
+`avdi_adapter._bars_dict()` dependency, not hardcoded — confirmed to return exactly 55) well before
+2024-04-01: ~62 trading days of real daily-bar depth exist by the evaluation start, per
+`lab.paper.market_calendar`. Warm-up cycles run for real (real scan/evaluate/broker/ledger calls) so account
+state and daily-bar depth accumulate correctly into the evaluation window; only `evaluation`-phase
+observations/events/trades are counted in Medium's reported metrics.
+
+### A1.3 Equity dataset (directive sec 7/8 — exact manifests, batch strategy)
+
+* **Source**: `fabhaus/equities_5m_stockprices` @ pinned revision `f17c0b0c3cf6a455994f93d6a85e76274172ab03`
+  (same pinned revision as Smoke) — six monthly shards (`2024-01.jsonl` .. `2024-06.jsonl`), **not** the full
+  478GB corpus. Each shard streamed (8MB chunks) and filtered to the 90-symbol universe on the fly, never
+  held in full in memory or on disk; upstream `Content-Length`/`ETag` and the downloaded bytes' own SHA-256
+  recorded per shard (`research/historical/hist001/medium_2024-0{1..6}_fetch_manifest.json`, committed).
+  94.06 GB streamed total; 1,164,068 rows kept.
+* **Batch strategy**: one batch per calendar month (fabhaus's own native shard boundary) — a deterministic
+  partition, not a chosen one. `build_medium_dataset.py` combines the six independently-loaded monthly
+  frames by concatenation followed by a full sort on `(symbol, timestamp)`; a pure sort has no dependency on
+  concatenation order, proven directly by
+  `tests/historical/test_hist001_medium_batching.py` (all 6 permutations of month order tested, byte-identical
+  results, both raw and daily-aggregated).
+* **Daily decision bars**: aggregated from the same 5-minute source (open/high/low/close/volume rollup,
+  16:00 ET-labelled), same disclosed methodology as Smoke (§2 above).
+* **`HIST001_MEDIUM_2024_H1_5M`**: 1,164,068 rows, 89 symbols with data, `2024-01-01`..`2024-07-01`,
+  `parquet_sha256=f2a3306fb6f243a2a4706b71538e8eb8dd125362a0e3f0e3ba54a21f33a901f6`.
+* **`HIST001_MEDIUM_2024_H1_DAILY`**: 11,491 rows, `parquet_sha256=541bcd39a1cd0de63e2c5207b994e23a0088bdf09814c2c2d8563ff0b083840d`.
+* **Corporate actions**: `detect_splits()` found 3 suspected events over the window — **NVDA's real 10-for-1
+  split (2024-06-10, high confidence, volume-confirmed)**, and two low-confidence suspected events (**CMG's
+  real ~50-for-1 split, 2024-06-26**; **WMT's real 3-for-1 split, 2024-02-26**, whose volume ratio didn't
+  clear the detector's own confirmation bar). Only the NVDA event is `is_confirmed()`. Per the standing
+  policy, raw bars remain immutable and are what the paper broker trades against; `split_adjusted` treatment
+  is available on demand but not applied to raw replay data; the two unconfirmed events are **not**
+  silently adjusted or excluded — reported here exactly as detected, fail-closed.
+* **Volume trust**: `RELATIVE_ONLY` throughout (unchanged from Smoke).
+
+### A1.4 Macro dataset (directive sec 3)
+
+`HIST001_MEDIUM_2024_H1_MACRO` — real ALFRED vintage-aware fetch (`DGS10`, `DGS2`, `VIXCLS`, `FEDFUNDS`),
+fetched `2023-12-11`..`2024-06-30` (a 21-day lookback before `warmup_start` so
+`latest_value_as_of(2024-01-01)` resolves across the New Year's Day holiday gap — see commit message for
+detail), 424 vintage observations, `local_sha256=ae9c08970f26a16b7290f9ec81a1b9d6f10486d577187fcbda212d8036d39e44`.
+`assert_macro_coverage()` verified to pass cleanly for the full `[2024-01-01, 2024-06-30]` warm-up+evaluation
+range before this amendment was written. `capability_fingerprint=PRICE_TREND_MACRO_V1` for Medium (not
+`PRICE_TREND_ONLY_V1`) — the run structurally cannot start without this coverage, per
+`research/historical/hist001/baseline.py`.
+
+### A1.5 Champion config, capability fingerprint, execution assumptions
+
+Unchanged from §1/§5/§6 above — same `decision_engine/gates-v1.1`, same post-`322e325` executable-risk
+sizing, same real scanner/canonical/risk/fill/exit code, same `PRICE_TREND_MACRO_V1` capability disclosure
+(§6). `universe_sectors` passed to `run_baseline()` is all 11 sector keys (`technology`, `communication`,
+`consumer_discretionary`, `consumer_staples`, `financials`, `health_care`, `industrials`, `energy`,
+`materials`, `utilities`, `real_estate`) — this neutralizes real sector-rotation ranking uniformly across the
+whole universe (§6's disclosed limitation: real membership is used, real relative ranking/rotation is not),
+matching Smoke's treatment of its own (single-sector) universe rather than applying it selectively.
+
+### A1.6 Expected scanner warm-up (directive's key Smoke lesson)
+
+The evaluation window begins only after ~62 real trading days of accumulated daily-bar depth — the Champion
+enters `evaluation_start` with the same information it would have had forward, not a cold start. This is the
+"structural requirement discovered by Smoke" this amendment exists to close.
+
+### A1.7 Metrics and acceptance criteria
+
+Exactly the metrics list in §8 above — no addition, no omission. Acceptance criteria are the directive's own
+sec 9 list (candidates produced, macro exercised, TRADEABLEs occur naturally, account persists
+chronologically, blocked candidates fully resolvable, event clustering works, no lookahead, no production
+touched, deterministic rerun) — evaluated in the Medium report, not assumed here. No parameter search, no
+threshold change, at any point in the Medium stage (§10, unchanged, binding).
