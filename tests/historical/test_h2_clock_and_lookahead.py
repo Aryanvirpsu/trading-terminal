@@ -167,3 +167,28 @@ def test_naive_datetime_end_is_rejected_not_silently_assumed_utc(dataset):
     p = HistoricalMarketProvider(clk, [dataset])
     with pytest.raises(ValueError):
         p.bars("AAPL", end=dt.datetime(2026, 6, 17, 10, 0))
+
+
+def test_visible_uses_searchsorted_and_matches_a_boolean_mask_reference(dataset):
+    """Regression test for a real performance defect found dry-running HIST-001 Full: `_visible()` used to
+    boolean-mask a symbol's ENTIRE history on every single quote()/bars() call -- O(n) per call, and at
+    Full's multi-year, multi-million-row scale this made a 6-day/108-cycle slice take ~33 minutes (at that
+    rate the full ~26-month replay would have taken days). Fixed via `searchsorted` on the already-sorted
+    timestamp column (O(log n)). This test proves the fix produces the IDENTICAL row set a boolean mask
+    would, including a duplicate-timestamp edge case, so the performance fix cannot have changed any
+    decision -- not just that it runs, but that its output is provably unchanged."""
+    clk = HistoricalClock(_et("1005"))
+    p = HistoricalMarketProvider(clk, [dataset])
+    full_df = p._by_symbol["AAPL"]
+
+    # duplicate an existing timestamp (a legitimate edge case: two rows sharing one instant) to make sure
+    # searchsorted's "side=right" semantics include ALL rows at the boundary, exactly like `<=` would.
+    dup_row = full_df.iloc[[10]].copy()
+    with_dup = pd.concat([full_df.iloc[:11], dup_row, full_df.iloc[11:]], ignore_index=True)
+    p._by_symbol["AAPL"] = with_dup
+
+    for bound_time in ("0935", "1000", "1005"):    # all <= the clock's current 10:05 -- _bound() forbids later
+        bound = _et(bound_time)
+        reference = with_dup[with_dup["timestamp"] <= bound]          # the OLD boolean-mask implementation
+        actual = p._visible("AAPL", bound)                            # the NEW searchsorted implementation
+        pd.testing.assert_frame_equal(reference.reset_index(drop=True), actual.reset_index(drop=True))

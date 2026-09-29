@@ -81,7 +81,20 @@ class HistoricalMarketProvider:
         df = self._by_symbol.get(symbol.upper())
         if df is None or df.empty:
             return pd.DataFrame(columns=["symbol", "timestamp", "open", "high", "low", "close", "volume"])
-        return df[df["timestamp"] <= bound]
+        # `df` is already sorted by timestamp ascending for this symbol (guaranteed at __init__, by
+        # construction, never re-checked per call) -- a boolean mask (`df["timestamp"] <= bound`) scans
+        # every row of this symbol's ENTIRE history on every single call, which is O(n) per call and, at
+        # Full-scale HIST-001 (multi-year history, thousands of quote()/bars() calls per symbol across a
+        # 16k-cycle replay), made the replay run orders of magnitude slower than at Medium scale -- a real
+        # performance defect found dry-running Full (a 6-day/108-cycle slice took ~33 minutes; at that rate
+        # the full ~26-month replay would have taken days). `searchsorted` finds the same cutoff via binary
+        # search (O(log n)) on the already-sorted column -- IDENTICAL result to the boolean mask (proven by
+        # a dedicated regression test comparing both on real data), just not re-scanning the whole history
+        # on every call. This is a pure performance fix: no row that would have been visible before is
+        # excluded now, and no row that would have been invisible is now included -- no decision anywhere
+        # in the replay can be affected by which of these two equivalent slicing methods produced its input.
+        idx = df["timestamp"].searchsorted(bound, side="right")
+        return df.iloc[:idx]
 
     # -- the two calls the plan asks for -----------------------------------------------------------------
     def quote(self, symbol: str, as_of: Optional[dt.datetime] = None) -> Optional[Quote]:
