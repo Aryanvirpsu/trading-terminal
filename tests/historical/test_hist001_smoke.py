@@ -2,6 +2,10 @@
 478GB corpus), the real Champion decision+execution stack run over a real month, determinism verified by
 an actual repeated run, and the finding that a single month cannot cross the 55-daily-bar trend floor
 confirmed directly against the real committed dataset (not asserted from memory).
+
+The Smoke stage itself has no separate warm-up month (that was Smoke's own central finding -- see
+HIST_001_CHAMPION_BASELINE.md); these tests call run_baseline() with warmup_start == evaluation_start, i.e.
+zero warm-up days, exactly matching what was actually run.
 """
 import sys
 from pathlib import Path
@@ -11,6 +15,7 @@ import pytest
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
 
+from research.historical.capability import PRICE_TREND_ONLY_V1
 from research.historical.hist001.analysis import (
     capacity_opportunity_cost, ch001_shadow, choice_events, funnel_summary, portfolio_metrics,
     survivorship_bias_note,
@@ -75,11 +80,13 @@ def test_no_symbol_has_55_daily_bars_in_a_single_month():
 def smoke_result():
     return run_baseline(run_id="hist001_test_smoke_1", intraday_dataset_id=INTRADAY_DATASET_ID,
                         daily_dataset_id=DAILY_DATASET_ID, universe_sectors=["technology"],
-                        start="2024-01-01", end="2024-01-31")
+                        warmup_start="2024-01-01", evaluation_start="2024-01-01", evaluation_end="2024-01-31",
+                        capability_fingerprint=PRICE_TREND_ONLY_V1)
 
 
 def test_smoke_replay_runs_all_cycles_with_no_exception(smoke_result):
-    assert len(smoke_result["trading_days"]) == 21
+    assert len(smoke_result["evaluation_trading_days"]) == 21
+    assert len(smoke_result["warmup_trading_days"]) == 0
     assert len(smoke_result["cycles"]) == 567
     assert all(c["premarket"]["state"] == "ok" for c in smoke_result["cycles"])
 
@@ -91,12 +98,11 @@ def test_smoke_replay_produces_zero_candidates_consistent_with_the_daily_bar_fin
 
 
 def test_smoke_replay_is_deterministic_across_two_independent_runs():
-    r1 = run_baseline(run_id="hist001_test_determinism_a", intraday_dataset_id=INTRADAY_DATASET_ID,
-                      daily_dataset_id=DAILY_DATASET_ID, universe_sectors=["technology"],
-                      start="2024-01-01", end="2024-01-10")
-    r2 = run_baseline(run_id="hist001_test_determinism_b", intraday_dataset_id=INTRADAY_DATASET_ID,
-                      daily_dataset_id=DAILY_DATASET_ID, universe_sectors=["technology"],
-                      start="2024-01-01", end="2024-01-10")
+    kwargs = dict(intraday_dataset_id=INTRADAY_DATASET_ID, daily_dataset_id=DAILY_DATASET_ID,
+                 universe_sectors=["technology"], warmup_start="2024-01-01", evaluation_start="2024-01-01",
+                 evaluation_end="2024-01-10", capability_fingerprint=PRICE_TREND_ONLY_V1)
+    r1 = run_baseline(run_id="hist001_test_determinism_a", **kwargs)
+    r2 = run_baseline(run_id="hist001_test_determinism_b", **kwargs)
     assert r1["event_count"] == r2["event_count"]
     assert len(r1["signals"]) == len(r2["signals"])
     assert r1["account"]["equity"] == r2["account"]["equity"]
@@ -107,11 +113,21 @@ def test_smoke_replay_starts_from_a_fresh_500_account(smoke_result):
     assert smoke_result["account"]["starting_equity"] == 500.0
 
 
+def test_price_trend_macro_v1_refuses_without_macro_history(smoke_result_kwargs_unused=None):
+    from research.historical.macro import MacroCoverageError
+
+    with pytest.raises(MacroCoverageError):
+        run_baseline(run_id="hist001_test_macro_refuse", intraday_dataset_id=INTRADAY_DATASET_ID,
+                    daily_dataset_id=DAILY_DATASET_ID, universe_sectors=["technology"],
+                    warmup_start="2024-01-01", evaluation_start="2024-01-01", evaluation_end="2024-01-10")
+                    # capability_fingerprint defaults to PRICE_TREND_MACRO_V1, no macro_history given
+
+
 # ── analysis functions on real (trivial) smoke output ──────────────────────────────────────────────────
 
 def test_funnel_summary_on_real_zero_decision_output(smoke_result):
     f = funnel_summary(smoke_result)
-    assert f["cycles_completed_ok"] == 567
+    assert f["evaluation_cycles_ok"] == 567
     assert f["raw_observations"] == 0
     assert f["independent_events"] == 0
 
@@ -125,7 +141,7 @@ def test_survivorship_note_reports_full_coverage_for_the_smoke_universe(smoke_re
 
 
 def test_capacity_choice_ch001_portfolio_all_handle_the_trivial_case_cleanly(smoke_result):
-    assert capacity_opportunity_cost(smoke_result, None) == []
+    assert capacity_opportunity_cost(smoke_result, INTRADAY_DATASET_ID) == []
     assert choice_events(smoke_result) == []
     shadow = ch001_shadow(smoke_result)
     assert shadow["independent_trades_reaching_plus_1r"] == 0

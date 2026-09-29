@@ -1,7 +1,14 @@
 """HIST-001: post-hoc analysis over a `baseline.run_baseline()` result -- funnel attribution, capacity
-opportunity cost (via H6's `resolve_hypothetical`), choice-event records, the CH-001 shadow comparison, and
-basic portfolio/trade/path metrics. Every function here is read-only over the replay's own output; none of
-them change a Champion decision or re-run any part of the replay.
+opportunity cost (via H6's `resolve_hypothetical`, now using the full decision-time capture baseline.py
+records), choice-event records with full candidate detail, the CH-001 shadow comparison, and basic
+portfolio/trade/path metrics. Every function here is read-only over the replay's own output; none of them
+change a Champion decision or re-run any part of the replay.
+
+Post-Smoke: every metric that would otherwise count a warm-up-phase observation is filtered to
+`phase == "evaluation"` only (directive: "warm-up decisions do not count, warm-up trades do not count,
+warm-up events do not enter HIST-001 metrics") -- warm-up cycles still ran for real and their account-state
+effects are real (a warm-up position still consumes capacity in the evaluation window), just excluded from
+the REPORTED sample.
 """
 from __future__ import annotations
 
@@ -10,28 +17,28 @@ import json
 from collections import Counter, defaultdict
 from typing import Any, Dict, List, Optional
 
+from ..clock import HistoricalClock
 from ..outcomes import resolve_hypothetical
+from ..provider import HistoricalMarketProvider
+
+
+def _eval_cycles(result: Dict[str, Any]):
+    return [c for c in result["cycles"] if c["phase"] == "evaluation" and c["premarket"].get("state") == "ok"]
 
 
 def funnel_summary(result: Dict[str, Any]) -> Dict[str, Any]:
     """UNIVERSE -> scanner detections -> raw setups -> validation -> A/B/C/D/E -> finalists -> TRADEABLE ->
-    capacity-eligible -> orders -> fills -> exits, with observation counts, independent-event counts (via
-    each observation's own event_id, stamped during the replay), conversion %, and major rejection reasons.
-    Scanner-detection/raw-setup/finalist counts come straight from each cycle's own scan() output
-    (candidate_count/finalist_count), already the real funnel the Champion itself reports."""
+    capacity-eligible -> orders -> fills -> exits. EVALUATION PHASE ONLY."""
     total_observations = 0
     events_seen: set = set()
     by_decision = Counter()
     events_by_decision: Dict[str, set] = defaultdict(set)
     candidates_total = 0
     finalists_total = 0
-    cycles_ok = 0
 
-    for c in result["cycles"]:
+    eval_cycles = _eval_cycles(result)
+    for c in eval_cycles:
         pm = c["premarket"]
-        if pm.get("state") != "ok":
-            continue
-        cycles_ok += 1
         candidates_total += pm.get("candidates") or 0
         finalists_total += len(pm.get("finalists") or [])
         for ev in pm.get("evaluated", []):
@@ -43,6 +50,8 @@ def funnel_summary(result: Dict[str, Any]) -> Dict[str, Any]:
                 events_seen.add(eid)
                 events_by_decision[action].add(eid)
 
+    # not_executed audit rows carry a UTC timestamp, not an ET session_date, so they are NOT phase-filtered
+    # here -- this tally is informational context (all phases combined), never a counted HIST-001 metric.
     reasons = Counter()
     for row in result["not_executed"]:
         try:
@@ -60,7 +69,9 @@ def funnel_summary(result: Dict[str, Any]) -> Dict[str, Any]:
         return round(100.0 * n / d, 2) if d else None
 
     return {
-        "cycles_completed_ok": cycles_ok, "cycles_total": len(result["cycles"]),
+        "phase": "evaluation", "evaluation_cycles_ok": len(eval_cycles),
+        "warmup_trading_days": len(result["warmup_trading_days"]),
+        "evaluation_trading_days": len(result["evaluation_trading_days"]),
         "candidates_total_raw": candidates_total, "finalists_total_raw": finalists_total,
         "raw_observations": total_observations, "independent_events": len(events_seen),
         "by_decision_observations": dict(by_decision),
@@ -72,12 +83,11 @@ def funnel_summary(result: Dict[str, Any]) -> Dict[str, Any]:
             "tradeable_events_to_orders": pct(len(orders), tradeable_events) if tradeable_events else None,
             "orders_to_fills": pct(len(fills), len(orders)),
         },
-        "major_rejection_reasons": reasons.most_common(10),
+        "major_rejection_reasons_all_phases": reasons.most_common(10),
     }
 
 
 def survivorship_bias_note(universe_symbols: List[str], dataset_symbols: List[str]) -> Dict[str, Any]:
-    """Directive sec 17, mandatory: today's sector_map membership was used (never called unbiased)."""
     missing = sorted(set(universe_symbols) - set(dataset_symbols))
     return {
         "universe_source": "today's dashboard/sector_map.py membership (NOT point-in-time historical "
@@ -94,64 +104,87 @@ def survivorship_bias_note(universe_symbols: List[str], dataset_symbols: List[st
     }
 
 
-def capacity_opportunity_cost(result: Dict[str, Any], provider, decision_provider=None) -> List[Dict[str, Any]]:
-    """For every TRADEABLE observation that did NOT execute (blocked by daily-entry cap / sector cap /
-    open-position cap / capital / cutoff -- read from its own journalled `note`/not_executed reason),
-    resolve its hypothetical outcome via H6, using its own decision-time price/stop/target. Does not
-    conclude the constraint should change (directive sec 13) -- purely descriptive opportunity cost."""
+def capacity_opportunity_cost(result: Dict[str, Any], intraday_dataset_id: str) -> List[Dict[str, Any]]:
+    """For every TRADEABLE observation (EVALUATION phase only) that did NOT execute, resolve its
+    hypothetical outcome via H6, using the FULL decision-time record `baseline.run_baseline()` captured
+    (price/stop/target/direction/sector/quantity/risk-budget/quote/account-state/capability-fingerprint --
+    the directive's own required minimum). The historical account never actually consumed cash/capacity for
+    these -- this reads the replay's own already-produced output; nothing is re-run or re-decided."""
     blocked_capacity_phrases = ("daily entry cap", "sector", "capacity", "post-cutoff", "post_cutoff",
                                "existing position", "already entered")
+    end_clock = HistoricalClock(dt.datetime.fromisoformat(result["cycles"][-1]["et_time"]) + dt.timedelta(minutes=5))
+    outcome_provider = HistoricalMarketProvider(end_clock, [intraday_dataset_id])
+
     out: List[Dict[str, Any]] = []
-    for c in result["cycles"]:
-        pm = c["premarket"]
-        if pm.get("state") != "ok":
-            continue
-        decision_time = dt.datetime.fromisoformat(c["et_time"])
-        for ev in pm.get("evaluated", []):
+    for c in _eval_cycles(result):
+        for ev in c["premarket"].get("evaluated", []):
             if ev.get("action") != "TRADEABLE" or ev.get("executed"):
                 continue
             note = (ev.get("note") or "").lower()
-            reasons_matched = [phrase for phrase in blocked_capacity_phrases if phrase in note]
-            if not reasons_matched:
+            if not any(phrase in note for phrase in blocked_capacity_phrases):
                 continue
-            # The evaluated dict from premarket() carries only the action/note, not price/stop/target --
-            # those live in the real decision output, not retrievable post-hoc without re-evaluating. This
-            # is disclosed as a scope limit of this analysis pass, not silently worked around: a genuine
-            # capacity-opportunity-cost resolution needs the ORIGINAL decision's own levels, captured at
-            # replay time in a future increment (see HIST_001 report's "not yet done" section).
-            out.append({"symbol": ev["symbol"], "cycle_id": c["cycle_id"], "session_date": c["session_date"],
-                       "event_id": ev.get("event_id"), "blocked_reason": ev.get("note"),
-                       "hypothetical_outcome": "NOT RESOLVED -- decision-time price/stop/target were not "
-                       "captured at replay time for non-executed TRADEABLE observations in this pass"})
+            key = f"{c['cycle_id']}|{ev['symbol']}"
+            rec = result["decision_capture"].get(key)
+            record: Dict[str, Any] = {"symbol": ev["symbol"], "cycle_id": c["cycle_id"],
+                                      "session_date": c["session_date"], "event_id": ev.get("event_id"),
+                                      "decision_id": ev.get("decision_id"), "blocked_reason": ev.get("note")}
+            if rec is None or rec.get("price") is None or rec.get("stop") is None or rec.get("target") is None:
+                record["hypothetical_outcome"] = None
+                record["resolution_note"] = "decision-time price/stop/target were not captured for this symbol"
+                out.append(record)
+                continue
+            record.update({"decision_time_et": rec.get("et_time"), "direction": rec.get("direction"),
+                          "entry_price": rec["price"], "stop": rec["stop"], "target": rec["target"],
+                          "sector": rec.get("sector"), "hypothetical_quantity": rec.get("hypothetical_quantity"),
+                          "risk_budget": rec.get("risk_budget"), "quote_ask": rec.get("quote_ask"),
+                          "quote_bid": rec.get("quote_bid"), "account_equity_before": rec.get("account_equity_before"),
+                          "capability_fingerprint": rec.get("capability_fingerprint")})
+            try:
+                decision_time = dt.datetime.fromisoformat(rec["et_time"])
+                outcome = resolve_hypothetical(outcome_provider, ev["symbol"],
+                                               {"price": rec["price"], "stop": rec["stop"], "target": rec["target"],
+                                               "direction": rec.get("direction", "LONG")}, decision_time)
+                record["hypothetical_outcome"] = outcome.to_dict() if outcome else None
+            except Exception as e:
+                record["hypothetical_outcome"] = None
+                record["resolution_note"] = f"outcome resolution failed: {e}"
+            out.append(record)
     return out
 
 
 def choice_events(result: Dict[str, Any]) -> List[Dict[str, Any]]:
-    """Directive sec 14: whenever two or more TRADEABLE candidates compete for a limited slot in the SAME
-    cycle, record the candidate set and which one the Champion actually selected (executed)."""
+    """Directive sec 5/14: whenever two or more TRADEABLE candidates compete in the SAME evaluation-phase
+    cycle, record the full candidate set (decision-time features from decision_capture) and which one the
+    Champion actually selected."""
     out = []
-    for c in result["cycles"]:
-        pm = c["premarket"]
-        if pm.get("state") != "ok":
-            continue
-        tradeable = [ev for ev in pm.get("evaluated", []) if ev.get("action") == "TRADEABLE"]
+    for c in _eval_cycles(result):
+        tradeable = [ev for ev in c["premarket"].get("evaluated", []) if ev.get("action") == "TRADEABLE"]
         if len(tradeable) < 2:
             continue
         selected = [ev["symbol"] for ev in tradeable if ev.get("executed")]
+        candidate_detail = []
+        for ev in tradeable:
+            rec = result["decision_capture"].get(f"{c['cycle_id']}|{ev['symbol']}", {})
+            candidate_detail.append({"symbol": ev["symbol"], "note": ev.get("note"),
+                                    "quality": rec.get("quality"), "sector": rec.get("sector"),
+                                    "price": rec.get("price"), "stop": rec.get("stop"), "target": rec.get("target"),
+                                    "selected": ev["symbol"] in selected})
         out.append({"cycle_id": c["cycle_id"], "session_date": c["session_date"],
                    "candidates": [ev["symbol"] for ev in tradeable], "selected": selected,
-                   "candidate_detail": [{"symbol": ev["symbol"], "note": ev.get("note")} for ev in tradeable]})
+                   "candidate_detail": candidate_detail})
     return out
 
 
 def ch001_shadow(result: Dict[str, Any]) -> Dict[str, Any]:
-    """SHADOW ANALYSIS ONLY (directive sec 15): Champion's real exit vs. a hypothetical breakeven-after-+1R
-    stop management, for every REAL position that reached +1R (per its own recorded MFE). Never affects a
-    real position. Uses the real positions table's own mfe/stop/target/avg_entry -- does not re-run
-    outcomes.py bar-by-bar (that needs the raw provider bars, a further increment); reports what CAN be
-    determined from the ledger's own recorded MFE/exit alone, and says so."""
+    """SHADOW ANALYSIS ONLY: Champion's real exit vs. a hypothetical breakeven-after-+1R stop management,
+    for every REAL position (opened during the EVALUATION phase) that reached +1R per its own recorded MFE.
+    Never affects a real position."""
+    eval_dates = set(result["evaluation_trading_days"])
     reached_plus_1r = []
     for p in result["positions"]:
+        opened_date = str(p.get("opened_at") or "")[:10]
+        if eval_dates and opened_date not in eval_dates:
+            continue
         entry, stop = p.get("avg_entry"), p.get("stop")
         if entry is None or stop is None or entry == stop:
             continue
@@ -172,12 +205,15 @@ def ch001_shadow(result: Dict[str, Any]) -> Dict[str, Any]:
 
 
 def portfolio_metrics(result: Dict[str, Any]) -> Dict[str, Any]:
-    positions = result["positions"]
+    """EVALUATION PHASE positions only (opened_at date within the evaluation window)."""
+    eval_dates = set(result["evaluation_trading_days"])
+    positions = [p for p in result["positions"]
+                if not eval_dates or str(p.get("opened_at") or "")[:10] in eval_dates]
     closed = [p for p in positions if p.get("status") == "closed"]
     realized = [p.get("realized_pnl") or 0.0 for p in closed]
     acct = result["account"]
     return {
-        "starting_equity": acct.get("starting_equity"), "ending_equity": acct.get("equity"),
+        "phase": "evaluation", "starting_equity": acct.get("starting_equity"), "ending_equity": acct.get("equity"),
         "net_pnl": round(sum(realized), 2), "resolved_trades": len(closed), "open_positions_end": len(
             [p for p in positions if p.get("status") == "open"]),
         "win_rate_pct": round(100.0 * sum(1 for r in realized if r > 0) / len(closed), 1) if closed else None,
