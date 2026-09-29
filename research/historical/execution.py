@@ -27,7 +27,7 @@ effect on calls made from the other. Every import in this file therefore uses th
 stay in the SAME module-identity space H3's patches already live in -- `lab.paper.*` must never be mixed in
 here, or a patch silently stops applying with no error, only a live network call or a stale mock.
 
-Four hidden LIVE-data/wall-clock paths were found and are patched here (see docstrings below for why each
+Six hidden LIVE-data/wall-clock paths were found and are patched here (see docstrings below for why each
 matters):
   * `workflow.quote_for` -- the obvious one; workflow.py's own market-data entry point.
   * `workflow.provider_health` -- premarket() aborts entirely ("no orders planned") if this reports
@@ -40,9 +40,22 @@ matters):
   * `cache_policy.classify` (found via HIST-001's Medium stage, once real TRADEABLE candidates first reached
     the execution path) -- `broker._decision_valid()` calls it with no `now=`, so its real-wall-clock default
     compared a genuinely historical quote timestamp against the REPLAY's real run-time, refusing every single
-    entry as artificially "stale" (a ~2.5-year apparent age) regardless of how good the setup was. Unlike the
-    other three, this one silently produced a WRONG RESULT (zero executions) rather than a live network call
-    or a stale mock -- the more dangerous failure mode, since nothing raised or errored.
+    entry as artificially "stale" (a ~2.5-year apparent age) regardless of how good the setup was.
+  * `db.utcnow()` (found auditing every remaining wall-clock call once the above was fixed) -- has no
+    override parameter at all, so every `opened_at`/`closed_at`/`created_at`/`outcome_at`/`filled_at`
+    timestamp written anywhere in the ledger during a historical replay was the REAL run-time, not the
+    historical trade time. This one is doubly dangerous: it doesn't just misclassify one check, it corrupts
+    stored data that later analysis (including this project's own `analysis.py`, which buckets positions by
+    their own `opened_at` date) reads back as if it were ground truth.
+  * `risk.cooldown_state()` -- exposes no seam at all (`dt.date.today()` inline, no parameter), and even
+    after `db.utcnow()` is fixed so `closed_at` is genuinely historical, comparing that historical `until`
+    date against the REAL wall-clock date means the consecutive-loss cooldown gate can never trigger during
+    a replay (real "today" is always past any historical "until"). Patched via call-through: the real
+    function's streak/threshold/`until` computation runs completely unchanged; only the final `today <=
+    until` comparison is corrected to use the replay clock.
+  Unlike the first three (which would either call out to a live network or serve a stale-but-labeled mock),
+  the last two silently produced WRONG RESULTS with no error and no live call -- the more dangerous failure
+  mode, since nothing about them looked broken from the outside.
 
 Shadow evidence collection (`shadow_log`, `options_shadow`'s own resolve path) exists to collect live
 Challenger evidence for the forward Ubuntu runtime and has no historical-replay meaning; disabled here the
@@ -141,9 +154,45 @@ class HistoricalExecutionContext(HistoricalAVDIContext):
             now = self.clock.now.timestamp()
         return self._real_cache_policy_classify(category, source_ts, now=now)
 
+    def _patched_db_utcnow(self) -> str:
+        # A FOURTH hidden wall-clock path, found investigating the cache_policy fix further: `paper.db.utcnow()`
+        # (real `datetime.now(timezone.utc).isoformat()`, no override parameter at all) is what
+        # `broker._apply_fill_to_position()` stamps every position's `opened_at`/`closed_at` with, and what
+        # `journal`/`options_shadow`/`shadow_log` stamp every `created_at`/`outcome_at`/`filled_at` with. Left
+        # unpatched, every position in a historical replay carries the REAL run-time as its open/close
+        # timestamp (e.g. "2026-09-29..." for a trade that actually happened on "2024-03-08") -- silently
+        # wrong in two compounding ways: (1) any reporting code that filters/buckets positions by their own
+        # opened_at date (this project's own analysis.py, e.g.) would filter out every real historical trade,
+        # since no real position's opened_at date could ever fall inside a historical evaluation window; (2)
+        # it feeds `risk.cooldown_state()`'s `until` calculation with a real-run-time `closed_at`, which
+        # `_patched_cooldown_state` below corrects for separately. `db.utcnow()` has no strategy logic
+        # whatsoever -- it is pure timestamp generation -- so replacing it outright (not a call-through
+        # override of an optional param, since it takes none) changes no Champion decision, only what "now"
+        # means during replay, exactly like every other patch in this file.
+        self.calls.append({"fn": "db.utcnow", "clock_now": self.clock.now.isoformat()})
+        return self.clock.now.isoformat()
+
+    def _patched_cooldown_state(self):
+        # Even after `db.utcnow()` is corrected (so `closed_at` is genuinely historical), `risk.cooldown_state()`
+        # independently calls `dt.date.today()` with NO override parameter to decide whether a cooldown
+        # triggered by a historical loss streak is still `active` -- comparing a real historical `until` date
+        # (e.g. "2024-03-18") against the REAL wall-clock date (e.g. "2026-09-29") always reads `today > until`,
+        # so the cooldown gate would silently NEVER trigger during any historical replay, regardless of how
+        # many consecutive historical losses occurred. `cooldown_state()` exposes no seam to inject a
+        # historical "today" through, so this calls the REAL function through unchanged (same streak-counting,
+        # same `cooldown_losses`/`cooldown_days` config, same `until` computation) and corrects ONLY the final
+        # wall-clock-dependent comparison using the replay clock's own date -- no cooldown THRESHOLD or
+        # strategy parameter is touched, only which "today" the existing threshold is compared against.
+        self.calls.append({"fn": "risk.cooldown_state", "clock_now": self.clock.now.isoformat()})
+        rec = self._real_cooldown_state()
+        if rec.get("until"):
+            rec = dict(rec)
+            rec["active"] = self.clock.now.date().isoformat() <= rec["until"]
+        return rec
+
     def __enter__(self) -> "HistoricalExecutionContext":
         super().__enter__()
-        from paper import risk as risk_mod       # flat namespace -- see module docstring
+        from paper import db, risk as risk_mod       # flat namespace -- see module docstring
         from paper import shadow_log, workflow
         import cache_policy                       # flat namespace -- lab/ on sys.path, same as every sibling
         p = self._stack.enter_context
@@ -152,6 +201,9 @@ class HistoricalExecutionContext(HistoricalAVDIContext):
         p(mock.patch.object(risk_mod, "_live_mark_src", self._patched_live_mark_src))
         self._real_cache_policy_classify = cache_policy.classify
         p(mock.patch.object(cache_policy, "classify", self._patched_cache_policy_classify))
+        p(mock.patch.object(db, "utcnow", self._patched_db_utcnow))
+        self._real_cooldown_state = risk_mod.cooldown_state
+        p(mock.patch.object(risk_mod, "cooldown_state", self._patched_cooldown_state))
         # No historical replay for Challenger shadow evidence (see module docstring) -- disabled, not
         # reimplemented, same disclosed-limitation pattern as avdi_adapter.py's FAMILIES_WITHOUT_HISTORICAL_REPLAY.
         p(mock.patch.object(shadow_log, "capacity_snapshot", lambda *a, **k: None))

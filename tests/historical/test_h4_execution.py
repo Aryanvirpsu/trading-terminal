@@ -7,6 +7,7 @@ ONE daily-resolution provider for both decision-making and execution quotes, mat
 provider design. A follow-on increment should give execution its own finer (e.g. 5-minute) timeframe for
 realistic intraday stop/target fills -- not done here, and not claimed here.
 """
+import datetime as dt
 import sys
 from pathlib import Path
 
@@ -150,6 +151,90 @@ def test_decision_valid_uses_the_historical_clock_not_the_real_wall_clock(univer
         allowed, detail = broker._decision_valid({}, q)
         assert allowed is True, detail
         assert "display-only" not in detail
+
+
+def test_db_utcnow_uses_the_historical_clock_not_the_real_wall_clock(universe_dataset):
+    """Regression test: paper.db.utcnow() has no override parameter at all, so every opened_at/closed_at/
+    created_at timestamp written during a historical replay must come from the replay clock -- not
+    datetime.now(timezone.utc), which would stamp a 2024 trade with a 2026 (or later) real run-time."""
+    dataset_id, days = universe_dataset
+    clk = HistoricalClock(days[60].to_pydatetime())
+    provider = HistoricalMarketProvider(clk, [dataset_id])
+
+    from paper import db
+    orig_utcnow = db.utcnow
+
+    with HistoricalExecutionContext(provider):
+        assert db.utcnow is not orig_utcnow
+        stamped = db.utcnow()
+        assert stamped == clk.now.isoformat()
+        assert stamped[:4] == str(days[60].year)   # genuinely the historical year, not the real one
+
+    assert db.utcnow is orig_utcnow
+
+
+def test_position_opened_at_is_the_historical_date_not_the_real_run_date(universe_dataset):
+    """End-to-end regression test for the bug found building HIST-001 Medium: a real fill's position row
+    must carry the HISTORICAL trade date in opened_at, not the real wall-clock date the replay happened to
+    run on -- this project's own analysis.py filters positions by opened_at date, so a wall-clock-stamped
+    opened_at would silently make every real historical trade invisible to that filter."""
+    dataset_id, days = universe_dataset
+    isolate_paper_ledger("h4_opened_at_test")
+    clk = HistoricalClock(days[60].to_pydatetime())
+    provider = HistoricalMarketProvider(clk, [dataset_id])
+
+    from paper import broker, db
+
+    with HistoricalExecutionContext(provider):
+        order = broker.place_order("AAPL", "BUY", 1.0, order_type="MARKET", intent="entry",
+                                   strategy="test", session_date=days[60].strftime("%Y-%m-%d"))
+        q = provider.quote("AAPL")
+        broker.process_order(order["order_id"], q)
+        pos = db.query_one("SELECT * FROM positions WHERE symbol='AAPL' AND status='open'")
+        assert pos is not None
+        assert pos["opened_at"].startswith(days[60].strftime("%Y-%m-%d"))
+        assert not pos["opened_at"].startswith("2026")   # never the real replay run-year
+
+
+def test_cooldown_state_compares_against_the_historical_clock(universe_dataset):
+    """Regression test: risk.cooldown_state() calls dt.date.today() inline with no override -- even with
+    db.utcnow() fixed (so closed_at is genuinely historical), comparing a historical `until` against the
+    REAL wall-clock date would make the cooldown gate either permanently active or permanently inactive
+    depending on which side of "today" the historical dates fall. Inside a HistoricalExecutionContext, the
+    `active` flag must be computed against the replay clock's own date."""
+    dataset_id, days = universe_dataset
+    isolate_paper_ledger("h4_cooldown_test")
+    clk = HistoricalClock(days[60].to_pydatetime())
+    provider = HistoricalMarketProvider(clk, [dataset_id])
+
+    from paper import config as cfg
+    from paper import db, risk as risk_mod
+
+    with HistoricalExecutionContext(provider):
+        r = cfg.risk()
+        # Seed exactly cooldown_losses consecutive losing CLOSED positions, closed_at stamped via the
+        # (now-historical) db.utcnow() at the replay clock's current instant.
+        closed_at = db.utcnow()
+        for i in range(r.cooldown_losses):
+            db.execute("""INSERT INTO positions(position_id, signal_id, symbol, strategy, sector, opened_at,
+                            closed_at, quantity, avg_entry, avg_exit, stop, target, status, realized_pnl,
+                            fees, planned_risk, mfe, mae)
+                          VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+                       (f"pos_cooldown_test_{i}", None, "AAPL", "test", "technology", closed_at, closed_at,
+                        1.0, 100.0, 95.0, 95.0, 110.0, "closed", -5.0, 0.0, 5.0, 0.0, 5.0))
+
+        rec = risk_mod.cooldown_state()
+        assert rec["consecutive_losses"] == r.cooldown_losses
+        # the cooldown was JUST triggered at the replay clock's current instant -- it must read as ACTIVE
+        # relative to that same clock, not as expired (which real 2026 wall-clock "today" would show, since
+        # `until` = historical closed_at's date + cooldown_days is always in the historical past relative to
+        # the real run date) nor as permanently active for real calendar days.
+        assert rec["active"] is True, rec
+
+        # advance the replay clock PAST the cooldown window -- must now read inactive.
+        clk.set(clk.now + dt.timedelta(days=r.cooldown_days + 1))
+        rec2 = risk_mod.cooldown_state()
+        assert rec2["active"] is False, rec2
 
 
 def test_run_session_executes_the_real_pipeline_against_the_isolated_ledger(universe_dataset, tmp_path):
