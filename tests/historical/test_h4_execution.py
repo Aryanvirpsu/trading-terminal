@@ -91,14 +91,17 @@ def test_execution_context_patches_and_restores_the_extra_h4_seams(universe_data
 
     from paper import risk as risk_mod
     from paper import workflow
+    import cache_policy
     orig_quote_for = workflow.quote_for
     orig_health = workflow.provider_health
     orig_mark = risk_mod._live_mark_src
+    orig_classify = cache_policy.classify
 
     with HistoricalExecutionContext(provider) as ctx:
         assert workflow.quote_for is not orig_quote_for
         assert workflow.provider_health is not orig_health
         assert risk_mod._live_mark_src is not orig_mark
+        assert cache_policy.classify is not orig_classify
 
         health = workflow.provider_health()
         assert health["healthy"] is True and health["historical_replay"] is True
@@ -111,10 +114,42 @@ def test_execution_context_patches_and_restores_the_extra_h4_seams(universe_data
         assert src == "historical_quote" and mark is not None
         assert any(c["fn"] == "risk._live_mark_src" for c in ctx.calls)
 
+        # a quote timestamped a few minutes before the HISTORICAL clock's own "now" must classify as
+        # fresh ("valid-decision"), never compared against the real wall clock -- the exact bug found
+        # building HIST-001's Medium stage (a real 2024 quote was refused as ~2.5-years stale against the
+        # real 2026 wall clock).
+        historical_source_ts = clk.now.timestamp() - 120
+        rec = cache_policy.classify("price", historical_source_ts)
+        assert rec["tier"] == "valid-decision", rec
+        assert rec["decision_valid"] is True
+        assert rec["age_seconds"] == 120
+
     # restored exactly, no leakage across tests (same pattern H3 already proves for its own seams)
     assert workflow.quote_for is orig_quote_for
     assert workflow.provider_health is orig_health
     assert risk_mod._live_mark_src is orig_mark
+    assert cache_policy.classify is orig_classify
+
+
+def test_decision_valid_uses_the_historical_clock_not_the_real_wall_clock(universe_dataset):
+    """Direct regression test for the bug: lab.paper.broker._decision_valid() calls
+    cache_policy.classify('price', quote.source_ts) with no `now=` -- inside a HistoricalExecutionContext
+    this must resolve against the replay clock, never against real wall-clock time.time()."""
+    dataset_id, days = universe_dataset
+    clk = HistoricalClock(days[60].to_pydatetime())
+    provider = HistoricalMarketProvider(clk, [dataset_id])
+
+    from paper import broker
+
+    with HistoricalExecutionContext(provider):
+        q = None
+        from paper import workflow
+        q = workflow.quote_for("AAPL")
+        # the quote's own source_ts is derived from the historical bar's timestamp -- genuinely far from
+        # the REAL wall clock, but must read as fresh relative to the replay clock.
+        allowed, detail = broker._decision_valid({}, q)
+        assert allowed is True, detail
+        assert "display-only" not in detail
 
 
 def test_run_session_executes_the_real_pipeline_against_the_isolated_ledger(universe_dataset, tmp_path):

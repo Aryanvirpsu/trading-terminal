@@ -27,7 +27,8 @@ effect on calls made from the other. Every import in this file therefore uses th
 stay in the SAME module-identity space H3's patches already live in -- `lab.paper.*` must never be mixed in
 here, or a patch silently stops applying with no error, only a live network call or a stale mock.
 
-Two hidden LIVE-data paths were found and are patched here (see docstrings below for why each matters):
+Four hidden LIVE-data/wall-clock paths were found and are patched here (see docstrings below for why each
+matters):
   * `workflow.quote_for` -- the obvious one; workflow.py's own market-data entry point.
   * `workflow.provider_health` -- premarket() aborts entirely ("no orders planned") if this reports
     unhealthy, and it calls live Yahoo/Finnhub/TradingView checks that have no historical meaning.
@@ -36,6 +37,12 @@ Two hidden LIVE-data paths were found and are patched here (see docstrings below
     contaminated by TODAY'S real live price for any symbol with a currently-open historical position, a
     serious lookahead defect that has nothing to do with the deliberately-disclosed missing evidence
     families (news/filings/etc.) H3 already flags -- this one would have silently corrupted P&L.
+  * `cache_policy.classify` (found via HIST-001's Medium stage, once real TRADEABLE candidates first reached
+    the execution path) -- `broker._decision_valid()` calls it with no `now=`, so its real-wall-clock default
+    compared a genuinely historical quote timestamp against the REPLAY's real run-time, refusing every single
+    entry as artificially "stale" (a ~2.5-year apparent age) regardless of how good the setup was. Unlike the
+    other three, this one silently produced a WRONG RESULT (zero executions) rather than a live network call
+    or a stale mock -- the more dangerous failure mode, since nothing raised or errored.
 
 Shadow evidence collection (`shadow_log`, `options_shadow`'s own resolve path) exists to collect live
 Challenger evidence for the forward Ubuntu runtime and has no historical-replay meaning; disabled here the
@@ -118,14 +125,33 @@ class HistoricalExecutionContext(HistoricalAVDIContext):
             return float(q.last), "historical_quote"
         return None, "historical_quote_unavailable"          # caller falls back to last fill / avg_entry
 
+    def _patched_cache_policy_classify(self, category, source_ts, now=None):
+        # A THIRD hidden live-data path, found only once HIST-001's Medium stage produced real TRADEABLE
+        # candidates to execute (Smoke never reached this code -- its zero decisions never got past the
+        # scanner): `lab.paper.broker._decision_valid()` calls `cache_policy.classify("price", quote.source_ts)`
+        # with no `now=` argument, so `classify()`'s own default (`time.time()`, real wall-clock "now")
+        # compares a genuinely historical quote timestamp (e.g. 2024-03-08) against the REAL replay-time
+        # clock (e.g. 2026-09) -- a ~2.5-year apparent staleness that refused EVERY single entry attempt as
+        # "display-only", with the specific, misleading reason text "price data is display-only (source age
+        # 80740713s > limit 900s)". This is a real timestamp/freshness-semantics correctness bug in Historical
+        # Lab's clock-patching coverage (the standing correctness-freeze's own explicit carve-out), not a
+        # Champion strategy defect -- `cache_policy.classify()` already accepts an explicit `now`, so this
+        # patches ONLY that default, the same call-through pattern as every other seam in this file.
+        if now is None:
+            now = self.clock.now.timestamp()
+        return self._real_cache_policy_classify(category, source_ts, now=now)
+
     def __enter__(self) -> "HistoricalExecutionContext":
         super().__enter__()
         from paper import risk as risk_mod       # flat namespace -- see module docstring
         from paper import shadow_log, workflow
+        import cache_policy                       # flat namespace -- lab/ on sys.path, same as every sibling
         p = self._stack.enter_context
         p(mock.patch.object(workflow, "quote_for", self._patched_quote_for))
         p(mock.patch.object(workflow, "provider_health", self._patched_provider_health))
         p(mock.patch.object(risk_mod, "_live_mark_src", self._patched_live_mark_src))
+        self._real_cache_policy_classify = cache_policy.classify
+        p(mock.patch.object(cache_policy, "classify", self._patched_cache_policy_classify))
         # No historical replay for Challenger shadow evidence (see module docstring) -- disabled, not
         # reimplemented, same disclosed-limitation pattern as avdi_adapter.py's FAMILIES_WITHOUT_HISTORICAL_REPLAY.
         p(mock.patch.object(shadow_log, "capacity_snapshot", lambda *a, **k: None))
