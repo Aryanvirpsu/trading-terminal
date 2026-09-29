@@ -22,6 +22,8 @@ from __future__ import annotations
 
 import datetime as dt
 import os
+import sys
+import time
 from typing import Any, Dict, List, Optional, Sequence, Tuple
 from unittest import mock
 
@@ -40,7 +42,8 @@ def run_baseline(*, run_id: str, intraday_dataset_id: str, daily_dataset_id: str
                  warmup_start: str, evaluation_start: str, evaluation_end: str,
                  macro_history: Optional[MacroHistory] = None,
                  capability_fingerprint: str = PRICE_TREND_MACRO_V1,
-                 seed_cash: float = 500.0, cycles: Optional[Sequence[ScheduledCycle]] = None) -> Dict[str, Any]:
+                 seed_cash: float = 500.0, cycles: Optional[Sequence[ScheduledCycle]] = None,
+                 progress_every: Optional[int] = None) -> Dict[str, Any]:
     """Runs the real Champion decision+execution stack over every real trading-day cycle in
     [warmup_start, evaluation_end], starting from a FRESH $500 (or `seed_cash`) account. Cycles whose
     `session_date < evaluation_start` are tagged `phase="warmup"`; the rest `phase="evaluation"`. Warm-up
@@ -52,7 +55,22 @@ def run_baseline(*, run_id: str, intraday_dataset_id: str, daily_dataset_id: str
     [warmup_start, evaluation_end] range (`macro.assert_macro_coverage` raises otherwise) -- this run
     structurally cannot claim the macro tag without real, complete macro data behind it. Pass
     `capability_fingerprint=PRICE_TREND_ONLY_V1` explicitly (and no `macro_history`) for a deliberate
-    price-only run instead."""
+    price-only run instead.
+
+    `progress_every`: HIST-001 Full stage (27 months, ~16k cycles, multi-hour) has no way to observe progress
+    otherwise short of waiting for completion. When set, prints one line to stderr every `progress_every`
+    cycles (cycle index, session_date, elapsed seconds, running order/event counts) -- purely observational,
+    reads no state this function doesn't already have, changes no decision, and defaults to None (off,
+    Medium's exact unchanged behavior) so this is additive, not a behavior change to the accepted
+    implementation. This is NOT checkpoint/resume: a killed run still restarts from cycle 0 on an isolated,
+    wiped ledger, by the same design `isolate_paper_ledger()` already documents. Genuine interrupt/resume
+    (persisting decision_capture/event-identity state and proving a resumed run reproduces an uninterrupted
+    one exactly) was scoped OUT of this run as a deliberate, disclosed decision: the same single-process
+    design has now completed reliably three times at Medium scale (up to ~68 minutes each), Full is expected
+    to run single-digit hours as one uninterrupted background process, and building genuine resumability
+    correctly is a substantial standalone effort whose own correctness risk works against the reason this
+    audit trail exists in the first place. If a future run needs true multi-day resumability, it should be
+    built then, deliberately, not rushed in under this run's own time pressure."""
     guard_all()
     if capability_fingerprint not in (PRICE_TREND_MACRO_V1, PRICE_TREND_ONLY_V1):
         raise ValueError(f"unknown capability_fingerprint {capability_fingerprint!r}")
@@ -123,9 +141,15 @@ def run_baseline(*, run_id: str, intraday_dataset_id: str, daily_dataset_id: str
             })
             return canon
 
+        _progress_started = time.time()
         with mock.patch.object(de, "evaluate", _recording_evaluate), \
             mock.patch.object(cb, "evaluate_canonical", _recording_evaluate_canonical):
-            for cyc in cycles:
+            for _cyc_idx, cyc in enumerate(cycles):
+                if progress_every and _cyc_idx % progress_every == 0:
+                    _orders_so_far = db.query("SELECT COUNT(*) n FROM orders")[0]["n"]
+                    print(f"[hist001 progress] cycle {_cyc_idx}/{len(cycles)} session_date={cyc.session_date} "
+                         f"elapsed={time.time() - _progress_started:.0f}s events={tracker.event_count()} "
+                         f"orders_so_far={_orders_so_far}", file=sys.stderr, flush=True)
                 current_cycle_id[0] = cyc.cycle_id
                 shared_clock.set(cyc.et_time)
                 phase = "warmup" if cyc.session_date < evaluation_start else "evaluation"
