@@ -277,7 +277,13 @@ def fetch_fred_vintages(series_id: str, start: str, end: str, *, api_key: str) -
     if not api_key:
         raise ValueError("fetch_fred_vintages requires a real FRED_API_KEY -- none was given")
     rt_start = (dt.date.fromisoformat(start) - dt.timedelta(days=7)).isoformat()
-    rt_end = dt.datetime.now(dt.timezone.utc).date().isoformat()
+    # "9999-12-31" is FRED's own real-time-max sentinel for "through the latest available vintage" -- the
+    # API rejects any concrete calendar date here that is (from ITS server clock) "after today", which a
+    # locally-computed UTC "today" can trip over near a day boundary or under clock skew between this
+    # process and FRED's server (confirmed empirically: a locally-computed date one day ahead of FRED's own
+    # notion of "today" was rejected with HTTP 400). Never a strategy-affecting choice -- purely a real
+    # FRED-API-correctness fix so the query can't intermittently fail depending on when it happens to run.
+    rt_end = "9999-12-31"
     url = (f"https://api.stlouisfed.org/fred/series/observations?series_id={series_id}"
           f"&api_key={api_key}&file_type=json&output_type=2"
           f"&realtime_start={rt_start}&realtime_end={rt_end}"

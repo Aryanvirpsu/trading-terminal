@@ -1,0 +1,22 @@
+{
+ "dataset_id": "HIST001_MEDIUM_2024_H1_MACRO",
+ "source": "FRED",
+ "series_ids": [
+  "DGS10",
+  "DGS2",
+  "FEDFUNDS",
+  "VIXCLS"
+ ],
+ "retrieval_date": "2026-09-29",
+ "api_version": "fred/series/observations?output_type=2",
+ "date_range": [
+  "2023-12-11",
+  "2024-06-30"
+ ],
+ "row_count": 424,
+ "vintage_semantics": "output_type=2 (every historical vintage per observation_date); latest_value_as_of(T) selects the most recent observation_date whose active vintage window [realtime_start, realtime_end] contains T",
+ "local_sha256": "ae9c08970f26a16b7290f9ec81a1b9d6f10486d577187fcbda212d8036d39e44",
+ "adapter_version": "2026-09-28.1",
+ "parquet_path": "HIST001_MEDIUM_2024_H1_MACRO.parquet",
+ "notes": "HIST-001 Medium stage: warm-up 2024-01-01..2024-03-31, evaluation 2024-04-01..2024-06-30. Fetched from 2023-12-11 (21-day lookback) so latest_value_as_of(2024-01-01) resolves across the New Year's Day holiday gap. Built via ALFRED output_type=2 vintage query, same adapter validated in H5.5."
+}

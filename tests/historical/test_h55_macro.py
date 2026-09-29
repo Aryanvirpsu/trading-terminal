@@ -144,6 +144,39 @@ def test_no_data_at_all_is_zero_confidence_not_fabricated():
     assert sig["conf"] == 0.0 and sig["dir"] == 0.0
 
 
+# ── fetch_fred_vintages URL construction (mocked network -- no real key/call needed) ────────────────────────
+# Regression guard for a real bug found building HIST-001's Medium macro dataset: a locally-computed
+# `realtime_end` of wall-clock "today" was rejected by FRED with HTTP 400 ("can not be after today's date")
+# because this process's UTC "today" was one day ahead of FRED's own server clock at call time -- a
+# transient, environment-dependent failure mode. Fixed by using FRED's own "9999-12-31" real-time-max
+# sentinel instead of a locally-computed date, which the API documents as always valid.
+
+def test_fetch_fred_vintages_never_computes_realtime_end_from_the_wall_clock(monkeypatch):
+    from research.historical import macro as macro_mod
+
+    captured_urls = []
+
+    class _FakeResponse:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *a):
+            return False
+
+        def read(self):
+            return b'{"observations": []}'
+
+    def _fake_urlopen(request, timeout=30):
+        captured_urls.append(request.full_url)
+        return _FakeResponse()
+
+    monkeypatch.setattr(macro_mod.urllib.request, "urlopen", _fake_urlopen)
+    macro_mod.fetch_fred_vintages("DGS10", "2024-01-01", "2024-06-30", api_key="fake-key-not-real")
+
+    assert len(captured_urls) == 1
+    assert "&realtime_end=9999-12-31&" in captured_urls[0]  # the sentinel, never a computed calendar date
+
+
 # ── Local Parquet + manifest store: provenance, reproducibility, never the API key ─────────────────────────
 
 @pytest.fixture()
