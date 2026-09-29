@@ -315,3 +315,12 @@ venv/
 # duplicates that data at ~9x the final Parquet's size for no additional evidentiary value.
 research/historical/hist001/medium_*_filtered.jsonl
 research/historical/hist001/full_*_filtered.jsonl
+
+# HIST001_FULL_2024_2026_5M.parquet (117MB) exceeds GitHub's 100MB hard file-size limit -- cannot be
+# committed at all (a technical constraint, not a resource-safety judgment call like the two rules above).
+# Its manifest (data/historical/manifests/HIST001_FULL_2024_2026_5M.json, small, IS committed) carries the
+# sha256 that makes this file's integrity verifiable, and it is exactly reproducible from the 27 committed
+# per-shard fetch manifests (upstream ETag/sha256, pinned revision) plus build_full_dataset.py's
+# deterministic, batch-order-invariant combination -- the same reproducibility argument as the raw
+# intermediates above, just forced here by a hard size limit rather than a size/value tradeoff.
+data/historical/equities/HIST001_FULL_2024_2026_5M.parquet

@@ -281,3 +281,146 @@ sec 9 list (candidates produced, macro exercised, TRADEABLEs occur naturally, ac
 chronologically, blocked candidates fully resolvable, event clustering works, no lookahead, no production
 touched, deterministic rerun) — evaluated in the Medium report, not assumed here. No parameter search, no
 threshold change, at any point in the Medium stage (§10, unchanged, binding).
+
+## Amendment 2 — 2026-09-29 — Full stage exact parameters (committed BEFORE Full results are computed)
+
+Medium was accepted as `MEDIUM_VALID_WITH_LIMITATIONS` and judged mechanically justified for scale (real
+Champion behavior, real macro replay, zero risk-invariant violations, zero unresolved wall-clock leaks,
+representative-subset determinism proven byte-identical). This amendment freezes the accepted implementation
+and locks in Full's exact parameters before `run_baseline()` is invoked for Full at all.
+
+### A2.1 Frozen accepted implementation (directive sec 1)
+
+| Component | Frozen value |
+|---|---|
+| Git commit (Full pre-registration) | `37b52dd96c97822e6b3ce3976723f279e102d6a5` (branch `h1/historical-lab`) |
+| Champion decision-engine version | `decision_engine/gates-v1.1` |
+| Capability fingerprint | `PRICE_TREND_MACRO_V1` — real price/TA + real historical macro; every other evidence family stubbed (§6 above, unchanged since Smoke) |
+| Execution model / executable-risk sizing | post-`322e325` (unchanged since Smoke) |
+| Event-identity version | `research/historical/event_identity.py` (H7), unchanged since Smoke |
+| Replay-clock implementation | `HistoricalClock` (`research/historical/clock.py`) + six patched wall-clock seams in `execution.py`: `workflow.quote_for`, `workflow.provider_health`, `risk._live_mark_src`, `cache_policy.classify`, `paper.db.utcnow`, `risk.cooldown_state` — the last three fixed during Medium (see Medium's "Invalid Medium Attempts" section), all six unchanged since `CORRECTED_MEDIUM_3` |
+| Macro implementation | `research/historical/macro.py`, vintage-aware ALFRED fetch/point-in-time lookup, unchanged since H5.5/Medium |
+| Corporate-action policy | Raw bars immutable; `split_adjusted` view available on demand; quarantine-by-default for ticker-change/merger/delisting (unchanged since Smoke, §2 above) |
+| Volume trust policy | `RELATIVE_ONLY` throughout (unchanged) |
+| Capacity rules (`cfg.risk()`) | `max_loss_per_trade=$5.00`, `max_position_notional=$125.00`, `min_cash_reserve=$100.00`, `max_daily_loss=$10.00`, `max_drawdown=$50.00`, `max_entries_per_day=2`, `max_open_positions=3`, `max_positions_per_sector=1`, `max_correlated_positions=2`, `risk_per_trade_pct=1%`, `max_sector_exposure_pct=30%`, `cooldown_losses=3`, `cooldown_days=1` (unchanged since Smoke, verified in Medium §E) |
+| Ranking | Whatever `scan()`'s own candidate sort already does (unchanged, no code touched) |
+| Entry cutoff | Session-schedule `allow_entries`, from `schedule.py` (unchanged) |
+| Stop/target logic | Real `broker.manage_open_positions()` / decision-engine stop-target computation (unchanged) |
+| Account configuration | $500 seed cash, fractional shares enabled, no margin, no shorting (Robinhood cash-account model, unchanged since `PAPER_500_ACCOUNT.md`) |
+
+**No strategy-affecting behavior changes during Full.** The only code change since `CORRECTED_MEDIUM_3` is
+`baseline.py`'s optional `progress_every` parameter (default `None` — off, no behavior change) added purely
+for visibility into a multi-hour run, and `analysis.py`'s `capacity_opportunity_cost()` phrase-matching fix
+(post-hoc analysis code, not the replay itself). Neither touches a Champion decision.
+
+### A2.2 Full historical period (directive sec 3)
+
+The pinned fabhaus revision (`f17c0b0c3cf6a455994f93d6a85e76274172ab03`) was confirmed via the Hugging Face
+tree API to have **exactly 27 monthly shards**: `2024-01.jsonl` through `2026-03.jsonl` — this fixes Full's
+range at the real data boundary, not an assumed one. The `2026-03` shard itself is a **partial month**: real
+data stops at **2026-03-10** (confirmed directly from the built daily dataset — no bars exist for
+2026-03-11 onward at this pinned revision).
+
+| Field | Value |
+|---|---|
+| `warmup_start` | `2024-01-01` (identical to Medium's warm-up start — Full's warm-up is not a new period, it is the same already-vetted 61-trading-day window) |
+| `evaluation_start` | `2024-04-01` (identical to Medium's evaluation start — Full's evaluation window is a strict superset of Medium's, extended forward rather than re-defined) |
+| `evaluation_end` | `2026-03-10` (the real data boundary at this pinned revision, not `2026-03-31`) |
+
+Warm-up exists only to satisfy the empirically-confirmed 55-trading-day floor
+(`research/historical/hist001/warmup.py`); warm-up cycles run for real (real scan/evaluate/broker/ledger
+calls) so account state and daily-bar depth accumulate correctly, but are excluded from official Full
+performance statistics — unchanged design from Medium.
+
+### A2.3 Full research universe (directive sec 4)
+
+Identical to Medium's: the full 90-symbol `dashboard/sector_map.py` universe (all 11 sectors), deterministic,
+not selected on historical performance. 89 of 90 symbols have real fabhaus data; `BRK-B` has zero rows across
+the entire 2024-01..2026-03 range (same finding as Medium, confirmed again at Full scale) — most likely a
+ticker-format mismatch, disclosed and kept in the requested universe, not silently dropped. Universe
+membership is **not** point-in-time (today's universe replayed backward) — survivorship bias is present and
+disclosed, unchanged since Smoke. No ticker changes, mergers, or delistings were supplied as metadata for
+this batch, so none are quarantined by that mechanism; corporate-action quarantining (a separate, already-
+tested mechanism) is reported in §A2.5 below.
+
+### A2.4 Data acquisition (directive sec 5)
+
+* **Source**: `fabhaus/equities_5m_stockprices` @ pinned revision `f17c0b0c3cf6a455994f93d6a85e76274172ab03`
+  — all 27 monthly shards, **not** the ~478GB full corpus. 6 months (`2024-01`..`2024-06`) were reused
+  directly from Medium's own committed fetch manifests, never re-downloaded; the other 21 months
+  (`2024-07`..`2026-03`) were newly streamed (8MB chunks, filtered to the 90-symbol universe on the fly,
+  never held in full in memory or on disk) — 21 new fetch manifests committed alongside this amendment.
+* **`HIST001_FULL_2024_2026_5M`**: 5,286,164 rows, 89 symbols with data, `2024-01-01`..`2026-04-01`,
+  `parquet_sha256=30f98cbad7b1ee2eafa905089f6cabfcbd91e2b8018775f88cdf79a6e7b550c2`.
+* **`HIST001_FULL_2024_2026_DAILY`**: 50,609 rows,
+  `parquet_sha256=076c62a9db45e7eeb5c8749b1fb2601c67d3c192844a03230117037350ec0361`.
+* **Batch strategy**: identical to Medium's proven, tested design — one batch per calendar month (fabhaus's
+  own shard boundary), combined via concatenation followed by a full `(symbol, timestamp)` sort. The
+  combination algorithm in `build_full_dataset.py` is byte-identical to `build_medium_dataset.py`'s (already
+  proven batch-order invariant by `test_hist001_medium_batching.py`); not re-tested at this larger scale
+  since the algorithm itself did not change, only the month list and a file-prefix lookup were extended.
+* **Daily decision bars**: aggregated from the same 5-minute source, same disclosed methodology as Smoke/Medium.
+* **Volume trust**: `RELATIVE_ONLY` throughout.
+
+### A2.5 Corporate actions (directive sec 4/20)
+
+5 suspected split events detected across the full 27-month range, 2 confirmed by the detector's own volume
+heuristic:
+
+| Symbol | Date | Ratio | Confidence | Real event? |
+|---|---|---|---|---|
+| NVDA | 2024-06-10 | 10-for-1 | High, **confirmed** | Yes (real, well-known) |
+| AVGO | 2024-07-15 | 10-for-1 | High, **confirmed** | Yes (real, well-known) |
+| CMG | 2024-06-26 | ~50-for-1 | Low, unconfirmed | Yes (real, volume heuristic simply didn't clear its own bar) |
+| WMT | 2024-02-26 | 3-for-1 | Low, unconfirmed | Yes (real, same reason) |
+| NFLX | 2025-11-17 | 10-for-1 | Low, unconfirmed | Not independently verified by this project; reported exactly as detected, fail-closed, neither assumed real nor dismissed |
+
+Per the standing policy: raw bars remain immutable and are what the paper broker trades against; only the
+two `is_confirmed()` events would be eligible for the on-demand `split_adjusted` view; none of the five are
+silently adjusted or excluded from replay.
+
+### A2.6 Macro dataset (directive sec 6)
+
+`HIST001_FULL_2024_2026_MACRO` — real ALFRED vintage-aware fetch (`DGS10`, `DGS2`, `VIXCLS`, `FEDFUNDS`),
+fetched `2023-12-11`..`2026-03-31` (same 21-day lookback established for Medium), 1,769 vintage observations,
+`local_sha256=04fab584010dbb01e4f7bca008b7d91a9e86da588187c5bb86610d721b49b519`. `assert_macro_coverage()`
+verified to pass cleanly for the full `[2024-01-01, 2026-03-31]` range (a superset of the actual
+`evaluation_end=2026-03-10` needed) before this amendment was written — the run structurally cannot start
+without this coverage. `FRED_API_KEY` was used only as an in-process environment variable for this one build
+command; never exported persistently, never printed, never written to any file. Working tree swept for the
+literal key value before every commit in this stage (zero occurrences, every time).
+
+### A2.7 Champion config, capability fingerprint, execution assumptions
+
+Unchanged from Medium (§A2.1 above) — same `decision_engine/gates-v1.1`, same post-`322e325` executable-risk
+sizing, same real scanner/canonical/risk/fill/exit code, same `PRICE_TREND_MACRO_V1` capability disclosure.
+`universe_sectors` passed to `run_baseline()` is all 11 sector keys, identical to Medium.
+
+### A2.8 Execution strategy, checkpointing (directive sec 8/9)
+
+**Execution**: Full runs as one uninterrupted background process (the same single-process design already
+used for all of Smoke and Medium, including all three Medium attempts) — no batching of the replay itself is
+needed beyond the dataset's own monthly-shard batching (§A2.4), which is already proven batch-order
+invariant.
+
+**Checkpointing**: a lightweight, purely observational progress heartbeat (`run_baseline(progress_every=...)`,
+default off) prints cycle index/session_date/elapsed-time/event-count/orders-so-far to stderr periodically —
+added specifically because Full is long enough that zero visibility until completion would otherwise be the
+only option. **Genuine interrupt/resume was deliberately scoped OUT of this run**: the same single-process
+design has now completed reliably three times at Medium scale (up to ~68 minutes each); Full is expected to
+run several hours as one process; and building genuine resumability correctly (persisting
+`decision_capture`/event-identity state and *proving* a resumed run reproduces an uninterrupted one exactly)
+is a substantial standalone engineering effort whose own correctness risk works against the reason this audit
+trail exists. If a future run genuinely needs multi-day resumability, it should be built deliberately then,
+not rushed under this run's own time pressure. This is a disclosed scope decision, not a silent gap.
+
+### A2.9 Metrics, funnel, choice-event definition, and acceptance criteria
+
+Exactly the metrics list in §8 above, extended with the granular breakdowns and diagnostics the Full
+directive itself specifies (concentration excluding top trades, regime attribution, stability by month/
+quarter/year) — no metric invented beyond what was requested. **Choice events use the corrected definition
+established during Medium**: a genuine choice event requires two or more truly newly-eligible (not
+already-held) candidates competing for a genuinely scarce, available slot at that instant — the naive
+raw-episode count (765/58-style) is explicitly rejected as a measure of genuine ranking competition, per
+Medium's own finding. No parameter search, no threshold change, at any point in the Full stage — binding,
+unchanged from Medium/Smoke.
