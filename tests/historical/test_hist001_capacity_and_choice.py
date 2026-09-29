@@ -78,6 +78,34 @@ def capacity_datasets(tmp_path, monkeypatch):
     return eval_day
 
 
+def test_capacity_opportunity_cost_matches_the_real_daily_order_cap_note_text(capacity_datasets):
+    """Regression test for a bug found building the HIST-001 Medium report: capacity_opportunity_cost()'s
+    own phrase filter looked for "daily entry cap" (the wording used only in the separate audit-log
+    string), but lab.paper.workflow.premarket()'s REAL ev["note"] text is "daily order cap reached" --
+    a different phrase -- so every real daily-cap-blocked observation was silently invisible to this
+    function. Uses a synthetic result dict (real registered intraday dataset, fabricated cycles/
+    decision_capture) so this doesn't depend on the real gates cooperating to produce a genuine cap hit."""
+    eval_day = capacity_datasets
+    synthetic_result = {
+        "cycles": [{
+            "cycle_id": f"{eval_day}T0915", "session_date": eval_day, "phase": "evaluation",
+            "et_time": f"{eval_day}T09:15:00-05:00",
+            "premarket": {"state": "ok", "evaluated": [
+                {"symbol": "AAPL", "action": "TRADEABLE", "executed": False,
+                 "note": "daily order cap reached", "event_id": "evt_test_1"},
+            ]},
+        }],
+        "decision_capture": {
+            f"{eval_day}T0915|AAPL": {"price": 100.0, "stop": 95.0, "target": 110.0, "direction": "LONG",
+                                      "sector": "technology", "et_time": f"{eval_day}T09:15:00-05:00"},
+        },
+    }
+    blocked = capacity_opportunity_cost(synthetic_result, INTRADAY_ID)
+    assert len(blocked) == 1, blocked
+    assert blocked[0]["symbol"] == "AAPL"
+    assert blocked[0]["blocked_reason"] == "daily order cap reached"
+
+
 def test_capacity_and_choice_capture_on_a_real_two_candidate_competition(capacity_datasets):
     eval_day = capacity_datasets
     # A single-cycle "evaluation window" on the last (most-trended, most-likely-TRADEABLE) day, with the

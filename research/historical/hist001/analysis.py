@@ -110,8 +110,14 @@ def capacity_opportunity_cost(result: Dict[str, Any], intraday_dataset_id: str) 
     (price/stop/target/direction/sector/quantity/risk-budget/quote/account-state/capability-fingerprint --
     the directive's own required minimum). The historical account never actually consumed cash/capacity for
     these -- this reads the replay's own already-produced output; nothing is re-run or re-decided."""
-    blocked_capacity_phrases = ("daily entry cap", "sector", "capacity", "post-cutoff", "post_cutoff",
-                               "existing position", "already entered")
+    # "daily order cap reached" is the REAL note text `lab.paper.workflow.premarket()` attaches to `ev["note"]`
+    # (verbatim from its own source) -- the separate, differently-worded "daily entry cap reached (...)" string
+    # only ever appears in the AUDIT log (`db.audit("not_executed", ...)`), never here. Both phrases are kept
+    # so this filter matches the real note text (bug found building the Medium report: the audit-log wording
+    # was used here by mistake, silently making the daily-cap bucket empty even when the funnel's own audit-
+    # sourced tally showed real daily-cap rejections).
+    blocked_capacity_phrases = ("daily order cap", "daily entry cap", "sector", "capacity", "post-cutoff",
+                               "post_cutoff", "existing position", "already entered")
     end_clock = HistoricalClock(dt.datetime.fromisoformat(result["cycles"][-1]["et_time"]) + dt.timedelta(minutes=5))
     outcome_provider = HistoricalMarketProvider(end_clock, [intraday_dataset_id])
 
