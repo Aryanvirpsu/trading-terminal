@@ -104,6 +104,48 @@ def test_intraday_synthesis_of_todays_daily_bar_is_only_todays_real_visible_bars
     assert synth["v"] == 4000
 
 
+def test_intraday_synthesis_bounded_lookback_still_captures_all_of_todays_bars(tmp_path, monkeypatch):
+    """Regression test for a real performance defect found building HIST-001 Full:
+    _synthesize_todays_daily_bar() used to call bars() with NO lookback, fetching a symbol's entire visible
+    history (tens of thousands of rows once the replay clock is deep into a multi-year dataset) only to
+    discard all but one day's worth in the Python filter -- catastrophically slow at Full scale. Fixed with
+    lookback=300 (25 hours of 5-minute bars, comfortably more than any single session including pre/post-
+    market extension). This test builds MANY prior days of 5-minute bars (more than 300 bars deep) plus a
+    long "today" session, and proves the bounded-lookback result is byte-identical to what an unbounded
+    fetch would have produced -- the fix changes only how much irrelevant history is fetched, never which
+    bars end up in the synthesized bar."""
+    from research.historical.avdi_adapter import _synthesize_todays_daily_bar
+
+    monkeypatch.setenv("AVDI_HISTORICAL_DATA_DIR", str(tmp_path / "historical"))
+    # 10 prior days x 80 5-minute bars/day (a full extended session) + "today" (2025-06-12) with 80 bars of
+    # its own -- 800+ bars total visible by "today", far more than the 300-bar lookback bound.
+    prior_days = pd.date_range("2025-06-01T08:00:00Z", periods=10, freq="1D", tz="UTC")
+    frames = []
+    for d in prior_days:
+        ts = pd.date_range(d, periods=80, freq="5min", tz="UTC")
+        frames.append(pd.DataFrame({"symbol": "ZZZ", "timestamp": ts, "open": 100.0, "high": 101.0,
+                                    "low": 99.0, "close": 100.5, "volume": 500.0}))
+    today_ts = pd.date_range("2025-06-12T08:00:00Z", periods=80, freq="5min", tz="UTC")
+    today_closes = [100.0 + i * 0.1 for i in range(80)]
+    frames.append(pd.DataFrame({"symbol": "ZZZ", "timestamp": today_ts,
+                               "open": [c - 0.05 for c in today_closes], "high": [c + 0.2 for c in today_closes],
+                               "low": [c - 0.2 for c in today_closes], "close": today_closes,
+                               "volume": [1000.0 + i for i in range(80)]}))
+    df = pd.concat(frames, ignore_index=True)
+    _FixedAdapter("h5_lookback_bound_fixture", df).import_and_store(["ZZZ"], "2025-06-01", "2025-06-13", "5m")
+
+    as_of = today_ts[-1].to_pydatetime()          # end of "today"'s session -- ~890 bars visible in total
+    clk = HistoricalClock(as_of)
+    provider = HistoricalMarketProvider(clk, ["h5_lookback_bound_fixture"])
+    synth = _synthesize_todays_daily_bar(provider, "ZZZ", as_of, last_daily_et_date=None)
+
+    assert synth["o"] == pytest.approx(today_closes[0] - 0.05)     # open of TODAY's first bar, not day 1's
+    assert synth["c"] == pytest.approx(today_closes[-1])           # close of today's last (most recent) bar
+    assert synth["h"] == pytest.approx(max(c + 0.2 for c in today_closes))
+    assert synth["l"] == pytest.approx(min(c - 0.2 for c in today_closes))
+    assert synth["v"] == sum(1000.0 + i for i in range(80))        # every one of today's 80 bars counted
+
+
 def test_intraday_synthesis_returns_none_when_todays_daily_bar_already_exists():
     from research.historical.avdi_adapter import _synthesize_todays_daily_bar
     import datetime as _dt

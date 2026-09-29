@@ -76,7 +76,15 @@ def _synthesize_todays_daily_bar(intraday_provider: Optional[HistoricalMarketPro
     as_of_et_date = as_of.astimezone(et).date()
     if last_daily_et_date is not None and last_daily_et_date >= as_of_et_date:
         return None                                       # today's daily bar already exists -- no synthesis needed
-    todays = [p for p in intraday_provider.bars(symbol, timeframe="5m", end=as_of)
+    # Real performance defect found building HIST-001 Full: calling bars() with no `lookback` fetches EVERY
+    # visible 5-minute bar for this symbol since the dataset's start -- tens of thousands of rows once the
+    # replay clock is deep into a multi-year dataset -- only to throw away all but one day's worth in the
+    # Python filter below. `lookback=300` (25 hours of 5-minute bars -- comfortably more than any single
+    # session, including pre/post-market extension, ever needs) bounds the fetch to a small, cheap slice;
+    # the date filter below still does the exact same narrowing to `as_of_et_date` either way, so the
+    # result is byte-identical to the unbounded fetch -- this changes only how much irrelevant history is
+    # fetched and immediately discarded, never which bars end up in `todays`.
+    todays = [p for p in intraday_provider.bars(symbol, timeframe="5m", end=as_of, lookback=300)
              if dt.datetime.fromisoformat(p["t"]).astimezone(et).date() == as_of_et_date]
     if not todays:
         return None
