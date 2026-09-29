@@ -308,9 +308,10 @@ node_modules/
 .venv/
 venv/
 
-# HIST-001 Medium-stage raw fetch intermediates (231MB across 6 months) -- deliberately NOT committed
-# (unlike Smoke's much smaller 5.7MB single-month intermediate): the committed Parquet+manifest datasets
-# and the small per-shard fetch manifests (upstream ETag/sha256, pinned revision) already give full
-# provenance and exact reproducibility via fetch_medium_shards.py; keeping the large raw JSONL only
-# duplicates that data at 9x the size for no additional evidentiary value.
+# HIST-001 Medium/Full-stage raw fetch intermediates -- deliberately NOT committed (unlike Smoke's much
+# smaller 5.7MB single-month intermediate): the committed Parquet+manifest datasets and the small per-shard
+# fetch manifests (upstream ETag/sha256, pinned revision) already give full provenance and exact
+# reproducibility via fetch_medium_shards.py/fetch_full_shards.py; keeping the large raw JSONL only
+# duplicates that data at ~9x the final Parquet's size for no additional evidentiary value.
 research/historical/hist001/medium_*_filtered.jsonl
+research/historical/hist001/full_*_filtered.jsonl
