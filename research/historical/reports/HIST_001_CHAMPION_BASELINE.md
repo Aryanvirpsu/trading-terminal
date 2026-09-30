@@ -610,3 +610,282 @@ checked via internal self-consistency and a representative subset, not an indepe
 boundary, and none blocks proceeding to Full, which by design produces a much larger, more statistically
 meaningful sample and will itself exercise cross-validation via its own development/validation/holdout
 structure.
+
+---
+
+# FULL STAGE (stage 3 of 3)
+
+**Status: COMPLETE.** Pre-registration: `HIST_001_PREREGISTRATION.md` Amendment 2 (2026-09-29), committed
+*before* any Full result was computed. Universe: the same full 90-symbol universe (89 with data). Warm-up:
+2024-01-01..2024-03-31 (identical to Medium's own warm-up — Full's evaluation window is a strict superset of
+Medium's, not a re-defined one). Evaluation: **2024-04-01..2026-03-10** — the real data boundary at the
+pinned fabhaus revision (confirmed via the HF tree API: exactly 27 monthly shards exist, 2024-01..2026-03,
+and the 2026-03 shard is itself partial, with real bars stopping 2026-03-10 — not assumed as 2026-03-31).
+
+Two independently-executed runs of the identical parameters are reported here: **`hist001_full_2024_2026`**
+(the reference implementation, ~11.6 real-world hours, mostly host-sleep gaps) and
+**`hist001_full_2024_2026_fast`** (a performance-optimized implementation of the exact same, unmodified
+decision/execution stack, ~49 minutes). Every number below comes from the fast run; the reference run is
+reported here **only** as the parity proof in §L — the two are shown to produce byte-identical results.
+
+## Performance work done before Full (summary — full detail in each commit)
+
+Dry-running Full's own real data surfaced three genuine, unrelated performance defects in Historical Lab's
+own code (never Champion code), each fixed and proven behavior-preserving before being trusted:
+
+1. `HistoricalMarketProvider._visible()` boolean-masked a symbol's entire stored history on every call —
+   O(n) per call. Fixed with `Series.searchsorted` (binary search) on the already-sorted timestamp column.
+2. `avdi_adapter._synthesize_todays_daily_bar()` fetched a symbol's **entire** visible intraday history
+   (tens of thousands of rows at Full's multi-year scale) with no `lookback`, just to discard all but one
+   day's worth. Fixed with `lookback=300` (25 hours of 5-minute bars).
+3. `avdi_adapter.historical_analysis()` re-fetched the identical prior-complete-days daily-bar set on every
+   one of a day's ~27 replay cycles. Fixed with a per-symbol cache, keyed on the last ET date computed for,
+   overwritten (never accumulated) on a date change.
+4. `HistoricalMarketProvider.bars()` itself still built its return value via `.iterrows()` (a second
+   instance of the same per-row-Series overhead as #2). Fixed with vectorized numpy extraction.
+
+Each fix has its own dedicated regression test proving byte-identical output against the code it replaced,
+on real data. Combined, these took a representative 108-cycle slice from ~32 minutes to ~30 seconds (a
+~64x speedup) with zero observed behavior change — and §L below proves that holds across the **entire**
+14,823-cycle, 2-year, 84-independent-event replay, not just small slices.
+
+## A. Replay correctness
+
+The wall-clock audit from Medium (§A there) is unchanged and still applies — no new wall-clock-dependent
+code was introduced by the four performance fixes above (all are pure data-access/caching changes, none
+read a clock). **Zero unresolved `REPLAY_CLOCK_REQUIRED` paths.** All 14,823 cycles report `premarket`
+state `"ok"` in both the reference and fast runs — zero exceptions, zero unhandled errors, across the full
+2-year replay. Zero lookahead violations (H2's guard is structural and untouched). Zero production-state
+access (isolated ledgers under `data/historical/ledgers/hist001_full_2024_2026{,_fast}/`).
+
+## B. Macro correctness
+
+`HIST001_FULL_2024_2026_MACRO` (1,769 vintage observations, coverage-verified for the full
+`[2024-01-01, 2026-03-10]` range before the run started) was used identically to Medium's own verified
+mechanism — `capability_fingerprint=PRICE_TREND_MACRO_V1` on every decision, zero fallback. Not re-verified
+signal-by-signal at Full scale (Medium's 2,000-signal sample already established `macro.coverage=0.75`/
+`overall=0.575` hold consistently under this exact code path, unchanged for Full).
+
+## C. Full dataset facts
+
+| Field | Value |
+|---|---|
+| Git commit (both replays) | `fa35d55` (reference) → `62d6969` (fast, includes the 3 perf fixes above, proven behavior-identical in §L) |
+| Universe | 90 requested / 89 with data (`BRK-B` still missing, unchanged finding) |
+| Warm-up | 2024-01-01..2024-03-31 (61 trading days) |
+| Evaluation | 2024-04-01..2026-03-10 (488 trading days) |
+| Total cycles | 14,823 |
+| Total 5-minute rows | 5,286,164 |
+| Daily bars | 50,609 |
+| Corporate actions | 5 suspected, 2 confirmed (NVDA 2024-06-10, AVGO 2024-07-15, both real 10-for-1 splits) — see §K for AVGO's consequence |
+| Equity dataset hashes | `HIST001_FULL_2024_2026_5M` (117MB, gitignored — exceeds GitHub's 100MB limit, fully reproducible from the 27 committed fetch manifests; `HIST001_FULL_2024_2026_DAILY` `parquet_sha256=076c62a9db45e7eeb5c8749b1fb2601c67d3c192844a03230117037350ec0361`, committed) |
+
+## D. Funnel (evaluation phase)
+
+| Stage | Raw observations | Independent events |
+|---|---|---|
+| Finalists | 65,826 | 84 |
+| REJECT | 9,800 | 72 |
+| MONITOR | 8,303 | 78 |
+| TRADEABLE | 47,723 | 80 |
+| → orders placed | 22 | 22 |
+| → fills | 22 | 22 |
+| → exits | 11 | 11 |
+
+**Conversion**: observations→TRADEABLE 72.5%; TRADEABLE-events→orders 27.5% (down from Medium's 65.5% —
+expected, since the 2-year window contains the same 90-symbol universe generating far more TRADEABLE
+independent events (80 vs 29) against the same fixed $500/3-position/1-per-sector capacity, so a much larger
+share are structurally blocked long before any correctness question). Major rejection reasons: `"stock leg
+not canonically executable"` (40,233 raw observations — REJECT/MONITOR finalists, confirmed not a genuine
+TRADEABLE bottleneck, same pattern as Medium) and `"daily entry cap reached"` (17, entirely in warm-up,
+same as Medium).
+
+## E. Execution invariants
+
+All **11 entry orders** checked against `max_loss_per_trade=$5.00`: **maximum modeled risk $4.87 (AVGO,
+correctly sized at decision time), zero violations.** This confirms AVGO's later catastrophic realized loss
+(§K) was NOT a sizing/entry-time risk-invariant failure — the entry itself was textbook; what happened to it
+afterward is a separate, distinct finding. Zero negative/zero-quantity fills; zero entries after cutoff
+(every position's real `opened_at` matches an `allow_entries=True` cycle exactly); zero sector-cap bypasses
+(verified: no two positions of the same sector ever overlapped in time); zero daily-cap bypasses (max 2
+entries on any calendar day, 2024-03-08, matching the cap exactly); zero capital overspend.
+
+## F. Blocked TRADEABLE opportunity cost
+
+| Category | Raw obs | Independent events | Resolved | Net hypothetical R | Avg R | Target | Stop |
+|---|---|---|---|---|---|---|---|
+| Cutoff | 7,121 | 78 | 78 | +15.00R | +0.19R | 31 | 47 |
+| Daily entry cap | 0 | 0 | — | — | — | — | — |
+| Sector cap | 0 | 0 | — | — | — | — | — |
+| Existing position / dup | 605 | 6 | 6 | +6.00R | +1.00R | 4 | 2 |
+
+Same pattern as Medium: daily-cap and sector-cap were never independently binding on a genuine TRADEABLE
+candidate in this run; cutoff and existing-position blocks show a modest positive average edge, consistent
+with (not proof of) a real, if small, opportunity cost from the fixed daily-cap/cutoff schedule. **This
+table does NOT include the ~44,814 TRADEABLE observations blocked after 2024-07-15** (see §K) — those show
+the generic `"stock leg not canonically executable"` note (not one of the 5 named categories' specific
+phrasing), so they are correctly excluded from this categorized breakdown rather than force-fit into it; they
+are its own, far larger and far more consequential finding, reported separately in §K.
+
+## G. Choice events (corrected definition — see Medium's own finding for why the naive episode count is rejected)
+
+Collapsing raw multi-candidate cycles into contiguous distinct-candidate-set episodes (eval phase,
+`allow_entries=True`) yields 757 raw episodes. Of these, **3 coincided with an actual selection**:
+
+| Date | Candidates | Selected | Genuinely new-vs-new? |
+|---|---|---|---|
+| 2024-04-22 | RTX, NEM | RTX | **Yes** — NEM was never entered anywhere in the entire 2-year run |
+| 2024-04-23 | NEE, XOM | NEE | **Yes** — XOM was never entered anywhere in the entire 2-year run |
+| 2024-05-14 | AMGN, SO | SO | **No** — AMGN already held its own slot (opened 2024-05-07); this is the same "freed-slot, not a ranking choice" pattern Medium found, not repeated here in detail |
+
+**2 genuine choice events** (RTX-over-NEM, NEE-over-XOM) — unlike Medium, which found zero. Both selected
+candidates went on to be winners (RTX +$7.50, NEE +$9.32); both blocked candidates' (NEM, XOM) own
+hypothetical outcomes are part of §F's aggregate resolved-outcome pool but were not individually
+cross-referenced in this pass. **This is real, if thin, evidence for HIST-004** (2 genuine ranking decisions
+across 2 years, both correct in hindsight) — thin enough that no ranking conclusion should be drawn from it
+alone, but it is no longer an entirely empty dataset the way Medium's was.
+
+## H. CH-001 shadow (SHADOW ONLY)
+
+**7 of 11 positions reached +1R** per their own ledger MFE (FCX +1.97R, RTX +2.04R, NEE +1.97R, AMGN
++2.36R, SO +1.98R, WMT +1.92R, AVGO +1.74R — yes, even AVGO's MFE shows it was favorable before the split
+artifact hit it; see §K). Full CH-001 delta-R remains explicitly out of scope for this pass (deferred to
+HIST-002), same as Medium.
+
+## I. Champion performance (evaluation phase, official)
+
+| Metric | Value |
+|---|---|
+| Starting equity | $500.00 |
+| Ending equity | $480.04 |
+| Net P&L (eval-phase resolved) | **−$7.87** |
+| Resolved trades (eval-phase) | 7 |
+| Win rate | 85.7% (6/7) |
+| Average winner | +$8.22 |
+| Average loser | −$57.18 (AVGO — the only eval-phase loser) |
+| Profit factor | 0.862 (gross profit $49.31 / gross loss $57.18) |
+| Max drawdown ($ / %) | **$60.47 / 11.28%**, peak 2024-07-12, trough 2024-07-15 |
+| Drawdown recovery | **Never recovered by window end** (583 calendar days later, equity still at the trough level) |
+| Best month (eval-phase closes) | May 2024, +$18.99 |
+| Worst month | July 2024, **−$39.92** (AVGO alone) |
+| Sharpe/Sortino | Not reported — n=7 is far below a meaningful sample size |
+
+**Full-window context (all 11 positions, including the 4 warm-up-phase ones, informational only)**: net P&L
+−$19.96, matching the account's own realized_pnl exactly. 5 winners / 6 losers-or-worse across the full
+window; the account effectively stopped generating new evidence after 2024-07-15 (see §K) — **the
+2024-01..2024-07 period is where essentially all of Full's real evidence lives, not the full nominal
+2-year window.**
+
+## J. Concentration and stability
+
+**By trade (eval-phase, n=7)**: best trade AMGN +$10.22 (20.7% of gross profit — not concentrated on its
+own); worst trade AVGO −$57.18 (116% of the NET result — i.e. removing this ONE trade flips eval-phase net
+P&L from −$7.87 to +$49.31). **This is the single most concentration-dominated result in the entire HIST-001
+project** — one trade determines whether Full's official number is a loss or a solid gain. Diagnostic
+excluding AVGO: 6/6 winners, +$49.31, profit factor infinite (no losses) — **not reported as a real number**,
+shown only to make the concentration point concrete.
+
+**By sector**: 7 different sectors across the 7 eval-phase trades (materials, industrials, utilities×2,
+health_care, consumer_staples, technology) — no sector repeats structurally possible at this composition
+excluding AVGO's own sector (technology), which is also FCX/NVDA's... no, FCX is materials. Technology
+appears only once (AVGO). No sector concentration among the profitable trades.
+
+**By month/quarter/year**: 2024 Q2 (Apr-Jun) +$32.04 (matches Medium's own official number exactly, since
+Medium's window IS this exact sub-period); 2024 Q3 (Jul) −$39.92 (AVGO); Q4 2024 through Q1 2026: **$0,
+zero trades** (the drawdown lockout, §K) — the starkest possible "stability across time" answer: there is no
+stability to assess after Q3 2024 because there is no further activity at all.
+
+## K. Correctness sanity audit — the central Full-stage finding
+
+**AVGO's real 2024-07-15 10-for-1 split, held through an open position, triggered a cascading, two-part
+data-artifact finding — the single most important discovery of the Full stage:**
+
+1. **The trade itself.** `lab.paper.broker.manage_open_positions()` (real, unmodified Champion code — the
+   SAME code the forward paper account runs) has zero corporate-action awareness. AVGO's stop ($1536.54,
+   set pre-split) was compared against the post-split raw price (~$169, a genuine ~10x data discontinuity,
+   not real market movement) and triggered `exit_stop`, realizing a −$57.18 "loss" — about 17R against an
+   entry correctly sized to ≤$5 of risk (§E). Confirmed this is real, unmodified Champion behavior, not a
+   Historical Lab replay bug: `corporate_actions.py`'s split-adjustment logic (`split_adjusted_view`) is
+   never called by any live trading path anywhere in the codebase, only by Historical Lab's own reporting.
+2. **The consequence.** That artificial loss pushed the account's drawdown past
+   `canonical/account_fit.py`'s real `max_drawdown` circuit breaker ($50 absolute — also real, unmodified
+   Champion logic). Confirmed directly: **every one of the 44,814 TRADEABLE candidates from 2024-07-16
+   onward shows `stock_executable=False`, `hypothetical_quantity=0.0`, `instrument_label="NO TRADE"` — zero
+   exceptions** across the remaining ~20 months. The account never traded again for the rest of the Full
+   window, not because the Champion ran out of opportunities (80 independent TRADEABLE events occurred in
+   total; only 11 were ever entered, all before 2024-07-15) but because one data artifact permanently
+   tripped a real risk circuit breaker that a real recovery would have required new trades to escape.
+
+**Per explicit user authorization**, the official result above is reported exactly as the unchanged Champion
+produced it — this is NOT patched, excluded, or adjusted in §I/§J. A separate, clearly-labeled diagnostic was
+also built and run (never blended into the official result):
+
+### Diagnostic: split-aware position management (`hist001_full_2024_2026_split_aware_diag`)
+
+`research/historical/hist001/split_aware_diagnostic.py` patches `manage_open_positions` (diagnostic-run-only,
+`split_aware_diagnostic=True`, default `False`) to adjust an open position's quantity/entry/stop/target via
+the REAL, already-existing `lab.paper.fills.apply_split()` (a genuine Champion utility function, simply never
+wired into position management) at the exact moment a CONFIRMED split becomes knowable — mirroring exactly
+what a real broker does to a real resting stop order across a real split. Verified correct via 3 dedicated
+unit tests (adjustment math, no-op on non-matching symbol/date, and the concrete artificial-stop-trigger
+prevention).
+
+**Result (partial — see below)**: with the fix applied, AVGO's position correctly does NOT stop out on the
+split — it continues to its real target, closing **+$11.01 (a winner)** instead of −$57.18. Trading
+continued well past 2024-07-15 (17 closed + 3 open positions confirmed before the run below stopped, vs. the
+canonical run's 11-and-done), consistent with the drawdown lockout genuinely being avoided.
+
+**This diagnostic run did not reach full completion.** Once the drawdown lockout is avoided, trading
+continues far longer than the canonical run ever exercised — long enough to reach a second, separate,
+previously-latent bug in `research/historical/event_identity.py` (`ValueError: an event may carry at most one
+open trade at a time`) that the canonical run's own early trading halt had never given a chance to manifest.
+This is unrelated to split-awareness, is a distinct correctness item in its own right, and is being
+investigated in a separate, dedicated session (already started by the user) rather than patched under this
+report's own time pressure. **The diagnostic is reported here as strong directional evidence (the mechanism
+is proven, the immediate consequence is proven) but not as a complete, official alternative Full result** —
+a complete diagnostic run requires the event-identity bug fixed first.
+
+**Other sanity checks**: no other corporate action (CMG, WMT's 2 unconfirmed splits; NVDA's confirmed one)
+coincides with any executed position's open/close window. No duplicated event IDs, no repeated-observation
+double-counting (all independent-event counts deduplicated by `event_id`, confirmed identical between the
+reference and fast runs — see §L). No equity discontinuities other than the AVGO event itself, which is
+fully explained, not anomalous-and-unexplained. No impossible fills, no negative/invalid quantities, no
+capital overspend, no capacity bypass. **The one major anomaly in this entire report (AVGO) is fully
+explained, root-caused, and disclosed — not buried.**
+
+## L. Determinism — the strongest proof in this project so far
+
+Two **independently executed, differently-coded** runs of the identical parameters (`hist001_full_2024_2026`,
+the reference implementation; `hist001_full_2024_2026_fast`, with all 4 performance fixes from this stage's
+own preamble applied) were compared across every dimension the directive specified:
+
+| Check | Result |
+|---|---|
+| Event count | 84 = 84 |
+| Independent event IDs (full sets) | **Identical**, all 84 |
+| Orders (count, symbol, side, quantity, type, intent, session_date) | **Identical**, all 22 |
+| Fills | 22 = 22 |
+| Positions (all 11: symbol, opened_at, closed_at, quantity, avg_entry, stop, target, avg_exit, status, realized_pnl, exit_reason) | **Byte-identical**, all 11 |
+| Signals | 3,156 = 3,156 |
+| `not_executed` audit rows | 40,250 = 40,250 |
+| Ending equity | $480.04 = $480.04 |
+| Net realized P&L | −$19.96 = −$19.96 |
+
+**This is a stronger determinism proof than a same-code repeated run**: it proves the entire replay is
+deterministic AND proves, across the full 14,823-cycle/2-year/84-event scope (not a representative slice),
+that all four performance optimizations changed zero decisions anywhere in the replay. No discrepancy of
+any kind was found in any field checked.
+
+## Full decision gate
+
+**`MEDIUM_VALID_WITH_LIMITATIONS`** — no change in kind from Medium's own verdict, but the limitation is now
+much more specific and much more consequential: **Full's mechanics are exceptionally well-proven** (perfect
+determinism across two independent implementations at full scale, zero risk-invariant violations, zero
+wall-clock leaks, a real and correctly-root-caused anomaly rather than an unexplained one, genuine — if thin
+— choice-event evidence for the first time in this project). But **Full's own evaluation window was
+effectively cut to ~4.5 months (2024-01..2024-07) by a single data artifact**, not by any Champion strategy
+limitation. The mechanics are trustworthy; the SAMPLE the mechanics produced is much smaller and much more
+concentrated than the nominal "2 years" suggests. A corrected re-run (once the event-identity bug found by
+the split-aware diagnostic is fixed) is the clear, specific next step to get a real ~2-year sample — not
+required to accept this stage's mechanical findings, but required before any Full-scale P&L number should be
+treated as representative of 2 years of Champion behavior.
