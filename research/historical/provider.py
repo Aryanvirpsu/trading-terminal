@@ -124,9 +124,17 @@ class HistoricalMarketProvider:
         vis = self._visible(symbol, end)
         if lookback is not None:
             vis = vis.tail(lookback)
-        return [{"t": row["timestamp"].isoformat(), "o": float(row["open"]), "h": float(row["high"]),
-                 "l": float(row["low"]), "c": float(row["close"]), "v": float(row["volume"])}
-                for _, row in vis.iterrows()]
+        if vis.empty:
+            return []
+        # `.iterrows()` builds a new pandas Series per row (real, measured overhead: this call profiled as
+        # the dominant cost of a single HIST-001 Full premarket() cycle before this fix -- see
+        # avdi_adapter.py's _synthesize_todays_daily_bar docstring for the full finding). Extracting each
+        # column as a plain numpy array once and zipping them is the same row-by-row output, built without
+        # ever constructing a Series -- same points, same order, same values, just not by that path.
+        ts = vis["timestamp"].tolist()
+        o, h, l, c, v = (vis[col].to_numpy(dtype=float) for col in ("open", "high", "low", "close", "volume"))
+        return [{"t": t.isoformat(), "o": float(oo), "h": float(hh), "l": float(ll), "c": float(cc), "v": float(vv)}
+               for t, oo, hh, ll, cc, vv in zip(ts, o, h, l, c, v)]
 
     # -- convenience aggregates that MUST be clock-bound, never "whole day" -----------------------------
     def session_high_so_far(self, symbol: str, session_start: dt.datetime) -> Optional[float]:

@@ -25,7 +25,7 @@ import sys
 from contextlib import ExitStack
 from pathlib import Path
 from statistics import mean
-from typing import Any, Dict, List, Optional, Sequence, Union
+from typing import Any, Dict, List, Optional, Sequence, Tuple, Union
 from unittest import mock
 
 from .clock import HistoricalClock
@@ -93,7 +93,8 @@ def _synthesize_todays_daily_bar(intraday_provider: Optional[HistoricalMarketPro
 
 
 def historical_analysis(provider: HistoricalMarketProvider, symbol: str, as_of: Optional[dt.datetime],
-                        *, intraday_provider: Optional[HistoricalMarketProvider] = None):
+                        *, intraday_provider: Optional[HistoricalMarketProvider] = None,
+                        daily_points_cache: Optional[Dict[str, Tuple[Any, List[Dict[str, Any]]]]] = None):
     """`decision_engine._load_analysis`'s PRIMARY (yfinance-fallback) branch, reimplemented against the
     historical provider instead of a live `yf.Ticker(...).history()` call. Reuses `lab.fallback_ta`'s pure
     `_rsi`/`_atr` helpers (the exact formulas the live path uses) — only the data FETCH is substituted,
@@ -102,14 +103,35 @@ def historical_analysis(provider: HistoricalMarketProvider, symbol: str, as_of: 
 
     `intraday_provider`, if given, lets today's still-forming daily bar be honestly reconstructed from real
     intraday bars already visible (see `_synthesize_todays_daily_bar`) rather than leaving the analysis
-    stuck on yesterday's close (and therefore critically_stale) for the entire length of today's session."""
-    import fallback_ta
+    stuck on yesterday's close (and therefore critically_stale) for the entire length of today's session.
 
-    points = provider.bars(symbol, timeframe="1d", end=as_of)
+    `daily_points_cache`, if given, memoizes `provider.bars(symbol, "1d", end=as_of)` per symbol, keyed on
+    the ET calendar date it was last (re)computed for -- performance only, found building HIST-001 Full: the
+    set of COMPLETE prior daily bars visible as of any instant is, by construction, IDENTICAL for every
+    cycle within the same calendar day (today's own bar is never in it -- decision_engine only ever sees
+    complete, closed sessions), so refetching it ~27 times a day (once per replay cycle) for the same,
+    unchanged answer was pure waste at Full's multi-year scale. Keyed by symbol only (not (symbol, date), to
+    avoid holding one ever-growing copy of the list PER DATE -- O(days^2) memory across a multi-year run):
+    each cache entry is fully OVERWRITTEN, never accumulated, whenever `as_of`'s own date differs from the
+    date it was last computed for, so at most one list per symbol is ever held. Only the prior-days fetch is
+    cached; `synth` (today's own in-progress bar) is still recomputed fresh every call, since that genuinely
+    changes intraday -- the combined `points` list this function computes from is therefore identical to the
+    uncached call every time, just without repeating the identical prior-days fetch within a day."""
+    import fallback_ta
+    from zoneinfo import ZoneInfo
+
+    et = ZoneInfo("America/New_York")
+    as_of_et_date = as_of.astimezone(et).date() if as_of else None
+    cache_entry = daily_points_cache.get(symbol.upper()) if daily_points_cache is not None else None
+    if cache_entry is not None and cache_entry[0] == as_of_et_date:
+        points = cache_entry[1]
+    else:
+        points = provider.bars(symbol, timeframe="1d", end=as_of)
+        if daily_points_cache is not None:
+            daily_points_cache[symbol.upper()] = (as_of_et_date, points)
     last_et_date = None
     if points:
-        from zoneinfo import ZoneInfo
-        last_et_date = dt.datetime.fromisoformat(points[-1]["t"]).astimezone(ZoneInfo("America/New_York")).date()
+        last_et_date = dt.datetime.fromisoformat(points[-1]["t"]).astimezone(et).date()
     synth = _synthesize_todays_daily_bar(intraday_provider, symbol, as_of, last_et_date)
     if synth is not None:
         points = points + [synth]
@@ -176,6 +198,12 @@ class HistoricalAVDIContext:
         self.execution_provider: HistoricalMarketProvider = execution_provider or provider
         self._stack: Optional[ExitStack] = None
         self.calls: List[Dict[str, Any]] = []            # every patched call this context served, for audit
+        # performance only (see historical_analysis()'s own docstring): memoizes the prior-complete-days
+        # daily-bar fetch per symbol for the life of this context -- one real provider.bars() call per
+        # symbol per day instead of once per replay cycle (~27/day). Value is (last ET date computed for,
+        # points list); overwritten (never accumulated) on a date change, so memory stays O(symbols), not
+        # O(symbols x days).
+        self._daily_points_cache: Dict[str, Tuple[Any, List[Dict[str, Any]]]] = {}
 
     # -- patched replacements (each records what it was asked for + what clock.now was) -----------------
     def _patched_bars(self, symbol: str):
@@ -204,7 +232,8 @@ class HistoricalAVDIContext:
         # case today's bar (if any) is almost always already present in the daily data, so synthesis is a
         # harmless no-op; a genuinely finer execution_provider (H5) lets today's still-forming session
         # contribute real, already-visible information instead of leaving the analysis on yesterday's close.
-        return historical_analysis(self.provider, symbol, self.clock.now, intraday_provider=self.execution_provider)
+        return historical_analysis(self.provider, symbol, self.clock.now, intraday_provider=self.execution_provider,
+                                   daily_points_cache=self._daily_points_cache)
 
     def _patched_bar_age_seconds(self, as_of, session_close_hour: int = 16):
         # H5 finding #1: lab/freshness.py's REAL bar_age_seconds() ages a bar against datetime.now(UTC) --

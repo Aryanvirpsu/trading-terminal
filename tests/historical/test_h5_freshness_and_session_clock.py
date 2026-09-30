@@ -146,6 +146,56 @@ def test_intraday_synthesis_bounded_lookback_still_captures_all_of_todays_bars(t
     assert synth["v"] == sum(1000.0 + i for i in range(80))        # every one of today's 80 bars counted
 
 
+def test_historical_analysis_daily_points_cache_avoids_refetch_within_the_same_day(daily_dataset):
+    """Regression test for a real performance defect found building HIST-001 Full: historical_analysis()
+    called provider.bars(symbol, "1d", end=as_of) fresh on EVERY replay cycle (~27 times per trading day)
+    even though the set of complete prior daily bars visible is, by construction, identical for every cycle
+    within the same calendar day. `daily_points_cache` (a plain dict, owned by the caller/context) memoizes
+    this per symbol, overwriting (never accumulating) on a date change. This test proves both halves: (1)
+    the underlying bars() call only happens ONCE per day per symbol when the cache is used (spied via
+    monkeypatch), and (2) the returned analysis is BYTE-IDENTICAL to the uncached call across several
+    same-day cycles and a real day-boundary transition."""
+    dataset_id, days_et = daily_dataset
+    as_of_day1 = (days_et[60] + pd.Timedelta(hours=14)).tz_convert("UTC").to_pydatetime()     # mid-session
+    same_day_later = (days_et[60] + pd.Timedelta(hours=19)).tz_convert("UTC").to_pydatetime()  # later, same day
+    next_day = (days_et[61] + pd.Timedelta(hours=14)).tz_convert("UTC").to_pydatetime()        # a new day
+
+    clk = HistoricalClock(as_of_day1)
+    provider = HistoricalMarketProvider(clk, [dataset_id])
+
+    calls = {"n": 0}
+    real_bars = provider.bars
+
+    def _spy_bars(*a, **kw):
+        calls["n"] += 1
+        return real_bars(*a, **kw)
+    provider.bars = _spy_bars
+
+    cache: dict = {}
+    a1, _, _ = historical_analysis(provider, "ZZZ", as_of_day1, daily_points_cache=cache)
+    assert calls["n"] == 1                                  # first call for this symbol/day: real fetch
+    a2, _, _ = historical_analysis(provider, "ZZZ", as_of_day1, daily_points_cache=cache)
+    assert calls["n"] == 1                                  # same symbol, same day: cache hit, NO new fetch
+    assert a1 == a2
+
+    clk.set(same_day_later)
+    a3, _, _ = historical_analysis(provider, "ZZZ", same_day_later, daily_points_cache=cache)
+    assert calls["n"] == 1                                  # still the same calendar day: still cached
+
+    clk.set(next_day)
+    a4, _, _ = historical_analysis(provider, "ZZZ", next_day, daily_points_cache=cache)
+    assert calls["n"] == 2                                  # a NEW day: exactly one fresh fetch, not zero
+
+    # cross-check every cached result against a fully uncached run at the same instants
+    clk2 = HistoricalClock(as_of_day1)
+    provider2 = HistoricalMarketProvider(clk2, [dataset_id])
+    ref1, _, _ = historical_analysis(provider2, "ZZZ", as_of_day1, daily_points_cache=None)
+    clk2.set(next_day)
+    ref4, _, _ = historical_analysis(provider2, "ZZZ", next_day, daily_points_cache=None)
+    assert a1 == ref1
+    assert a4 == ref4
+
+
 def test_intraday_synthesis_returns_none_when_todays_daily_bar_already_exists():
     from research.historical.avdi_adapter import _synthesize_todays_daily_bar
     import datetime as _dt

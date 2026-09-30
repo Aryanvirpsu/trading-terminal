@@ -192,3 +192,25 @@ def test_visible_uses_searchsorted_and_matches_a_boolean_mask_reference(dataset)
         reference = with_dup[with_dup["timestamp"] <= bound]          # the OLD boolean-mask implementation
         actual = p._visible("AAPL", bound)                            # the NEW searchsorted implementation
         pd.testing.assert_frame_equal(reference.reset_index(drop=True), actual.reset_index(drop=True))
+
+
+def test_bars_vectorized_construction_matches_the_old_iterrows_reference(dataset):
+    """Regression test for the SECOND .iterrows() hotspot found building HIST-001 Full (the first was
+    _synthesize_todays_daily_bar's unbounded fetch): bars() itself built its returned point-dicts via
+    `.iterrows()`, which constructs a new pandas Series per row -- real, measured overhead on every single
+    bars() call. Fixed by extracting each column as a plain numpy array once and zipping them -- same
+    row-by-row output, never via a Series. This test proves the new construction is byte-identical to the
+    old `.iterrows()` implementation on real data."""
+    clk = HistoricalClock(_et("1005"))
+    p = HistoricalMarketProvider(clk, [dataset])
+
+    def _old_iterrows_bars(provider, symbol, end):
+        vis = provider._visible(symbol, end)
+        return [{"t": row["timestamp"].isoformat(), "o": float(row["open"]), "h": float(row["high"]),
+                 "l": float(row["low"]), "c": float(row["close"]), "v": float(row["volume"])}
+                for _, row in vis.iterrows()]
+
+    for end_time in ("0935", "1000", "1005"):
+        bound = _et(end_time)
+        assert p.bars("AAPL", end=bound) == _old_iterrows_bars(p, "AAPL", bound)
+    assert p.bars("AAPL", end=_et("1005"), lookback=2) == _old_iterrows_bars(p, "AAPL", _et("1005"))[-2:]
