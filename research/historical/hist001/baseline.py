@@ -45,7 +45,7 @@ def run_baseline(*, run_id: str, intraday_dataset_id: str, daily_dataset_id: str
                  capability_fingerprint: str = PRICE_TREND_MACRO_V1,
                  seed_cash: float = 500.0, cycles: Optional[Sequence[ScheduledCycle]] = None,
                  progress_every: Optional[int] = None,
-                 split_aware_diagnostic: bool = False) -> Dict[str, Any]:
+                 split_aware_diagnostic: bool = True) -> Dict[str, Any]:
     """Runs the real Champion decision+execution stack over every real trading-day cycle in
     [warmup_start, evaluation_end], starting from a FRESH $500 (or `seed_cash`) account. Cycles whose
     `session_date < evaluation_start` are tagged `phase="warmup"`; the rest `phase="evaluation"`. Warm-up
@@ -74,16 +74,27 @@ def run_baseline(*, run_id: str, intraday_dataset_id: str, daily_dataset_id: str
     audit trail exists in the first place. If a future run needs true multi-day resumability, it should be
     built then, deliberately, not rushed in under this run's own time pressure.
 
-    `split_aware_diagnostic=True` (default False -- the canonical, unchanged behavior): layers
-    `split_aware_diagnostic.SplitAwarePositionDiagnostic` on top of the real, unmodified execution stack,
-    so an OPEN position's stop/target/quantity are adjusted (via the real, already-existing
+    `split_aware_diagnostic=True` (the DEFAULT as of 2026-09-30 -- promoted from an opt-in diagnostic once
+    the user reviewed the Full-stage finding it was built to investigate): layers
+    `split_aware_diagnostic.SplitAwarePositionDiagnostic` on top of the real, unmodified execution stack, so
+    an OPEN position's stop/target/quantity are adjusted (via the real, already-existing
     `lab.paper.fills.apply_split()`) at the exact session date a CONFIRMED split's own bar appears, before
-    `manage_open_positions()` runs its real, unmodified stop/target comparison. This exists ONLY as an
-    explicitly-authorized, clearly-labeled DIAGNOSTIC for HIST-001 Full (found: AVGO's real 2024-07-15
-    10-for-1 split, comparing a pre-split stop against a post-split raw price, triggered a ~17R "loss" that
-    then tripped the account's own real max_drawdown circuit breaker for the rest of the evaluation window)
-    -- see split_aware_diagnostic.py's own module docstring. Never the default; never silently applied to
-    the canonical HIST-001 result."""
+    `manage_open_positions()` runs its real, unmodified stop/target comparison.
+
+    This is a REPLAY-FIDELITY correctness fix, not a Champion behavior change: `lab.paper.broker.py` is
+    never touched by it (the real `manage_open_positions()` still runs completely unmodified, still makes
+    the same real stop/target comparison it always has). What this corrects is that a NAIVE historical
+    replay -- comparing a stored stop against a raw price series with a real, confirmed ~10x split
+    discontinuity in it -- misrepresents what a REAL account/broker would actually show a held position at
+    that moment (a real broker adjusts a resting stop order's price and a position's share count
+    automatically when the underlying stock splits; nothing about that is a strategy decision). Leaving the
+    replay naive here was the actual fidelity defect, discovered via AVGO's real 2024-07-15 10-for-1 split:
+    comparing a pre-split stop against a post-split raw price triggered a ~17R artificial "loss" that then
+    tripped the account's own real `max_drawdown` circuit breaker for the rest of HIST-001 Full's evaluation
+    window -- see `split_aware_diagnostic.py`'s own module docstring and
+    `HIST_001_CHAMPION_BASELINE.md`'s Full-stage correction for the full finding. Pass
+    `split_aware_diagnostic=False` explicitly to reproduce the OLD (naive, pre-correction) behavior for
+    comparison purposes only -- never the default going forward."""
     guard_all()
     if capability_fingerprint not in (PRICE_TREND_MACRO_V1, PRICE_TREND_ONLY_V1):
         raise ValueError(f"unknown capability_fingerprint {capability_fingerprint!r}")
@@ -199,6 +210,20 @@ def run_baseline(*, run_id: str, intraday_dataset_id: str, daily_dataset_id: str
                                        "account_equity_before": (account_snapshot or {}).get("equity")})
                         if ev.get("executed"):
                             tracker.open_trade(ident.event_id, ev.get("signal_id") or "")
+
+                # H7 event closure: mirrors the forward runtime's own `shadow_log._closed_signal_ids()`
+                # check. Without this, an event this tracker opened above never lets go of its (symbol,
+                # direction) key, so a LATER, genuinely independent re-entry (this symbol's prior position
+                # has since closed for real, per the ledger) reuses the stale event_id and open_trade()
+                # raises on the second, different trade_id -- a real crash found running an ad hoc replay
+                # whose non-standard, near-zero warmup window made a within-one-run close-then-reenter
+                # sequence far more likely to actually occur before evaluation_end. Cheap: bounded by this
+                # run's own total closed-position count, queried fresh each cycle exactly like shadow_log
+                # already does in production.
+                if tracker.open_trades():
+                    closed_trade_ids = {r["signal_id"] for r in db.query(
+                        "SELECT DISTINCT signal_id FROM positions WHERE status='closed' AND signal_id IS NOT NULL")}
+                    tracker.reconcile_closed_trades(closed_trade_ids)
 
                 cycle_results.append({
                     "cycle_id": cyc.cycle_id, "session_date": cyc.session_date, "et_time": cyc.et_time.isoformat(),

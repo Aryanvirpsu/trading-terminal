@@ -878,14 +878,47 @@ any kind was found in any field checked.
 
 ## Full decision gate
 
-**`MEDIUM_VALID_WITH_LIMITATIONS`** — no change in kind from Medium's own verdict, but the limitation is now
-much more specific and much more consequential: **Full's mechanics are exceptionally well-proven** (perfect
-determinism across two independent implementations at full scale, zero risk-invariant violations, zero
-wall-clock leaks, a real and correctly-root-caused anomaly rather than an unexplained one, genuine — if thin
-— choice-event evidence for the first time in this project). But **Full's own evaluation window was
-effectively cut to ~4.5 months (2024-01..2024-07) by a single data artifact**, not by any Champion strategy
-limitation. The mechanics are trustworthy; the SAMPLE the mechanics produced is much smaller and much more
-concentrated than the nominal "2 years" suggests. A corrected re-run (once the event-identity bug found by
-the split-aware diagnostic is fixed) is the clear, specific next step to get a real ~2-year sample — not
-required to accept this stage's mechanical findings, but required before any Full-scale P&L number should be
-treated as representative of 2 years of Champion behavior.
+**Correction (2026-09-30): the verdict below was originally posted as `MEDIUM_VALID_WITH_LIMITATIONS`, copying
+Medium's own verdict scheme by mistake. The Full-stage directive's own scale is `BASELINE_VALID` /
+`BASELINE_VALID_WITH_LIMITATIONS` / `BASELINE_INVALID`, and the user caught this immediately on review. Per
+this file's own append-only rule, the wrong verdict is left visible here (struck through in spirit, not
+deleted) and the corrected one follows.**
+
+~~`MEDIUM_VALID_WITH_LIMITATIONS`~~ — **`BASELINE_INVALID — CORPORATE_ACTION_SPLIT_CASCADE`**
+
+This verdict separates two things this report's own numbers had blurred together:
+
+```
+HIST-001 ENGINE VALIDATION        VALID
+  Fast/reference parity           proven byte-identical at full 2-year scale
+  Historical clock/timing         zero unresolved wall-clock leaks
+  Macro replay                    genuinely exercised, zero fallback
+  Risk sizing at entry            zero invariant violations (max modeled risk $4.87 of $5.00)
+
+HIST-001 STRATEGY BASELINE        INVALID (this run)
+  Corporate-action handling       AVGO's real split, compared raw, produced a data-artifact loss
+  Event-identity continuation     a second pre-existing bug, found once trading resumed past 7/15
+  True ~2-year Champion sample    never obtained -- real evaluation window was ~4.5 months, not ~2 years
+```
+
+The engine work is genuinely valid and does not need to be redone — the byte-identical fast/reference parity
+proof (§L) stands regardless of what follows. But the STRATEGY numbers this run produced (§I/§J: net P&L
+−$7.87, net R −5.04R, expectancy −0.72R/trade, 85.7% win rate) are **retired from strategy discussion as of
+this correction** — they are forensic evidence of exactly one cascading data-artifact sequence, not evidence
+about Champion's real historical edge. One data-artifact loss determined the entire subsequent portfolio
+path; no P&L conclusion drawn from a sample dominated that way is meaningful in either direction.
+
+**`Ready for Challenger experiments?` is corrected to No, not yet — not "yes, mechanically" as originally
+posted.** The engine is mechanically ready, but HIST-002/003/004 would be compared against a benchmark that
+is still contaminated; starting them now would produce comparisons against a baseline everyone already knows
+is wrong. The next sequence, in order: (1) make Historical Lab's own replay corporate-action-aware by
+default (promoting the split-aware diagnostic from opt-in to the standard behavior — see below, done as part
+of this correction); (2) fix the event-identity continuation bug (in progress, a separate session); (3)
+regression-test both; (4) a targeted parity check on the AVGO split window and the event-identity failure
+specifically, not a full 11-hour reference re-run (the byte-identical parity already proven makes that
+unnecessary — a targeted slice comparison is sufficient to prove the two new fixes don't break the
+already-proven equivalence); (5) rerun Full with the fast engine only; (6) produce the real HIST-001 baseline;
+(7) only then consider HIST-002/003/004.
+
+See the addendum below for the corporate-action-handling promotion made immediately following this
+correction, and `HIST_001_PREREGISTRATION.md` Amendment 3 for the corrected Full run this leads to.

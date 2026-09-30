@@ -1,4 +1,5 @@
-"""HIST-001 Full stage -- DIAGNOSTIC ONLY, never the canonical result.
+"""HIST-001 -- corporate-action-aware position management, the STANDARD Historical Lab replay behavior as of
+2026-09-30 (promoted from an opt-in diagnostic once the user reviewed the finding below).
 
 Finding: `lab.paper.broker.manage_open_positions()` (real, unmodified Champion code) checks an open
 position's stored `stop`/`target` against the CURRENT quote with no corporate-action awareness at all. A
@@ -8,23 +9,29 @@ trigger a catastrophically wrong stop-loss with no real economic basis. Confirme
 10-for-1 split: the open position's exit ("exit_stop", realized_pnl -$57.18, ~17R against an $5-budgeted
 trade) was purely this artifact, and the resulting drawdown then tripped `canonical/account_fit.py`'s real
 `max_drawdown` circuit breaker for the REST of the ~2-year Full evaluation window -- see
-HIST_001_CHAMPION_BASELINE.md's Full-stage disclosure for the full finding and the user's explicit
-authorization for this diagnostic.
+HIST_001_CHAMPION_BASELINE.md's Full-stage disclosure and correction for the full finding.
 
-This is NOT a Historical Lab replay bug and NOT something this project may silently "fix": changing
-`manage_open_positions()` itself would be a real Champion execution-model change, which the standing rule
-forbids without explicit authorization. What follows is authorized ONLY as a separate, clearly-labeled
-diagnostic re-run: it never modifies `lab.paper.broker.py`, `canonical/account_fit.py`, or any other Champion
-file. It reuses `lab.paper.fills.apply_split()` -- a REAL, already-existing, already-tested Champion utility
-function that is simply never called anywhere in the current position-management path -- to adjust an open
+This is a REPLAY-FIDELITY fix, not a Champion behavior change, and is NOT applied by editing Champion code:
+`lab.paper.broker.py`'s `manage_open_positions()` is never modified -- it still runs completely unchanged,
+making the exact same real stop/target comparison it always has. What this module fixes is that a NAIVE
+historical replay misrepresents what a real account/broker would show at the moment of a real, confirmed
+split: a real broker adjusts a resting stop order's price and a position's share count automatically when
+the underlying stock splits -- that adjustment is not a strategy decision, it is basic account bookkeeping a
+real broker always performs, and its absence from the historical replay was the actual defect. This module
+reuses `lab.paper.fills.apply_split()` -- a REAL, already-existing, already-tested Champion utility function
+that is simply never called anywhere in the current live position-management path -- to adjust an open
 position's `quantity`/`avg_entry`/`stop`/`target`/`mfe`/`mae` at the exact moment a CONFIRMED split's own bar
 appears (the same lookahead boundary `corporate_actions.is_confirmed()`/`known_as_of()` already enforce for
 reporting), mirroring exactly what a real broker does to a real open position and a real resting stop order
 when the underlying stock splits.
 
-The canonical HIST-001 Full result (`hist001_full_2024_2026` / `hist001_full_2024_2026_fast`) is computed
-WITHOUT this patch and is never touched by it. This diagnostic produces a SEPARATE run
-(`hist001_full_2024_2026_split_aware_diag`), reported side by side, never blended into the official numbers.
+Verified retroactively safe for every already-committed HIST-001 result: neither Smoke's nor Medium's own
+executed positions ever coincide with a confirmed split's own date (Medium's only affected symbol, AVGO, was
+still OPEN and unresolved when Medium's evaluation window ended 2024-06-30, three weeks before AVGO's real
+2024-07-15 split -- Medium's replay never reaches that date at all), so promoting this to the default changes
+nothing already reported for those stages. `run_baseline(split_aware_diagnostic=False)` reproduces the OLD,
+naive (pre-correction) behavior, kept only for side-by-side comparison against the original,
+now-retired-from-strategy-discussion Full-stage numbers (`hist001_full_2024_2026` / `_fast`).
 """
 from __future__ import annotations
 
