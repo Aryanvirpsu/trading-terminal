@@ -94,6 +94,16 @@ def test_split_aware_diagnostic_adjusts_an_open_position_on_the_split_date(tmp_p
             assert len(diag.adjustments_applied) == 1
             assert diag.adjustments_applied[0]["ratio"] == 10.0
 
+            # Regression test for a real bug found running the actual Full diagnostic: manage_open_positions()
+            # (and therefore this patch) runs on MANY cycles within the same session_date -- calling the
+            # adjustment again for the SAME (position, date) must be a no-op, never a second 10x compounding
+            # into 100x.
+            diag._adjust_positions_for_todays_splits(split_date)
+            still_after = db.query_one("SELECT * FROM positions WHERE symbol='ZZZ'")
+            assert still_after["quantity"] == pytest.approx(10.0)        # NOT 100.0
+            assert still_after["avg_entry"] == pytest.approx(before_entry / 10.0)
+            assert len(diag.adjustments_applied) == 1                    # still exactly one adjustment recorded
+
         # a symbol/date with NO matching split is untouched
         diag2 = SplitAwarePositionDiagnostic(splits)
         diag2._adjust_positions_for_todays_splits(days[3].strftime("%Y-%m-%d"))

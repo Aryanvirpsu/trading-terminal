@@ -57,6 +57,7 @@ class SplitAwarePositionDiagnostic:
     def __init__(self, splits_by_symbol_date: Dict[Tuple[str, str], float]):
         self.splits_by_symbol_date = splits_by_symbol_date
         self.adjustments_applied = []          # audit trail of every adjustment this diagnostic made
+        self._already_adjusted: set = set()    # (position_id, session_date) already applied -- see below
         self._stack = None
         self._real_manage_open_positions = None
 
@@ -69,6 +70,15 @@ class SplitAwarePositionDiagnostic:
             ratio = self.splits_by_symbol_date.get((pos["symbol"], session_date))
             if not ratio:
                 continue
+            # `manage_open_positions()` (and therefore this patch) runs on MANY cycles within the same
+            # session_date (the real multi-scan schedule, ~27/day) -- a real bug found running the actual
+            # diagnostic: without this guard, the SAME position got the SAME split ratio applied on every
+            # one of that day's cycles, compounding 10x into 100x for AVGO's real split. A position may be
+            # adjusted for a given (position, date) split exactly once, no matter how many cycles re-check it.
+            dedup_key = (pos["position_id"], session_date)
+            if dedup_key in self._already_adjusted:
+                continue
+            self._already_adjusted.add(dedup_key)
             new_qty, new_entry = apply_split(pos["quantity"], pos["avg_entry"], ratio)
             _, new_stop = apply_split(1.0, pos["stop"], ratio) if pos["stop"] is not None else (None, None)
             _, new_target = apply_split(1.0, pos["target"], ratio) if pos["target"] is not None else (None, None)
