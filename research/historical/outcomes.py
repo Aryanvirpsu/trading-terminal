@@ -81,8 +81,14 @@ def resolve_outcome(provider: HistoricalMarketProvider, symbol: str, entry_time:
                entry_price=entry_price, stop=stop, target=target, r_per_share=round(r_per_share, 6),
                hypothetical=hypothetical)
 
-    all_points = provider.bars(symbol, timeframe=timeframe)
-    points = [p for p in all_points if dt.datetime.fromisoformat(p["t"]) > entry_time]
+    # Real performance defect found running HIST-001's own capacity_opportunity_cost() report at Full scale:
+    # calling bars() with no `start` fetches and materializes EVERY visible bar since the dataset's start
+    # (up to ~2 years of 5-minute bars) for EVERY hypothetical/blocked candidate resolved, only to
+    # immediately discard everything at/before entry_time. provider.bars(..., start=entry_time) does the
+    # identical `> entry_time` filtering via searchsorted on the already-sorted column instead of
+    # materializing and then discarding rows -- see provider.py's own docstring for the exact equivalence
+    # (`side="right"` matches `>`, not `>=`). Byte-identical result, just without the wasted work.
+    points = provider.bars(symbol, timeframe=timeframe, start=entry_time)
     if max_bars is not None:
         points = points[:max_bars]
 

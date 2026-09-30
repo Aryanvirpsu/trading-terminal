@@ -117,11 +117,28 @@ class HistoricalMarketProvider:
                     provider=self.provider_name)
 
     def bars(self, symbol: str, timeframe: str = "5m", end: Optional[dt.datetime] = None,
-            lookback: Optional[int] = None) -> List[Dict[str, Any]]:
+            lookback: Optional[int] = None, start: Optional[dt.datetime] = None) -> List[Dict[str, Any]]:
         """Points shaped like `research.price_history()["points"]` (`t/o/h/l/c/v`), oldest first, every one
         at/before the bound. `lookback` (if given) keeps only the most recent N of the visible bars —
-        it can only shrink the visible window, never extend it past the clock."""
+        it can only shrink the visible window, never extend it past the clock.
+
+        `start`, if given, keeps only bars STRICTLY AFTER `start` (real performance defect found running
+        HIST-001's own capacity_opportunity_cost() report at Full scale: `outcomes.resolve_outcome()` called
+        `bars(symbol)` with no bound at all, materializing EVERY visible bar since the dataset's start --
+        up to ~2 years' worth of 5-minute bars -- for EVERY blocked-TRADEABLE candidate, only to immediately
+        Python-filter down to `timestamp > entry_time` and discard the rest. `start` does that same
+        filtering via `searchsorted` on the already-sorted column (identical semantics to the `> entry_time`
+        Python filter it replaces: `side="right"` on an exact match returns the index of the first row
+        STRICTLY greater than `start`, matching `>` exactly, not `>=`) instead of materializing rows that
+        get thrown away. Composes with `end`/`lookback` unchanged: `start` only narrows further from the
+        near side, exactly like `lookback` narrows from the far side."""
         vis = self._visible(symbol, end)
+        if start is not None:
+            if start.tzinfo is None:
+                raise ValueError("`start` must be timezone-aware")
+            start_bound = start.astimezone(dt.timezone.utc)
+            idx = vis["timestamp"].searchsorted(start_bound, side="right")
+            vis = vis.iloc[idx:]
         if lookback is not None:
             vis = vis.tail(lookback)
         if vis.empty:

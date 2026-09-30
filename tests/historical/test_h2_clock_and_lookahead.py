@@ -214,3 +214,41 @@ def test_bars_vectorized_construction_matches_the_old_iterrows_reference(dataset
         bound = _et(end_time)
         assert p.bars("AAPL", end=bound) == _old_iterrows_bars(p, "AAPL", bound)
     assert p.bars("AAPL", end=_et("1005"), lookback=2) == _old_iterrows_bars(p, "AAPL", _et("1005"))[-2:]
+
+
+def test_bars_start_matches_the_old_python_filter_reference(dataset):
+    """Regression test for the THIRD unbounded-fetch defect found building HIST-001's own Full-scale report
+    (outcomes.resolve_outcome() called bars(symbol) with no bound at all -- fetching and materializing
+    EVERY visible bar since the dataset's start for every hypothetical/blocked candidate resolved, only to
+    immediately Python-filter down to `timestamp > entry_time`). `start=` does that same filtering via
+    searchsorted instead. This test proves it is byte-identical to the old
+    `[p for p in bars(symbol) if timestamp > start]` Python filter on real data, for every entry point
+    across the day including the exact boundary case (a start that lands exactly ON a real bar's own
+    timestamp -- must exclude that bar, matching strict `>`, never `>=`)."""
+    clk = HistoricalClock(_et("1500"))                      # a clock late enough to see the whole day so far
+    p = HistoricalMarketProvider(clk, [dataset])
+
+    def _old_python_filter_bars(provider, symbol, start):
+        import datetime as _dt
+        all_points = provider.bars(symbol)                  # the OLD call: no bound, fetch everything
+        return [pt for pt in all_points if _dt.datetime.fromisoformat(pt["t"]) > start]
+
+    for start_time in ("0930", "0935", "1000", "1230", "1450"):     # includes an exact on-bar boundary (0935 etc.)
+        start = _et(start_time)
+        assert p.bars("AAPL", start=start) == _old_python_filter_bars(p, "AAPL", start)
+
+    # a start exactly AT the last visible bar (clock.now itself) excludes it too -- strict >, not >=
+    late_start = _et("1500")
+    assert p.bars("AAPL", start=late_start) == _old_python_filter_bars(p, "AAPL", late_start) == []
+
+    # composes correctly with `end` and `lookback`, same as any other bound
+    narrowed = p.bars("AAPL", end=_et("1005"), start=_et("0940"))
+    assert narrowed == [pt for pt in _old_python_filter_bars(p, "AAPL", _et("0940"))
+                        if dt.datetime.fromisoformat(pt["t"]) <= _et("1005").astimezone(dt.timezone.utc)]
+
+
+def test_bars_start_requires_timezone_awareness(dataset):
+    clk = HistoricalClock(_et("1005"))
+    p = HistoricalMarketProvider(clk, [dataset])
+    with pytest.raises(ValueError):
+        p.bars("AAPL", start=dt.datetime(2026, 6, 17, 9, 35))    # naive -- must be rejected, not silently guessed
