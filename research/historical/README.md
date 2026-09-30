@@ -232,6 +232,17 @@ directly for the API key text (zero occurrences in either file) — this rerun i
   Repeated observations of the same symbol+direction share one `event_id` until `close_event()` is called;
   an event carries at most one open `trade_id`. Directly reproduces the acceptance doc's own headline
   number (133 observations → 12 events) from the real per-symbol observation counts.
+  Real bug found and fixed running an ad hoc `hist001.baseline.run_baseline()` replay with a non-standard
+  warmup window (`warmup_start=evaluation_start='2024-06-01'`, `evaluation_end='2024-07-20'`):
+  `close_event()` was never actually wired up to any real ledger state in `baseline.py` (dead code, unlike
+  `shadow_log`'s own `_closed_signal_ids()` check it was meant to consolidate), so once a symbol's event was
+  opened it stayed "open" for the rest of the run even after its position closed for real -- a LATER,
+  legitimate re-entry for the same (symbol, direction) then crashed `open_trade()` on the differing
+  trade_id. This can happen for any warmup window, standard or not; the non-standard one used here just
+  made a within-one-run close-then-reenter far more likely to actually occur before `evaluation_end`. Fixed
+  by `EventIdentityTracker.reconcile_closed_trades()`, called once per cycle in `baseline.py` with the same
+  `positions WHERE status='closed'` query `shadow_log` already uses — see
+  `tests/historical/test_h7_event_identity.py` and `tests/historical/test_hist001_event_identity_reentry.py`.
 * **H8 — walk-forward with a holdout that cannot be casually spent** (`walkforward.py`): a `WalkForwardPlan`
   enforces exactly one holdout period, last. Every period access is recorded, tagged by purpose;
   `inspect()` refuses the holdout for anything but a final report, and the only other way in,

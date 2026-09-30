@@ -75,6 +75,65 @@ def test_closing_an_event_clears_its_open_trade():
     assert t.is_closed(o.event_id)
 
 
+def test_reproduces_the_hist001_non_standard_warmup_crash():
+    """Real crash found running `hist001.baseline.run_baseline()` with a non-standard warmup window
+    (warmup_start=evaluation_start='2024-06-01', evaluation_end='2024-07-20'): NEE was entered, its position
+    closed for real, and NEE was then legitimately re-entered later in the same run -- but baseline.py never
+    called `close_event()`, so the tracker still considered the FIRST event open and `open_trade()` raised
+    on the second, different trade_id. Reproduced here directly against the tracker, independent of any
+    warmup date or real dataset -- this crashes for ANY (symbol, direction) pair that closes and legitimately
+    re-enters within one run, with or without `reconcile_closed_trades()` called in between."""
+    t = EventIdentityTracker()
+    first = t.observe(symbol="NEE", direction="LONG", cycle_id="c1", scan_ts="2024-06-03T09:15:00")
+    t.open_trade(first.event_id, "sig_e395c3b8bdee7a98")
+
+    # NEE's position later closes for real, and NEE legitimately becomes tradeable again -- the tracker
+    # was never told the first event closed, so it hands back the SAME stale event_id.
+    still_same = t.observe(symbol="NEE", direction="LONG", cycle_id="c9", scan_ts="2024-06-10T09:15:00")
+    assert still_same.event_id == first.event_id and not still_same.is_new_event
+
+    with pytest.raises(ValueError, match=r"already has an open trade"):
+        t.open_trade(still_same.event_id, "sig_different_second_trade")
+
+
+def test_reconcile_closed_trades_lets_a_legitimate_reentry_start_a_new_event():
+    """The fix: once the ledger reports a trade's position closed, `reconcile_closed_trades()` closes its
+    event, so the NEXT observation of that (symbol, direction) mints a genuinely new, independent event_id
+    and the second `open_trade()` no longer collides with the first."""
+    t = EventIdentityTracker()
+    first = t.observe(symbol="NEE", direction="LONG", cycle_id="c1", scan_ts="2024-06-03T09:15:00")
+    t.open_trade(first.event_id, "sig_e395c3b8bdee7a98")
+    assert t.open_trades() == {first.event_id: "sig_e395c3b8bdee7a98"}
+
+    # not yet closed -- a no-op, exactly like shadow_log's own per-cycle check when nothing has exited
+    t.reconcile_closed_trades(set())
+    assert not t.is_closed(first.event_id)
+
+    # the ledger now reports NEE's position closed
+    t.reconcile_closed_trades({"sig_e395c3b8bdee7a98"})
+    assert t.is_closed(first.event_id)
+    assert t.open_trades() == {}
+
+    second = t.observe(symbol="NEE", direction="LONG", cycle_id="c9", scan_ts="2024-06-10T09:15:00")
+    assert second.is_new_event is True
+    assert second.event_id != first.event_id
+    t.open_trade(second.event_id, "sig_different_second_trade")     # no crash: a genuinely new event now
+    assert t.event_count() == 2                                     # two independent pieces of evidence
+
+
+def test_reconcile_closed_trades_is_a_noop_when_nothing_has_closed():
+    """Standard-run behavior (a symbol entered once and never exits within the run): reconciliation must
+    never touch an event whose trade is still open, regardless of how many times it's called."""
+    t = EventIdentityTracker()
+    o = t.observe(symbol="DELL", direction="LONG", cycle_id="c1", scan_ts="2026-09-25T09:35:00")
+    t.open_trade(o.event_id, "ord_abc123")
+    for _ in range(5):
+        t.reconcile_closed_trades({"some_unrelated_id"})
+    assert not t.is_closed(o.event_id)
+    assert t.trade_id_for(o.event_id) == "ord_abc123"
+    t.open_trade(o.event_id, "ord_abc123")             # still idempotent, still fine
+
+
 def test_reproduces_the_forward_sessions_own_observation_to_event_collapse():
     """The acceptance doc's own headline number: 133 raw observations -> 12 independent events, e.g. AMD
     26 observations -> 1 event, DELL 26 -> 1, CRM 25 -> 1. No trade closes mid-session for any of these

@@ -37,7 +37,7 @@ This module counts independent evidence: never count observations, always count 
 from __future__ import annotations
 
 import dataclasses
-from typing import Dict, Optional, Set, Tuple
+from typing import Dict, Iterable, Optional, Set, Tuple
 
 
 @dataclasses.dataclass(frozen=True)
@@ -102,6 +102,35 @@ class EventIdentityTracker:
 
     def is_closed(self, event_id: str) -> bool:
         return event_id in self._closed_events
+
+    def open_trades(self) -> Dict[str, str]:
+        """A snapshot of event_id -> trade_id for every event this tracker still considers open. A caller
+        that owns the actual ledger (e.g. HIST-001's `baseline.py`) uses this to find out which trade_ids
+        it needs to check for closure -- see `reconcile_closed_trades()`."""
+        return dict(self._open_trade)
+
+    def reconcile_closed_trades(self, closed_trade_ids: Iterable[str]) -> None:
+        """Call once per cycle with the trade_ids (order/position ids) whose underlying position the
+        ledger now reports closed -- e.g. `{r["signal_id"] for r in db.query("SELECT signal_id FROM
+        positions WHERE status='closed' AND signal_id IS NOT NULL")}`, exactly the forward runtime's own
+        `lab.paper.shadow_log._closed_signal_ids()` query.
+
+        Without this call, an event this tracker minted for a (symbol, direction) pair stays "open"
+        forever once `open_trade()` is called for it once, even after the real position exits -- so a
+        later, genuinely independent re-entry for the SAME (symbol, direction) reuses the same stale
+        event_id and `open_trade()` raises (a different trade_id on an event already marked open), even
+        though the two trades are unrelated. This is the actual mechanism of a real crash found running an
+        ad hoc HIST-001 replay with a non-standard warmup window: `close_event()` was never wired up to any
+        real ledger state, so it was dead code -- ANY run in which a symbol's position closes and that same
+        (symbol, direction) is legitimately entered again later hits this, regardless of warmup date; a
+        non-standard warmup window just makes that within-one-run close-then-reenter pattern far more
+        likely to actually occur (see `hist001/baseline.py`'s own call site for the full explanation)."""
+        closed = set(closed_trade_ids)
+        if not closed:
+            return
+        for event_id, trade_id in list(self._open_trade.items()):
+            if trade_id in closed and event_id not in self._closed_events:
+                self.close_event(event_id)
 
     def event_count(self) -> int:
         """Independent evidence count -- events, never observations."""
