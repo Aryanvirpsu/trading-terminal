@@ -36,6 +36,7 @@ from ..macro import MacroHistory, assert_macro_coverage
 from ..manifest import load_manifest
 from ..provider import HistoricalMarketProvider
 from .schedule import ScheduledCycle, build_multi_day_schedule
+from .split_aware_diagnostic import SplitAwarePositionDiagnostic, confirmed_splits_by_symbol_and_date
 
 
 def run_baseline(*, run_id: str, intraday_dataset_id: str, daily_dataset_id: str, universe_sectors: Sequence[str],
@@ -43,7 +44,8 @@ def run_baseline(*, run_id: str, intraday_dataset_id: str, daily_dataset_id: str
                  macro_history: Optional[MacroHistory] = None,
                  capability_fingerprint: str = PRICE_TREND_MACRO_V1,
                  seed_cash: float = 500.0, cycles: Optional[Sequence[ScheduledCycle]] = None,
-                 progress_every: Optional[int] = None) -> Dict[str, Any]:
+                 progress_every: Optional[int] = None,
+                 split_aware_diagnostic: bool = False) -> Dict[str, Any]:
     """Runs the real Champion decision+execution stack over every real trading-day cycle in
     [warmup_start, evaluation_end], starting from a FRESH $500 (or `seed_cash`) account. Cycles whose
     `session_date < evaluation_start` are tagged `phase="warmup"`; the rest `phase="evaluation"`. Warm-up
@@ -70,7 +72,18 @@ def run_baseline(*, run_id: str, intraday_dataset_id: str, daily_dataset_id: str
     to run single-digit hours as one uninterrupted background process, and building genuine resumability
     correctly is a substantial standalone effort whose own correctness risk works against the reason this
     audit trail exists in the first place. If a future run needs true multi-day resumability, it should be
-    built then, deliberately, not rushed in under this run's own time pressure."""
+    built then, deliberately, not rushed in under this run's own time pressure.
+
+    `split_aware_diagnostic=True` (default False -- the canonical, unchanged behavior): layers
+    `split_aware_diagnostic.SplitAwarePositionDiagnostic` on top of the real, unmodified execution stack,
+    so an OPEN position's stop/target/quantity are adjusted (via the real, already-existing
+    `lab.paper.fills.apply_split()`) at the exact session date a CONFIRMED split's own bar appears, before
+    `manage_open_positions()` runs its real, unmodified stop/target comparison. This exists ONLY as an
+    explicitly-authorized, clearly-labeled DIAGNOSTIC for HIST-001 Full (found: AVGO's real 2024-07-15
+    10-for-1 split, comparing a pre-split stop against a post-split raw price, triggered a ~17R "loss" that
+    then tripped the account's own real max_drawdown circuit breaker for the rest of the evaluation window)
+    -- see split_aware_diagnostic.py's own module docstring. Never the default; never silently applied to
+    the canonical HIST-001 result."""
     guard_all()
     if capability_fingerprint not in (PRICE_TREND_MACRO_V1, PRICE_TREND_ONLY_V1):
         raise ValueError(f"unknown capability_fingerprint {capability_fingerprint!r}")
@@ -107,8 +120,16 @@ def run_baseline(*, run_id: str, intraday_dataset_id: str, daily_dataset_id: str
     decision_capture: Dict[Tuple[str, str], Dict[str, Any]] = {}   # (cycle_id, symbol) -> full decision record
     current_cycle_id = [""]
 
-    with HistoricalExecutionContext(decision_provider, execution_provider=exec_provider,
-                                    neutral_sector=list(universe_sectors), macro_history=macro_history) as ctx:
+    from contextlib import ExitStack
+    diagnostic_stack = ExitStack()
+    if split_aware_diagnostic:
+        from ..datasets.base import load_parquet
+        splits = confirmed_splits_by_symbol_and_date(load_parquet(daily_dataset_id))
+        diagnostic_stack.enter_context(SplitAwarePositionDiagnostic(splits))
+
+    with diagnostic_stack, HistoricalExecutionContext(
+            decision_provider, execution_provider=exec_provider,
+            neutral_sector=list(universe_sectors), macro_history=macro_history) as ctx:
         import decision_engine as de
         from paper import broker, canonical_bridge as cb, db, risk as risk_mod, workflow
 
