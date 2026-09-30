@@ -204,12 +204,48 @@ class HistoricalAVDIContext:
         # points list); overwritten (never accumulated) on a date change, so memory stays O(symbols), not
         # O(symbols x days).
         self._daily_points_cache: Dict[str, Tuple[Any, List[Dict[str, Any]]]] = {}
+        # performance only (see _patched_scan's own docstring): memoizes strategies.scan()'s entire return
+        # value per (ET date, max_finalists, strategies) -- profiled as ~65% of a HIST-001 Full cycle's own
+        # wall time (scan() calling _bars() once per universe symbol, ~27 times/day, for a provably
+        # identical answer each time within a day). Overwritten per key, never accumulated across the
+        # whole run, so memory stays O(unique keys actually used), not O(cycles).
+        self._scan_cache: Dict[Tuple[Any, Any, Any], Dict[str, Any]] = {}
 
     # -- patched replacements (each records what it was asked for + what clock.now was) -----------------
     def _patched_bars(self, symbol: str):
         self.calls.append({"fn": "strategies._bars", "symbol": symbol, "clock_now": self.clock.now.isoformat()})
         points = self.provider.bars(symbol, timeframe="1d")
         return _bars_dict(points)
+
+    def _patched_scan(self, max_finalists: Optional[int] = None, strategies: Optional[tuple] = None):
+        """`strategies.scan()`'s entire real, unmodified funnel, memoized once per ET calendar date.
+
+        `scan()` reads exactly three inputs in this patched context, and every one of them is provably
+        day-invariant: `cfg.enabled_strategies()` (patched, depends only on `provider.volume_trust`, fixed
+        for the whole run), `rank_sectors()` (patched to a neutral stub, no per-cycle state), and
+        `_bars(sym)` for every universe symbol (patched to `self.provider.bars(sym, "1d")` bound by
+        `clock.now` -- and the set of COMPLETE daily bars visible as of any instant within a given calendar
+        date is, by construction, identical no matter which cycle of that date asks, since a day's own bar
+        is never visible during that same day -- see `historical_analysis()`'s own `daily_points_cache`
+        docstring for the exact same invariant, already proven and relied on elsewhere in this file).
+        `scan()` reads no live quote, no intraday price, and mutates no state of its own (confirmed by
+        reading `lab/paper/strategies.py::scan()` directly, not assumed) -- so its return value for a given
+        (ET date, max_finalists, strategies) is therefore identical on every cycle of that date, and
+        `premarket()`'s own only call site (`strategies.scan()`, no arguments) always hits the same key.
+
+        Cheap and safe to return the same cached dict object across calls: `premarket()`'s own use of
+        `scan()`'s return value is read-only (iterates `finalists`/`candidates`, never mutates them)."""
+        from zoneinfo import ZoneInfo
+        et_date = self.clock.now.astimezone(ZoneInfo("America/New_York")).date()
+        key = (et_date, max_finalists, strategies)
+        cached = self._scan_cache.get(key)
+        if cached is not None:
+            self.calls.append({"fn": "strategies.scan", "clock_now": self.clock.now.isoformat(), "cache_hit": True})
+            return cached
+        result = self._real_scan(max_finalists=max_finalists, strategies=strategies)
+        self._scan_cache[key] = result
+        self.calls.append({"fn": "strategies.scan", "clock_now": self.clock.now.isoformat(), "cache_hit": False})
+        return result
 
     def _patched_rank_sectors(self, limit_strong: int = 2, limit_weak: int = 1):
         # Sector breadth/ROTATION has no historical replay yet (disclosed in README.md) — every sector in
@@ -325,8 +361,10 @@ class HistoricalAVDIContext:
         p = self._stack.enter_context
         self._real_enabled_strategies = cfg.enabled_strategies
         self._real_session_state = market_regime.session_state
+        self._real_scan = strategies.scan
         p(mock.patch.object(strategies, "_bars", self._patched_bars))
         p(mock.patch.object(strategies, "rank_sectors", self._patched_rank_sectors))
+        p(mock.patch.object(strategies, "scan", self._patched_scan))
         p(mock.patch.object(cfg, "enabled_strategies", self._patched_enabled_strategies))
         p(mock.patch.object(de, "_load_analysis", self._patched_load_analysis))
         p(mock.patch.object(de, "_safe_regime", self._patched_safe_regime))
