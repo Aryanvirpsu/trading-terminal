@@ -101,6 +101,29 @@ def _bar_is_current(bar_t: Any, quote_ts: float) -> bool:
     return str(bar_t)[:10] in days
 
 
+def _prior_close_and_volume(symbol: str, quote_ts: Optional[float]) -> Optional[tuple]:
+    """The last fully-closed daily bar STRICTLY BEFORE the quote's own session date -- i.e. a real "prior
+    close", never today's still-forming bar (the same `_bar_is_current` boundary `quote_for()` already uses,
+    applied in reverse: this function explicitly EXCLUDES the current-session bar rather than requiring it).
+    Returns `(prior_close, prior_volume)` or `None` when no provider data is available -- `SplitGuard`
+    treats a missing reference as "nothing to check" for that symbol, never as a false ordinary-day signal."""
+    try:
+        import research as R
+        hist = R.price_history(symbol, "1M")
+    except Exception:
+        return None
+    if hist.get("state") != "ok" or not hist.get("points") or not quote_ts:
+        return None
+    prior = [p for p in hist["points"] if not _bar_is_current(p.get("t"), quote_ts)]
+    if not prior:
+        return None
+    bar = prior[-1]
+    close = bar.get("c")
+    if close is None:
+        return None
+    return close, bar.get("v")
+
+
 def _not_executed(signal_id: str, reason: str) -> None:
     """Record WHY a journaled signal never reached the broker (audit trail)."""
     db.audit("signal", signal_id, "not_executed", {"reason": reason})
@@ -411,8 +434,30 @@ def market_hours(session_date: Optional[str] = None, scope: str = "all") -> Dict
         if q:
             filled.append(broker.process_order(o["order_id"], q))
 
-    # 2) stops / targets on open positions
-    managed = broker.manage_open_positions(quotes, session_date)
+    # 1.5) corporate-action guard, BEFORE stop/target management sees the raw quotes: manage_open_positions()
+    # itself is never modified (still the real, unmodified stop/target comparison it has always made) -- this
+    # only corrects a position's own stored state ahead of it for a CONFIRMED split, or pauses that one
+    # position's check for this cycle when a split looks plausible but can't yet be confirmed. See
+    # lab/paper/corporate_actions.py's own module docstring for the full fail-closed design.
+    open_positions = db.query("SELECT * FROM positions WHERE status='open'")
+    split_paused: set = set()
+    if open_positions:
+        from .corporate_actions import SplitGuard
+        prior_ref = {}
+        for p in open_positions:
+            sym = p["symbol"]
+            if sym in prior_ref:
+                continue
+            q = quotes.get(sym)
+            ref = _prior_close_and_volume(sym, q.source_ts if q else None)
+            if ref is not None:
+                prior_ref[sym] = ref
+        split_paused = SplitGuard().check_and_adjust(open_positions, quotes, prior_ref)
+
+    # 2) stops / targets on open positions -- paused symbols are held back from this cycle's raw-price
+    # comparison entirely (never a false stop/target check against an unconfirmed, possibly-post-split quote).
+    managed = broker.manage_open_positions(
+        {sym: q for sym, q in quotes.items() if sym not in split_paused}, session_date)
 
     # 3) shadow tracking — MFE/MAE for EVERY tracked signal, including REJECT/MONITOR
     tracked_updates = 0
