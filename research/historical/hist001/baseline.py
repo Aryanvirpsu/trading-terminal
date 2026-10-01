@@ -35,6 +35,7 @@ from ..guards import guard_all
 from ..macro import MacroHistory, assert_macro_coverage
 from ..manifest import load_manifest
 from ..provider import HistoricalMarketProvider
+from .no_drawdown_challenger import NoDrawdownChallenger
 from .schedule import ScheduledCycle, build_multi_day_schedule
 from .split_aware_diagnostic import SplitAwarePositionDiagnostic, confirmed_splits_by_symbol_and_date
 
@@ -45,7 +46,8 @@ def run_baseline(*, run_id: str, intraday_dataset_id: str, daily_dataset_id: str
                  capability_fingerprint: str = PRICE_TREND_MACRO_V1,
                  seed_cash: float = 500.0, cycles: Optional[Sequence[ScheduledCycle]] = None,
                  progress_every: Optional[int] = None,
-                 split_aware_diagnostic: bool = True) -> Dict[str, Any]:
+                 split_aware_diagnostic: bool = True,
+                 disable_drawdown_gate: bool = False) -> Dict[str, Any]:
     """Runs the real Champion decision+execution stack over every real trading-day cycle in
     [warmup_start, evaluation_end], starting from a FRESH $500 (or `seed_cash`) account. Cycles whose
     `session_date < evaluation_start` are tagged `phase="warmup"`; the rest `phase="evaluation"`. Warm-up
@@ -94,7 +96,18 @@ def run_baseline(*, run_id: str, intraday_dataset_id: str, daily_dataset_id: str
     window -- see `split_aware_diagnostic.py`'s own module docstring and
     `HIST_001_CHAMPION_BASELINE.md`'s Full-stage correction for the full finding. Pass
     `split_aware_diagnostic=False` explicitly to reproduce the OLD (naive, pre-correction) behavior for
-    comparison purposes only -- never the default going forward."""
+    comparison purposes only -- never the default going forward.
+
+    `disable_drawdown_gate=False` (the default -- EVERY canonical HIST-001 Smoke/Medium/Full result uses
+    this default, unaffected): when `True`, additionally patches out BOTH of the real `max_drawdown` gates
+    (`paper.config.risk()`'s runtime gate and `canonical_bridge.STRATEGY_500_POLICY`'s canonical gate -- see
+    `no_drawdown_challenger.py`'s own module docstring for why both, found by reading each real gate's
+    source rather than assumed) for the duration of this run only. This is EXP-DD-001's own single-variable
+    Challenger knob, never a correctness fix and never promoted to the default -- it exists to answer
+    whether the Full corrected run's real $50 max_drawdown lockout (tripped 2025-02-03, never released --
+    see `max_drawdown_lockout_check()` in `analysis.py`) protected the account from a strategy that had
+    deteriorated, or prevented a later recovery. Every other Champion parameter (sizing, caps, stops,
+    targets, fills, strategy) is completely unaffected by this flag."""
     guard_all()
     if capability_fingerprint not in (PRICE_TREND_MACRO_V1, PRICE_TREND_ONLY_V1):
         raise ValueError(f"unknown capability_fingerprint {capability_fingerprint!r}")
@@ -137,6 +150,8 @@ def run_baseline(*, run_id: str, intraday_dataset_id: str, daily_dataset_id: str
         from ..datasets.base import load_parquet
         splits = confirmed_splits_by_symbol_and_date(load_parquet(daily_dataset_id))
         diagnostic_stack.enter_context(SplitAwarePositionDiagnostic(splits))
+    if disable_drawdown_gate:
+        diagnostic_stack.enter_context(NoDrawdownChallenger())
 
     with diagnostic_stack, HistoricalExecutionContext(
             decision_provider, execution_provider=exec_provider,
