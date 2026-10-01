@@ -15,7 +15,7 @@ from __future__ import annotations
 import datetime as dt
 import json
 from collections import Counter, defaultdict
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
 
 from ..clock import HistoricalClock
 from ..outcomes import resolve_hypothetical
@@ -392,6 +392,88 @@ def stability_breakdown(result: Dict[str, Any]) -> Dict[str, Any]:
     }
 
 
+def _equity_series(result: Dict[str, Any]) -> List[Tuple[str, float]]:
+    """Chronological, deduplicated `(cycle_id, account_equity_before)` series straight from
+    `decision_capture` -- the real account-state snapshot the engine itself used for that cycle's sizing,
+    not a value this file recomputes."""
+    seen: Dict[str, float] = {}
+    for v in result["decision_capture"].values():
+        eq = v.get("account_equity_before")
+        cyc = v.get("cycle_id")
+        if eq is not None and cyc is not None and cyc not in seen:
+            seen[cyc] = eq
+    return sorted(seen.items())
+
+
+def max_drawdown_lockout_check(result: Dict[str, Any], dd_cap: float = 50.0) -> Dict[str, Any]:
+    """Detects a REAL max_drawdown lockout directly from the equity series, rather than from
+    `not_executed`'s own audit text -- found necessary building the corrected Full report: every
+    `not_executed` row in this dataset carries only the generic reason `"stock leg not canonically
+    executable"` (confirmed by inspecting the full reason vocabulary in a real run's own audit log); the
+    SPECIFIC account_fit blocker (max_drawdown vs. anything else) is never threaded through to that log, so
+    a text search for "drawdown" there always returns zero regardless of whether a drawdown lockout actually
+    occurred -- a genuine auditability gap in `canonical_bridge.py`'s own logging, not a bug in this
+    function's string-matching, and not something this file changes (that would touch shared production
+    code, out of scope here).
+
+    This walks `decision_capture`'s own `account_equity_before` series chronologically, tracks the peak, and
+    reports the FIRST cycle where `peak - equity >= dd_cap` (the account's real `PAPER_MAX_DRAWDOWN_USD`,
+    default $50.0 -- see `PAPER_500_ACCOUNT.md`/`lab/paper/config.py`). Separately, it finds the LAST cycle
+    at which equity actually changed value at all (a position closed or a new one opened) and reports how
+    much of the window remains frozen after that point -- a real lockout rarely freezes at the EXACT instant
+    of the breach cycle (a few more trades usually resolve in the following days before capital is fully
+    exhausted of eligible candidates), so looking for "did equity ever change again after the breach" is too
+    brittle; looking for "is there a long frozen tail at the END of the window, and did a drawdown breach
+    happen before it" is the real, structural signature of `canonical/account_fit.py`'s own
+    `current_drawdown < dd_cap.limit` gate: once tripped, release requires a NEW equity high, which cannot
+    happen while no further trades are allowed -- the exact self-perpetuating mechanism the AVGO cascade
+    finding already identified, here potentially triggered by genuine trading losses instead of a data
+    artifact. Reported as a FACT for review, never as a correctness violation on its own -- a real, working
+    risk gate tripping on real losses is Champion behaving as designed, not a defect."""
+    series = _equity_series(result)
+    if not series:
+        return {"breach_detected": False, "note": "no decision_capture equity data available"}
+    peak = series[0][1]
+    breach = None
+    for cyc, eq in series:
+        peak = max(peak, eq)
+        if breach is None and (peak - eq) >= dd_cap:
+            breach = (cyc, eq, peak)
+
+    last_change_idx = 0
+    for i in range(1, len(series)):
+        if series[i][1] != series[i - 1][1]:
+            last_change_idx = i
+    frozen_tail_cycles = len(series) - 1 - last_change_idx
+    final_change_cycle, final_equity = series[last_change_idx]
+
+    if breach is None:
+        return {"breach_detected": False, "dd_cap": dd_cap,
+               "max_drawdown_seen": round(peak - min(e for _, e in series), 2),
+               "frozen_tail_cycles_at_window_end": frozen_tail_cycles}
+
+    breach_cycle, breach_equity, breach_peak = breach
+    sustained = breach_cycle <= final_change_cycle and frozen_tail_cycles > len(series) // 4
+    return {
+        "breach_detected": True, "dd_cap": dd_cap, "breach_cycle_id": breach_cycle,
+        "equity_at_breach": round(breach_equity, 2), "peak_before_breach": round(breach_peak, 2),
+        "drawdown_at_breach": round(breach_peak - breach_equity, 2),
+        "last_equity_change_cycle_id": final_change_cycle, "final_equity": round(final_equity, 2),
+        "frozen_tail_cycles_at_window_end": frozen_tail_cycles,
+        "frozen_tail_pct_of_series": round(100.0 * frozen_tail_cycles / len(series), 1),
+        "sustained_lockout": sustained,
+        "note": ("SUSTAINED LOCKOUT: equity reaches its drawdown breach, a few more trades resolve shortly "
+                "after, then equity is frozen for the LAST {:.0f}% of the evaluation window with no further "
+                "change at all -- consistent with the max_drawdown gate tripping and never releasing. Every "
+                "trade count/P&L/win-rate figure elsewhere in this report reflects only the ACTIVE portion "
+                "of the window before this point, not a continuously-operating sample for the full period."
+                .format(100.0 * frozen_tail_cycles / len(series))
+                if sustained else
+                "Drawdown exceeded the cap at least once but the window does not end in a long frozen tail "
+                "afterward -- not a sustained lockout."),
+    }
+
+
 def risk_invariant_check(result: Dict[str, Any]) -> Dict[str, Any]:
     """Directive's risk invariant check -- zero violations expected. Verifies, from the replay's own output
     only (no re-simulation): (1) no position or fill ever went short or used a negative quantity (the $500
@@ -399,9 +481,11 @@ def risk_invariant_check(result: Dict[str, Any]) -> Dict[str, Any]:
     realized loss on a trade exceeded ~1.5x its own planned_risk (a generous slippage/fee/gap tolerance --
     real gap-through-stop exits, like a genuine gap day, cost a bit more than the nominal stop distance;
     anything beyond that ratio is a genuine anomaly worth a name, not "normal slippage"), (3) equity never
-    went negative, (4) counts (does not fail on) every cycle the account's own real max_drawdown circuit
-    breaker fired, so a reviewer can see whether it fired rarely (expected, real risk management working) or
-    pathologically (e.g. the AVGO-cascade pattern this file exists to have retired)."""
+    went negative, (4) counts (does not fail on) every `not_executed` cycle whose own logged reason text
+    mentions drawdown (see `max_drawdown_lockout_check` for the real, equity-series-based detection this
+    text scan cannot provide -- kept here only as a secondary, legacy signal in case some other code path
+    ever does log that text), so a reviewer can see whether it fired rarely (expected, real risk management
+    working) or pathologically (e.g. the AVGO-cascade pattern this file exists to have retired)."""
     violations: List[Dict[str, Any]] = []
     for p in result["positions"]:
         qty = p.get("quantity")
@@ -433,6 +517,7 @@ def risk_invariant_check(result: Dict[str, Any]) -> Dict[str, Any]:
 
     return {
         "violations_found": len(violations), "violations": violations,
-        "max_drawdown_circuit_breaker_fired_count": dd_breaker_cycles,
+        "max_drawdown_circuit_breaker_fired_count_per_not_executed_text": dd_breaker_cycles,
+        "max_drawdown_lockout_check": max_drawdown_lockout_check(result),
         "verdict": "PASS -- zero violations" if not violations else "FAIL -- see violations",
     }

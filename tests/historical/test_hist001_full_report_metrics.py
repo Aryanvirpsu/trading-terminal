@@ -12,13 +12,13 @@ ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT))
 
 from research.historical.hist001.analysis import (
-    concentration_analysis, drawdown_and_streaks, r_multiple_metrics, risk_invariant_check,
-    stability_breakdown,
+    concentration_analysis, drawdown_and_streaks, max_drawdown_lockout_check, r_multiple_metrics,
+    risk_invariant_check, stability_breakdown,
 )
 
 
 def _result(positions, fills=None, not_executed=None, starting_equity=500.0, ending_equity=None,
-           evaluation_trading_days=()):
+           evaluation_trading_days=(), decision_capture=None):
     """`evaluation_trading_days=()` (empty, the default) disables phase filtering entirely -- every function
     under test here treats an empty `eval_dates` set as "no filter" (`if not eval_dates or ...`), so these
     tests exercise the actual metric computation, not the (separately-tested-elsewhere) phase filter."""
@@ -26,7 +26,12 @@ def _result(positions, fills=None, not_executed=None, starting_equity=500.0, end
         "positions": positions, "fills": fills or [], "not_executed": not_executed or [],
         "account": {"starting_equity": starting_equity, "equity": ending_equity if ending_equity is not None else starting_equity},
         "evaluation_trading_days": list(evaluation_trading_days),
+        "decision_capture": decision_capture or {},
     }
+
+
+def _dc(cycle_id, equity):
+    return {"cycle_id": cycle_id, "account_equity_before": equity}
 
 
 def _pos(symbol, opened, closed, pnl, planned_risk, sector="technology", position_id=None, quantity=1.0):
@@ -135,5 +140,69 @@ def test_risk_invariant_check_counts_drawdown_breaker_fires_without_failing_on_t
     not_executed = [{"detail_json": '{"reason": "max_drawdown circuit breaker"}'},
                     {"detail_json": '{"reason": "sector capacity"}'}]
     r = risk_invariant_check(_result(positions, not_executed=not_executed))
-    assert r["max_drawdown_circuit_breaker_fired_count"] == 1
+    assert r["max_drawdown_circuit_breaker_fired_count_per_not_executed_text"] == 1
     assert r["violations_found"] == 0             # a breaker firing is not itself a violation
+
+
+def test_max_drawdown_lockout_check_detects_a_sustained_lockout():
+    """Reproduces the exact shape found building the corrected HIST-001 Full report: equity breaches the
+    $50 cap, a few more cycles still show movement (trades already in flight resolving), then equity freezes
+    for the rest of the series with no further change at all."""
+    dc = {}
+    cyc = 0
+    equity = 500.0
+    # climb to a peak
+    for _ in range(5):
+        cyc += 1
+        equity += 20.0
+        dc[f"k{cyc}"] = _dc(f"c{cyc:03d}", equity)
+    # a losing stretch that breaches the $50 cap from the peak (600.0)
+    for _ in range(6):
+        cyc += 1
+        equity -= 10.0
+        dc[f"k{cyc}"] = _dc(f"c{cyc:03d}", equity)
+    breach_equity = equity                              # 600 - 60 = 540, a $60 drawdown from the 600 peak
+    # a couple more cycles still resolving in-flight trades
+    for delta in (-2.0, +1.0):
+        cyc += 1
+        equity += delta
+        dc[f"k{cyc}"] = _dc(f"c{cyc:03d}", equity)
+    final_equity = equity
+    # a long frozen tail -- no further equity change for the rest of the series
+    for _ in range(30):
+        cyc += 1
+        dc[f"k{cyc}"] = _dc(f"c{cyc:03d}", final_equity)
+
+    result = _result([], decision_capture=dc)
+    check = max_drawdown_lockout_check(result, dd_cap=50.0)
+    assert check["breach_detected"] is True
+    assert check["sustained_lockout"] is True
+    assert check["final_equity"] == pytest.approx(final_equity)
+    assert check["frozen_tail_cycles_at_window_end"] == 30        # every one of the 30 appended frozen cycles
+
+
+def test_max_drawdown_lockout_check_no_breach_when_drawdown_stays_under_cap():
+    dc = {}
+    for i, equity in enumerate([500.0, 510.0, 505.0, 515.0, 520.0, 500.0, 530.0]):
+        dc[f"k{i}"] = _dc(f"c{i}", equity)
+    result = _result([], decision_capture=dc)
+    check = max_drawdown_lockout_check(result, dd_cap=50.0)
+    assert check["breach_detected"] is False
+
+
+def test_max_drawdown_lockout_check_not_sustained_when_equity_keeps_moving():
+    """A breach that the account recovers from (equity keeps changing all the way to the end of the series)
+    must NOT be reported as a sustained lockout."""
+    dc = {}
+    cyc = 0
+    equity = 500.0
+    for _ in range(5):
+        cyc += 1; equity += 20.0; dc[f"k{cyc}"] = _dc(f"c{cyc:03d}", equity)
+    for _ in range(6):
+        cyc += 1; equity -= 10.0; dc[f"k{cyc}"] = _dc(f"c{cyc:03d}", equity)      # breaches $50 from the 600 peak
+    for _ in range(20):                                                       # keeps moving all the way through
+        cyc += 1; equity += 1.0; dc[f"k{cyc}"] = _dc(f"c{cyc:03d}", equity)
+    result = _result([], decision_capture=dc)
+    check = max_drawdown_lockout_check(result, dd_cap=50.0)
+    assert check["breach_detected"] is True
+    assert check["sustained_lockout"] is False
