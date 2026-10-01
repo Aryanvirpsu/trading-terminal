@@ -36,6 +36,12 @@ FAIL CLOSED. Nothing here liquidates a position based on a guess:
      not a corporate action. Stop/target management proceeds completely normally and is NEVER paused for
      this case — pausing risk management on a genuine adverse move would be actively harmful, the opposite
      of what this module exists to prevent.
+
+2:1 / reverse 1:2 coverage (resolved before this PR could be considered for merge): the original
+[0.4, 2.5] SUSPECT band did not even consider a clean 2-for-1 split (ratio 0.5) or 1-for-2 reverse split
+(ratio 2.0) as suspicious at all -- both fell comfortably inside the "ordinary" range. Narrowed to
+[0.6, 1/0.6] (see SUSPECT_RATIO_LOW/HIGH's own comment for the exact reasoning and the false-positive
+analysis) to bracket both with real margin while still never flagging ordinary moves under ~40%.
 """
 from __future__ import annotations
 
@@ -44,12 +50,25 @@ from typing import Any, Dict, Optional
 
 from .fills import apply_split
 
-# Day-over-day RAW close ratio bounds outside which a split is SUSPECTED at all -- identical bounds and
-# reasoning to research/historical/corporate_actions.py's SUSPECT_RATIO_LOW/HIGH: deliberately wide, since a
+# Day-over-day RAW close ratio bounds outside which a split is SUSPECTED at all. Deliberately wide, since a
 # false positive costs one flagged, paused cycle-group, and a false negative costs a real artificial
 # liquidation, which is much worse.
-SUSPECT_RATIO_LOW = 0.4
-SUSPECT_RATIO_HIGH = 2.5
+#
+# NARROWED from the historical detector's original [0.4, 2.5] (research/historical/corporate_actions.py's
+# own bounds, kept unchanged there -- changing it retroactively would alter already-accepted HIST-001
+# results, a separate review this PR does not touch). A clean 2-for-1 split has ratio 0.5 and a clean
+# 1-for-2 reverse split has ratio 2.0 -- BOTH fell inside [0.4, 2.5] and were therefore never even
+# considered for split detection at all, a real, disclosed blocker flagged on review before this PR could be
+# considered for merge. [0.6, 1/0.6] brackets both with real margin (2:1's ratio of 0.5 is comfortably
+# inside 0.6; 1:2's ratio of 2.0 is comfortably inside 1.667) while still treating any ordinary single-day
+# move up to 40% in either direction as never-suspected at all -- this bound alone does not pause anything;
+# a suspected ratio still has to cleanly round to a common factor (_round_to_common_factor's existing 8%
+# tolerance, unchanged) AND fail volume corroboration before SplitGuard pauses a position (see
+# is_plausible_but_unconfirmed's own docstring) -- an ordinary ~45-55% single-day move that does NOT land
+# within ~8% of a clean 2x ratio still falls through to case 3 (ordinary move, never paused), exactly as
+# before this change.
+SUSPECT_RATIO_LOW = 0.6
+SUSPECT_RATIO_HIGH = 1.0 / 0.6   # ~1.667, the exact reciprocal -- keeps the band symmetric in ratio-space
 
 # Common split/reverse-split factors -- identical set to research/historical/corporate_actions.py, so a
 # ratio is classified the same way in both places.
@@ -59,13 +78,25 @@ _ADJUSTABLE_FIELDS = ("quantity", "avg_entry", "stop", "target", "mfe", "mae")
 
 
 def _round_to_common_factor(x: float) -> tuple:
-    """Return (rounded_factor, confidence) for a raw ratio magnitude >= 1."""
+    """Return (rounded_factor, confidence) for a raw ratio magnitude >= 1.
+
+    Tolerance TIGHTENED from the historical detector's original 8% to 3%, alongside the SUSPECT band
+    narrowing above: a real corporate split lands at an essentially EXACT ratio (2.0000, 10.0000--
+    defined by the split terms, not organic price action, with at most a fraction of a percent of
+    after-hours/pre-market noise around the ex-date), so a tight tolerance costs real splits nothing. An
+    organic, unrelated price move landing within 8% of a clean factor is a real coincidence risk once the
+    SUSPECT band itself was narrowed to catch 2:1/1:2 -- a genuine ~47% single-day crash (ratio ~0.53,
+    magnitude ~1.89) sits only 5.7% from a clean 2.0, which the OLD 8% tolerance would have wrongly let
+    through as "plausibly a split," pausing real risk management on a real crash. At 3%, that same crash
+    (5.7% error) correctly falls through to case 3 (ordinary move, never paused) -- see
+    test_split_guard_never_pauses_an_ordinary_large_move and test_a_45_percent_crash_that_is_not_a_clean_
+    split_ratio_is_never_paused."""
     best, best_err = None, None
     for f in _COMMON_FACTORS:
         err = abs(x - f) / f
         if best_err is None or err < best_err:
             best, best_err = f, err
-    if best_err is not None and best_err <= 0.08:
+    if best_err is not None and best_err <= 0.03:
         return best, "high"
     return round(x, 4), "low"
 

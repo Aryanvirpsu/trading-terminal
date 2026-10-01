@@ -68,10 +68,7 @@ def test_detects_a_clean_10_for_1_forward_split_with_volume_confirmation():
 
 
 def test_detects_a_clean_3_for_1_forward_split():
-    # NOT 2:1 -- SUSPECT_RATIO_HIGH=2.5 means a ratio of exactly 0.5 (a clean 2:1) falls INSIDE the
-    # "ordinary day" band by design (identical inherited bound to research/historical/corporate_actions.py:
-    # a false positive on ordinary volatility is worse than missing a small split). 3:1 (ratio 0.333) is
-    # comfortably outside it.
+    # ratio 0.333, comfortably outside SUSPECT_RATIO_LOW=0.6.
     ev = detect_suspected_split("AAA", prior_close=300.0, current_price=100.0,
                                 prior_volume=1_000_000.0, current_volume=3_000_000.0)
     assert ev.inferred_split_ratio == pytest.approx(3.0)
@@ -80,24 +77,66 @@ def test_detects_a_clean_3_for_1_forward_split():
 
 def test_detects_a_clean_1_for_3_reverse_split():
     # a 1-for-3 reverse split: price TRIPLES, share count drops to a third -- apply_split()'s convention is
-    # ratio < 1 for a reverse split (shares multiply by ratio -> shrink). Ratio 3.0 is outside
-    # SUSPECT_RATIO_HIGH=2.5 (a clean 1-for-2, ratio 2.0, falls inside the ordinary band by the same
-    # inherited design as the forward-split case above).
+    # ratio < 1 for a reverse split (shares multiply by ratio -> shrink). Ratio 3.0, comfortably outside
+    # SUSPECT_RATIO_HIGH=1/0.6=1.667.
     ev = detect_suspected_split("BBB", prior_close=10.0, current_price=30.0,
                                 prior_volume=6_000_000.0, current_volume=2_000_000.0)
     assert ev.inferred_split_ratio == pytest.approx(1.0 / 3.0)
     assert is_confirmed(ev)
 
 
-def test_a_2_for_1_split_is_a_disclosed_detection_blind_spot_not_a_silent_bug():
-    """A clean 2:1 split (ratio exactly 0.5) is NOT flagged at all -- SUSPECT_RATIO_HIGH=2.5 means anything
-    with a day-over-day ratio inside [0.4, 2.5] is treated as ordinary trading, identical to the inherited
-    bound from research/historical/corporate_actions.py. This is a real, disclosed limitation (favoring
-    "never falsely pause on ordinary volatility" over "catch every possible split size"), asserted here so
-    it stays a documented, intentional boundary rather than something discovered by surprise later."""
+def test_detects_a_clean_2_for_1_forward_split_with_volume_confirmation():
+    """The real blocker this PR exists to resolve: a clean 2:1 split (ratio 0.5) previously fell inside the
+    original [0.4, 2.5] band and was never even considered. Now correctly detected and confirmed."""
     ev = detect_suspected_split("FFF", prior_close=200.0, current_price=100.0,
                                 prior_volume=1_000_000.0, current_volume=2_000_000.0)
+    assert ev is not None
+    assert ev.inferred_split_ratio == pytest.approx(2.0)
+    assert ev.confidence == "high"
+    assert ev.volume_confirms is True
+    assert is_confirmed(ev)
+
+
+def test_detects_a_clean_1_for_2_reverse_split_with_volume_confirmation():
+    """The symmetric case: a clean 1-for-2 reverse split (ratio 2.0) previously fell inside the original
+    [0.4, 2.5] band too. Now correctly detected and confirmed."""
+    ev = detect_suspected_split("GGG", prior_close=50.0, current_price=100.0,
+                                prior_volume=2_000_000.0, current_volume=1_000_000.0)
+    assert ev is not None
+    assert ev.inferred_split_ratio == pytest.approx(0.5)
+    assert ev.confidence == "high"
+    assert ev.volume_confirms is True
+    assert is_confirmed(ev)
+
+
+def test_2_for_1_without_volume_data_is_paused_not_silently_applied():
+    """Same fail-closed discipline as the 10:1 case: a clean 2:1 ratio with no volume data to corroborate
+    it is plausible-but-unconfirmed, never auto-applied."""
+    ev = detect_suspected_split("HHH", prior_close=200.0, current_price=100.0)
+    assert ev is not None
+    assert ev.confidence == "low"
+    assert not is_confirmed(ev)
+    assert is_plausible_but_unconfirmed(ev)
+
+
+def test_an_ordinary_38_percent_move_still_never_gets_suspected():
+    """The false-positive guard the narrowed band is specifically designed to preserve: a real, ordinary
+    (if large) single-day move that stays under the new SUSPECT_RATIO_LOW=0.6 threshold is never even
+    considered for split detection -- confirms narrowing [0.4, 2.5] to [0.6, 1.667] did not sacrifice the
+    generous allowance for genuine volatility the original design was built around."""
+    ev = detect_suspected_split("III", prior_close=100.0, current_price=62.0)   # a 38% down day
     assert ev is None
+
+
+def test_a_45_percent_crash_that_is_not_a_clean_split_ratio_is_never_paused():
+    """Beyond the SUSPECT band (ratio 0.55 < 0.6) but NOT close to any clean split factor (nearest is 2.0,
+    off by ~10%, past the 8% tolerance) -- a genuine, if severe, real crash. Must resolve to case 3
+    (ordinary move) and never pause real risk management, even though the narrowed band now means more
+    large moves enter the detection pipeline at all than before this fix."""
+    ev = detect_suspected_split("JJJ", prior_close=100.0, current_price=55.0)
+    assert ev is not None                           # now inside the (narrower) suspect band...
+    assert not is_confirmed(ev)
+    assert not is_plausible_but_unconfirmed(ev)      # ...but never flagged as plausibly a split either
 
 
 def test_plausible_ratio_without_volume_data_is_unconfirmed_not_silently_applied():
