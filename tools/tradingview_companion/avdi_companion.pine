@@ -1,0 +1,42 @@
+// AVDI Companion v0.1 -- display-only decision overlay. No trading authority: this indicator reads nothing
+// from any account or broker and places no orders. It draws exactly what you type into its Inputs tab,
+// reusing the same real entry/stop/target/+1R/scanner_rank/strategy/risk/regime fields AVDI itself records
+// in lab/paper/db.py's real `signals` table for the TRADEABLE signal you're looking at.
+//
+// Why input fields, not a live feed: Pine Script has no general outbound HTTP access for a non-broker-
+// integration indicator, so it cannot pull AVDI's decision data on its own. Run
+// generate_overlay_values.py (same folder) against the real signal you want to inspect; it prints the six
+// values below for you to paste into this indicator's Settings -> Inputs panel. Re-run and re-paste for a
+// different signal -- this is a manual refresh by design for v0.1, not a bug.
+//
+// @version=5
+indicator("AVDI Companion v0.1", overlay=true)
+
+// ── Inputs: paste generate_overlay_values.py's own output here ─────────────────────────────────────────
+entry_price   = input.float(0.0, "Entry price", group="AVDI decision")
+stop_price    = input.float(0.0, "Stop price", group="AVDI decision")
+target_price  = input.float(0.0, "Target price", group="AVDI decision")
+scanner_rank  = input.int(0, "Scanner rank", minval=0, group="AVDI decision")
+strategy_name = input.string("", "Strategy", group="AVDI decision")
+risk_amount   = input.float(0.0, "Risk amount ($)", group="AVDI decision")
+regime_label  = input.string("", "Regime / market state", group="AVDI decision")
+
+// LONG only -- this account never shorts (PAPER_ALLOW_SHORTING=false); +1R is entry plus the entry-to-stop
+// distance, the same level HIST-002's own breakeven-after-+1R Challenger uses.
+r_per_share = math.abs(entry_price - stop_price)
+plus_1r     = entry_price + r_per_share
+
+show = entry_price != 0.0 and stop_price != 0.0
+
+plot(show ? entry_price  : na, title="Entry",  color=color.new(color.blue,   0), style=plot.style_linebr, linewidth=2)
+plot(show ? stop_price   : na, title="Stop",   color=color.new(color.red,    0), style=plot.style_linebr, linewidth=2)
+plot(show ? target_price : na, title="Target", color=color.new(color.green, 0), style=plot.style_linebr, linewidth=2)
+plot(show ? plus_1r      : na, title="+1R",    color=color.new(color.orange,0), style=plot.style_circles, linewidth=1)
+
+if show and barstate.islast
+    label.new(bar_index, high, text=
+         "strategy: " + strategy_name + "\n" +
+         "scanner rank: " + str.tostring(scanner_rank) + "\n" +
+         "risk: $" + str.tostring(risk_amount, "#.##") + "\n" +
+         "regime: " + regime_label,
+         style=label.style_label_left, color=color.new(color.gray, 70), textcolor=color.white, size=size.small)
