@@ -6,6 +6,19 @@ still in flight, so no HIST-002 analysis can have looked at its outcome yet). St
 exploratory**, same status class as `experiments/ch001_breakeven_intraday/PREREG.md`, which this experiment
 extends.
 
+**Amendment 1 (2026-10-01, before any HIST-002 result has been computed):** the baseline this experiment
+runs against is changed from `hist001_full_2024_2026_corrected` (the $50-max_drawdown-capped Champion
+control) to `exp_dd_001_no_drawdown_v2_complete` (EXP-DD-001's uncapped, complete 2024-01-01..2026-03-10
+discovery run — 108 trades, ending equity $534.38, net P&L +$41.71, max drawdown $125.72/21.6%, lowest
+equity $446.59, longest losing streak 20). Rationale, per explicit direction: the capped control's own
+sustained lockout (tripped 2025-02-03, frozen through the rest of the window) hides more than half of the
+strategy's real behavior from every downstream Challenger; a hard absorbing kill switch is a production
+safety decision, not a discovery tool, and testing exit-management changes against a truncated sample would
+under-count how often +1R is even reached. The $50 cap itself remains unchanged in production (Ubuntu) and
+is not being challenged by this amendment -- this only changes which HISTORICAL sample HIST-002 is measured
+against. Every other element of this pre-registration (hypothesis, variable changed, ambiguity discipline,
+metrics, success criteria) is unchanged from the original text below.
+
 ## Why this experiment, and why now
 
 `ch001_shadow()` (`research/historical/hist001/analysis.py`) has always reported, for every already-run
