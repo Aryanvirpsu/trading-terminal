@@ -1,0 +1,2336 @@
+{
+  "n_genuine_episodes": 720,
+  "n_decision_episodes": 93,
+  "n_resolved_episodes": 89,
+  "totals_r": {
+    "champion": 18.9893,
+    "random_ev": 14.893674999999998,
+    "quality": 4.0033,
+    "planned_rr": 7.0327,
+    "composite": 7.014700000000001
+  },
+  "changes": {
+    "quality": 63,
+    "planned_rr": 68,
+    "composite": 64
+  },
+  "changes_improved": {
+    "quality": 15,
+    "planned_rr": 19,
+    "composite": 15
+  },
+  "changes_hurt": {
+    "quality": 19,
+    "planned_rr": 16,
+    "composite": 16
+  },
+  "by_year": {
+    "2024": {
+      "champion": 8.9966,
+      "quality": 6.0032,
+      "planned_rr": 3.011899999999999,
+      "composite": 9.005600000000001
+    },
+    "2025": {
+      "champion": 1.991399999999997,
+      "quality": -10.004100000000003,
+      "planned_rr": -6.987300000000001,
+      "composite": -12.995100000000003
+    },
+    "2026": {
+      "champion": 8.001299999999999,
+      "quality": 8.004199999999999,
+      "planned_rr": 11.008099999999999,
+      "composite": 11.004199999999999
+    }
+  },
+  "episodes": [
+    {
+      "session_date": "2024-04-22",
+      "symbols": [
+        "NEM",
+        "RTX"
+      ],
+      "k": 1,
+      "champion_picks": [
+        "RTX"
+      ],
+      "champion_r": 1.9968,
+      "quality_picks": [
+        "RTX"
+      ],
+      "quality_r": 1.9968,
+      "planned_rr_picks": [
+        "RTX"
+      ],
+      "planned_rr_r": 1.9968,
+      "composite_picks": [
+        "RTX"
+      ],
+      "composite_r": 1.9968
+    },
+    {
+      "session_date": "2024-04-23",
+      "symbols": [
+        "NEE",
+        "XOM"
+      ],
+      "k": 1,
+      "champion_picks": [
+        "NEE"
+      ],
+      "champion_r": 2.0,
+      "quality_picks": [
+        "XOM"
+      ],
+      "quality_r": -1.0,
+      "planned_rr_picks": [
+        "NEE"
+      ],
+      "planned_rr_r": 2.0,
+      "composite_picks": [
+        "NEE"
+      ],
+      "composite_r": 2.0
+    },
+    {
+      "session_date": "2024-07-16",
+      "symbols": [
+        "AMD",
+        "EOG"
+      ],
+      "k": 1,
+      "champion_picks": [
+        "EOG"
+      ],
+      "champion_r": -1.0,
+      "quality_picks": [
+        "EOG"
+      ],
+      "quality_r": -1.0,
+      "planned_rr_picks": [
+        "AMD"
+      ],
+      "planned_rr_r": -1.0,
+      "composite_picks": [
+        "AMD"
+      ],
+      "composite_r": -1.0
+    },
+    {
+      "session_date": "2024-08-07",
+      "symbols": [
+        "CCI",
+        "AMT",
+        "UNH"
+      ],
+      "k": 1,
+      "champion_picks": [
+        "UNH"
+      ],
+      "champion_r": -1.0,
+      "quality_picks": [
+        "UNH"
+      ],
+      "quality_r": -1.0,
+      "planned_rr_picks": [
+        "CCI"
+      ],
+      "planned_rr_r": -1.0,
+      "composite_picks": [
+        "CCI"
+      ],
+      "composite_r": -1.0
+    },
+    {
+      "session_date": "2024-09-12",
+      "symbols": [
+        "ORCL",
+        "PGR",
+        "DE",
+        "GILD"
+      ],
+      "k": 1,
+      "champion_picks": [
+        "ORCL"
+      ],
+      "champion_r": 2.0,
+      "quality_picks": [
+        "PGR"
+      ],
+      "quality_r": -1.0,
+      "planned_rr_picks": [
+        "GILD"
+      ],
+      "planned_rr_r": 2.0037,
+      "composite_picks": [
+        "DE"
+      ],
+      "composite_r": 2.0
+    },
+    {
+      "session_date": "2024-10-09",
+      "symbols": [
+        "CEG",
+        "NVDA",
+        "AVGO",
+        "AMD",
+        "FCX"
+      ],
+      "k": 1,
+      "champion_picks": [
+        "CEG"
+      ],
+      "champion_r": -1.0,
+      "quality_picks": [
+        "NVDA"
+      ],
+      "quality_r": 2.0,
+      "planned_rr_picks": [
+        "AVGO"
+      ],
+      "planned_rr_r": -1.0,
+      "composite_picks": [
+        "AVGO"
+      ],
+      "composite_r": -1.0
+    },
+    {
+      "session_date": "2024-10-29",
+      "symbols": [
+        "GM",
+        "WFC",
+        "NVDA",
+        "TMUS",
+        "CRM"
+      ],
+      "k": 1,
+      "champion_picks": [
+        "GM"
+      ],
+      "champion_r": 1.9957,
+      "quality_picks": [
+        "TMUS"
+      ],
+      "quality_r": 1.9988,
+      "planned_rr_picks": [
+        "WFC"
+      ],
+      "planned_rr_r": 2.0038,
+      "composite_picks": [
+        "CRM"
+      ],
+      "composite_r": 2.0012
+    },
+    {
+      "session_date": "2024-11-04",
+      "symbols": [
+        "WFC",
+        "VMC",
+        "NVDA"
+      ],
+      "k": 1,
+      "champion_picks": [
+        "WFC"
+      ],
+      "champion_r": 2.0,
+      "quality_picks": [
+        "WFC"
+      ],
+      "quality_r": 2.0,
+      "planned_rr_picks": [
+        "VMC"
+      ],
+      "planned_rr_r": 2.0,
+      "composite_picks": [
+        "VMC"
+      ],
+      "composite_r": 2.0
+    },
+    {
+      "session_date": "2024-11-06",
+      "symbols": [
+        "VMC",
+        "WFC"
+      ],
+      "k": 1,
+      "champion_picks": [
+        "VMC"
+      ],
+      "champion_r": -1.0,
+      "quality_picks": [
+        "WFC"
+      ],
+      "quality_r": 2.0036,
+      "planned_rr_picks": [
+        "WFC"
+      ],
+      "planned_rr_r": 2.0036,
+      "composite_picks": [
+        "WFC"
+      ],
+      "composite_r": 2.0036
+    },
+    {
+      "session_date": "2024-11-08",
+      "symbols": [
+        "TSLA",
+        "WFC"
+      ],
+      "k": 1,
+      "champion_picks": [
+        "WFC"
+      ],
+      "champion_r": 2.0033,
+      "quality_picks": [
+        "WFC"
+      ],
+      "quality_r": 2.0033,
+      "planned_rr_picks": [
+        "WFC"
+      ],
+      "planned_rr_r": 2.0033,
+      "composite_picks": [
+        "WFC"
+      ],
+      "composite_r": 2.0033
+    },
+    {
+      "session_date": "2024-11-08",
+      "symbols": [
+        "TSLA",
+        "GM"
+      ],
+      "k": 1,
+      "champion_picks": [
+        "TSLA"
+      ],
+      "champion_r": 1.9996,
+      "quality_picks": [
+        "GM"
+      ],
+      "quality_r": -1.0,
+      "planned_rr_picks": [
+        "GM"
+      ],
+      "planned_rr_r": -1.0,
+      "composite_picks": [
+        "GM"
+      ],
+      "composite_r": -1.0
+    },
+    {
+      "session_date": "2024-11-11",
+      "symbols": [
+        "TSLA",
+        "GM",
+        "MLM"
+      ],
+      "k": 1,
+      "champion_picks": [
+        "TSLA"
+      ],
+      "champion_r": -1.0,
+      "quality_picks": [
+        "GM"
+      ],
+      "quality_r": 2.0,
+      "planned_rr_picks": [
+        "TSLA"
+      ],
+      "planned_rr_r": -1.0,
+      "composite_picks": [
+        "GM"
+      ],
+      "composite_r": 2.0
+    },
+    {
+      "session_date": "2024-11-14",
+      "symbols": [
+        "TSLA",
+        "GM",
+        "CRM",
+        "NFLX",
+        "AMZN"
+      ],
+      "k": 1,
+      "champion_picks": [
+        "TSLA"
+      ],
+      "champion_r": 2.0,
+      "quality_picks": [
+        "TSLA"
+      ],
+      "quality_r": 2.0,
+      "planned_rr_picks": [
+        "GM"
+      ],
+      "planned_rr_r": -1.0,
+      "composite_picks": [
+        "TSLA"
+      ],
+      "composite_r": 2.0
+    },
+    {
+      "session_date": "2024-11-15",
+      "symbols": [
+        "GM",
+        "CRM",
+        "AMZN"
+      ],
+      "k": 1,
+      "champion_picks": [
+        "CRM"
+      ],
+      "champion_r": 2.0007,
+      "quality_picks": [
+        "CRM"
+      ],
+      "quality_r": 2.0007,
+      "planned_rr_picks": [
+        "CRM"
+      ],
+      "planned_rr_r": 2.0007,
+      "composite_picks": [
+        "CRM"
+      ],
+      "composite_r": 2.0007
+    },
+    {
+      "session_date": "2024-11-21",
+      "symbols": [
+        "DIS",
+        "NFLX",
+        "WFC"
+      ],
+      "k": 1,
+      "champion_picks": [
+        "DIS"
+      ],
+      "champion_r": -1.0,
+      "quality_picks": [
+        "WFC"
+      ],
+      "quality_r": -1.0,
+      "planned_rr_picks": [
+        "WFC"
+      ],
+      "planned_rr_r": -1.0,
+      "composite_picks": [
+        "WFC"
+      ],
+      "composite_r": -1.0
+    },
+    {
+      "session_date": "2024-12-04",
+      "symbols": [
+        "CRM",
+        "DE",
+        "NFLX",
+        "HD"
+      ],
+      "k": 1,
+      "champion_picks": [
+        "CRM"
+      ],
+      "champion_r": -1.0,
+      "quality_picks": [
+        "HD"
+      ],
+      "quality_r": -1.0,
+      "planned_rr_picks": [
+        "DE"
+      ],
+      "planned_rr_r": -1.0,
+      "composite_picks": [
+        "HD"
+      ],
+      "composite_r": -1.0
+    },
+    {
+      "session_date": "2024-12-06",
+      "symbols": [
+        "NFLX",
+        "CMG"
+      ],
+      "k": 1,
+      "champion_picks": [
+        "CMG"
+      ],
+      "champion_r": -1.0,
+      "quality_picks": [
+        "NFLX"
+      ],
+      "quality_r": -1.0,
+      "planned_rr_picks": [
+        "CMG"
+      ],
+      "planned_rr_r": -1.0,
+      "composite_picks": [
+        "NFLX"
+      ],
+      "composite_r": -1.0
+    },
+    {
+      "session_date": "2024-12-09",
+      "symbols": [
+        "TSLA",
+        "DE",
+        "NFLX"
+      ],
+      "k": 1,
+      "champion_picks": [
+        "TSLA"
+      ],
+      "champion_r": 2.0005,
+      "quality_picks": [
+        "NFLX"
+      ],
+      "quality_r": -1.0,
+      "planned_rr_picks": [
+        "DE"
+      ],
+      "planned_rr_r": -1.0,
+      "composite_picks": [
+        "NFLX"
+      ],
+      "composite_r": -1.0
+    },
+    {
+      "session_date": "2024-12-16",
+      "symbols": [
+        "AVGO",
+        "TSLA"
+      ],
+      "k": 1,
+      "champion_picks": [
+        "TSLA"
+      ],
+      "champion_r": -1.0,
+      "quality_picks": [
+        "TSLA"
+      ],
+      "quality_r": -1.0,
+      "planned_rr_picks": [
+        "TSLA"
+      ],
+      "planned_rr_r": -1.0,
+      "composite_picks": [
+        "TSLA"
+      ],
+      "composite_r": -1.0
+    },
+    {
+      "session_date": "2024-12-19",
+      "symbols": [
+        "AVGO",
+        "BA"
+      ],
+      "k": 1,
+      "champion_picks": [
+        "AVGO"
+      ],
+      "champion_r": -1.0,
+      "quality_picks": [
+        "AVGO"
+      ],
+      "quality_r": -1.0,
+      "planned_rr_picks": [
+        "BA"
+      ],
+      "planned_rr_r": -1.0,
+      "composite_picks": [
+        "AVGO"
+      ],
+      "composite_r": -1.0
+    },
+    {
+      "session_date": "2024-12-19",
+      "symbols": [
+        "TSLA",
+        "BA"
+      ],
+      "k": 1,
+      "champion_picks": [
+        "TSLA"
+      ],
+      "champion_r": -1.0,
+      "quality_picks": [
+        "TSLA"
+      ],
+      "quality_r": -1.0,
+      "planned_rr_picks": [
+        "TSLA"
+      ],
+      "planned_rr_r": -1.0,
+      "composite_picks": [
+        "TSLA"
+      ],
+      "composite_r": -1.0
+    },
+    {
+      "session_date": "2025-01-06",
+      "symbols": [
+        "OXY",
+        "NVDA",
+        "ABBV"
+      ],
+      "k": 1,
+      "champion_picks": [
+        "OXY"
+      ],
+      "champion_r": -1.0,
+      "quality_picks": [
+        "ABBV"
+      ],
+      "quality_r": -1.0,
+      "planned_rr_picks": [
+        "NVDA"
+      ],
+      "planned_rr_r": -1.0,
+      "composite_picks": [
+        "ABBV"
+      ],
+      "composite_r": -1.0
+    },
+    {
+      "session_date": "2025-01-27",
+      "symbols": [
+        "UBER",
+        "NEM",
+        "PLD",
+        "APD"
+      ],
+      "k": 1,
+      "champion_picks": [
+        "UBER"
+      ],
+      "champion_r": -1.0,
+      "quality_picks": [
+        "UBER"
+      ],
+      "quality_r": -1.0,
+      "planned_rr_picks": [
+        "APD"
+      ],
+      "planned_rr_r": -1.0,
+      "composite_picks": [
+        "UBER"
+      ],
+      "composite_r": -1.0
+    },
+    {
+      "session_date": "2025-01-29",
+      "symbols": [
+        "PLD",
+        "ABT",
+        "META",
+        "RTX"
+      ],
+      "k": 1,
+      "champion_picks": [
+        "PLD"
+      ],
+      "champion_r": -1.0,
+      "quality_picks": [
+        "RTX"
+      ],
+      "quality_r": -1.0,
+      "planned_rr_picks": [
+        "META"
+      ],
+      "planned_rr_r": -1.0,
+      "composite_picks": [
+        "META"
+      ],
+      "composite_r": -1.0
+    },
+    {
+      "session_date": "2025-02-03",
+      "symbols": [
+        "SBUX",
+        "APD",
+        "TMO",
+        "VRTX"
+      ],
+      "k": 1,
+      "champion_picks": [
+        "APD"
+      ],
+      "champion_r": -1.0,
+      "quality_picks": [
+        "TMO"
+      ],
+      "quality_r": -1.0,
+      "planned_rr_picks": [
+        "SBUX"
+      ],
+      "planned_rr_r": 2.0024,
+      "composite_picks": [
+        "TMO"
+      ],
+      "composite_r": -1.0
+    },
+    {
+      "session_date": "2025-02-05",
+      "symbols": [
+        "SBUX",
+        "VRTX",
+        "NFLX"
+      ],
+      "k": 1,
+      "champion_picks": [
+        "VRTX"
+      ],
+      "champion_r": -1.0,
+      "quality_picks": [
+        "VRTX"
+      ],
+      "quality_r": -1.0,
+      "planned_rr_picks": [
+        "SBUX"
+      ],
+      "planned_rr_r": -1.0,
+      "composite_picks": [
+        "SBUX"
+      ],
+      "composite_r": -1.0
+    },
+    {
+      "session_date": "2025-02-10",
+      "symbols": [
+        "SBUX",
+        "NFLX",
+        "TMUS",
+        "META"
+      ],
+      "k": 2,
+      "champion_picks": [
+        "SBUX",
+        "NFLX"
+      ],
+      "champion_r": -2.0,
+      "quality_picks": [
+        "SBUX",
+        "TMUS"
+      ],
+      "quality_r": -2.0,
+      "planned_rr_picks": [
+        "SBUX",
+        "NFLX"
+      ],
+      "planned_rr_r": -2.0,
+      "composite_picks": [
+        "SBUX",
+        "NFLX"
+      ],
+      "composite_r": -2.0
+    },
+    {
+      "session_date": "2025-02-13",
+      "symbols": [
+        "TMUS",
+        "META",
+        "UBER"
+      ],
+      "k": 1,
+      "champion_picks": [
+        "UBER"
+      ],
+      "champion_r": -1.0,
+      "quality_picks": [
+        "UBER"
+      ],
+      "quality_r": -1.0,
+      "planned_rr_picks": [
+        "TMUS"
+      ],
+      "planned_rr_r": -1.0,
+      "composite_picks": [
+        "UBER"
+      ],
+      "composite_r": -1.0
+    },
+    {
+      "session_date": "2025-02-26",
+      "symbols": [
+        "TMUS",
+        "ABBV",
+        "PGR"
+      ],
+      "k": 1,
+      "champion_picks": [
+        "TMUS"
+      ],
+      "champion_r": -1.0,
+      "quality_picks": [
+        "TMUS"
+      ],
+      "quality_r": -1.0,
+      "planned_rr_picks": [
+        "TMUS"
+      ],
+      "planned_rr_r": -1.0,
+      "composite_picks": [
+        "TMUS"
+      ],
+      "composite_r": -1.0
+    },
+    {
+      "session_date": "2025-03-06",
+      "symbols": [
+        "GILD",
+        "MDLZ",
+        "PGR",
+        "AMT"
+      ],
+      "k": 1,
+      "champion_picks": [
+        "GILD"
+      ],
+      "champion_r": -1.0,
+      "quality_picks": [
+        "PGR"
+      ],
+      "quality_r": -1.0,
+      "planned_rr_picks": [
+        "MDLZ"
+      ],
+      "planned_rr_r": 2.004,
+      "composite_picks": [
+        "PGR"
+      ],
+      "composite_r": -1.0
+    },
+    {
+      "session_date": "2025-03-10",
+      "symbols": [
+        "MDLZ",
+        "VZ",
+        "ABBV"
+      ],
+      "k": 1,
+      "champion_picks": [
+        "MDLZ"
+      ],
+      "champion_r": -1.0,
+      "quality_picks": [
+        "ABBV"
+      ],
+      "quality_r": -1.0,
+      "planned_rr_picks": [
+        "ABBV"
+      ],
+      "planned_rr_r": -1.0,
+      "composite_picks": [
+        "ABBV"
+      ],
+      "composite_r": -1.0
+    },
+    {
+      "session_date": "2025-03-14",
+      "symbols": [
+        "MRK",
+        "VRTX",
+        "LMT",
+        "ABBV",
+        "AMT"
+      ],
+      "k": 2,
+      "champion_picks": [
+        "AMT",
+        "LMT"
+      ],
+      "champion_r": 1.0,
+      "quality_picks": [
+        "VRTX",
+        "MRK"
+      ],
+      "quality_r": -2.0,
+      "planned_rr_picks": [
+        "MRK",
+        "ABBV"
+      ],
+      "planned_rr_r": -2.0,
+      "composite_picks": [
+        "MRK",
+        "ABBV"
+      ],
+      "composite_r": -2.0
+    },
+    {
+      "session_date": "2025-03-17",
+      "symbols": [
+        "CCI",
+        "MRK",
+        "CB",
+        "VRTX"
+      ],
+      "k": 1,
+      "champion_picks": [
+        "MRK"
+      ],
+      "champion_r": -1.0,
+      "quality_picks": [
+        "VRTX"
+      ],
+      "quality_r": -1.0,
+      "planned_rr_picks": [
+        "CCI"
+      ],
+      "planned_rr_r": -1.0,
+      "composite_picks": [
+        "CB"
+      ],
+      "composite_r": -1.0
+    },
+    {
+      "session_date": "2025-03-25",
+      "symbols": [
+        "CCI",
+        "UNH",
+        "FCX"
+      ],
+      "k": 1,
+      "champion_picks": [
+        "FCX"
+      ],
+      "champion_r": -1.0,
+      "quality_picks": [
+        "UNH"
+      ],
+      "quality_r": 2.0,
+      "planned_rr_picks": [
+        "CCI"
+      ],
+      "planned_rr_r": -1.0,
+      "composite_picks": [
+        "CCI"
+      ],
+      "composite_r": -1.0
+    },
+    {
+      "session_date": "2025-03-27",
+      "symbols": [
+        "NEM",
+        "UNH"
+      ],
+      "k": 1,
+      "champion_picks": [
+        "UNH"
+      ],
+      "champion_r": 1.9993,
+      "quality_picks": [
+        "UNH"
+      ],
+      "quality_r": 1.9993,
+      "planned_rr_picks": [
+        "NEM"
+      ],
+      "planned_rr_r": -1.0,
+      "composite_picks": [
+        "NEM"
+      ],
+      "composite_r": -1.0
+    },
+    {
+      "session_date": "2025-03-31",
+      "symbols": [
+        "NEM",
+        "KMB"
+      ],
+      "k": 1,
+      "champion_picks": [
+        "NEM"
+      ],
+      "champion_r": -1.0,
+      "quality_picks": [
+        "NEM"
+      ],
+      "quality_r": -1.0,
+      "planned_rr_picks": [
+        "KMB"
+      ],
+      "planned_rr_r": -1.0,
+      "composite_picks": [
+        "NEM"
+      ],
+      "composite_r": -1.0
+    },
+    {
+      "session_date": "2025-04-03",
+      "symbols": [
+        "COP",
+        "XOM",
+        "CVX"
+      ],
+      "k": 1,
+      "champion_picks": [
+        "COP"
+      ],
+      "champion_r": -1.0,
+      "quality_picks": [
+        "XOM"
+      ],
+      "quality_r": -1.0,
+      "planned_rr_picks": [
+        "COP"
+      ],
+      "planned_rr_r": -1.0,
+      "composite_picks": [
+        "COP"
+      ],
+      "composite_r": -1.0
+    },
+    {
+      "session_date": "2025-04-03",
+      "symbols": [
+        "XOM",
+        "CVX"
+      ],
+      "k": 1,
+      "champion_picks": [
+        "XOM"
+      ],
+      "champion_r": -1.0,
+      "quality_picks": [
+        "XOM"
+      ],
+      "quality_r": -1.0,
+      "planned_rr_picks": [
+        "CVX"
+      ],
+      "planned_rr_r": -1.0,
+      "composite_picks": [
+        "CVX"
+      ],
+      "composite_r": -1.0
+    },
+    {
+      "session_date": "2025-04-04",
+      "symbols": [
+        "AMT",
+        "CCI",
+        "EXC"
+      ],
+      "k": 2,
+      "champion_picks": [
+        "EXC",
+        "AMT"
+      ],
+      "champion_r": -2.0,
+      "quality_picks": [
+        "CCI",
+        "EXC"
+      ],
+      "quality_r": -2.0,
+      "planned_rr_picks": [
+        "CCI",
+        "AMT"
+      ],
+      "planned_rr_r": -2.0,
+      "composite_picks": [
+        "CCI",
+        "EXC"
+      ],
+      "composite_r": -2.0
+    },
+    {
+      "session_date": "2025-04-21",
+      "symbols": [
+        "NEM",
+        "COST",
+        "WMT",
+        "NFLX"
+      ],
+      "k": 1,
+      "champion_picks": [
+        "NEM"
+      ],
+      "champion_r": -1.0,
+      "quality_picks": [
+        "WMT"
+      ],
+      "quality_r": 1.9986,
+      "planned_rr_picks": [
+        "COST"
+      ],
+      "planned_rr_r": -1.0,
+      "composite_picks": [
+        "COST"
+      ],
+      "composite_r": -1.0
+    },
+    {
+      "session_date": "2025-05-05",
+      "symbols": [
+        "AVGO",
+        "CEG",
+        "NFLX",
+        "DELL",
+        "BA"
+      ],
+      "k": 1,
+      "champion_picks": [
+        "AVGO"
+      ],
+      "champion_r": 2.0007,
+      "quality_picks": [
+        "DELL"
+      ],
+      "quality_r": 2.0015,
+      "planned_rr_picks": [
+        "DELL"
+      ],
+      "planned_rr_r": 2.0015,
+      "composite_picks": [
+        "DELL"
+      ],
+      "composite_r": 2.0015
+    },
+    {
+      "session_date": "2025-05-13",
+      "symbols": [
+        "CEG",
+        "DIS",
+        "BA",
+        "TSLA",
+        "DELL"
+      ],
+      "k": 1,
+      "champion_picks": [
+        "DIS"
+      ],
+      "champion_r": 1.998,
+      "quality_picks": [
+        "TSLA"
+      ],
+      "quality_r": 2.0,
+      "planned_rr_picks": [
+        "BA"
+      ],
+      "planned_rr_r": 2.0,
+      "composite_picks": [
+        "BA"
+      ],
+      "composite_r": 2.0
+    },
+    {
+      "session_date": "2025-05-14",
+      "symbols": [
+        "CEG",
+        "TSLA",
+        "AVGO",
+        "BA"
+      ],
+      "k": 1,
+      "champion_picks": [
+        "CEG"
+      ],
+      "champion_r": 1.9995,
+      "quality_picks": [
+        "TSLA"
+      ],
+      "quality_r": -1.0,
+      "planned_rr_picks": [
+        "BA"
+      ],
+      "planned_rr_r": -1.0,
+      "composite_picks": [
+        "BA"
+      ],
+      "composite_r": -1.0
+    },
+    {
+      "session_date": "2025-06-03",
+      "symbols": [
+        "CEG",
+        "AVGO",
+        "NVDA",
+        "TSLA"
+      ],
+      "k": 1,
+      "champion_picks": [
+        "CEG"
+      ],
+      "champion_r": -1.0,
+      "quality_picks": [
+        "TSLA"
+      ],
+      "quality_r": -1.0,
+      "planned_rr_picks": [
+        "AVGO"
+      ],
+      "planned_rr_r": 2.0,
+      "composite_picks": [
+        "AVGO"
+      ],
+      "composite_r": 2.0
+    },
+    {
+      "session_date": "2025-06-04",
+      "symbols": [
+        "AVGO",
+        "CEG",
+        "NVDA",
+        "TSLA"
+      ],
+      "k": 1,
+      "champion_picks": [
+        "AVGO"
+      ],
+      "champion_r": -1.0,
+      "quality_picks": [
+        "NVDA"
+      ],
+      "quality_r": 2.0,
+      "planned_rr_picks": [
+        "CEG"
+      ],
+      "planned_rr_r": 2.0005,
+      "composite_picks": [
+        "CEG"
+      ],
+      "composite_r": 2.0005
+    },
+    {
+      "session_date": "2025-06-06",
+      "symbols": [
+        "AVGO",
+        "NVDA",
+        "DELL",
+        "GILD",
+        "AMD"
+      ],
+      "k": 1,
+      "champion_picks": [
+        "AVGO"
+      ],
+      "champion_r": 2.0,
+      "quality_picks": [
+        "NVDA"
+      ],
+      "quality_r": 2.0,
+      "planned_rr_picks": [
+        "GILD"
+      ],
+      "planned_rr_r": -1.0,
+      "composite_picks": [
+        "AVGO"
+      ],
+      "composite_r": 2.0
+    },
+    {
+      "session_date": "2025-06-27",
+      "symbols": [
+        "ORCL",
+        "AMD",
+        "NEM",
+        "FCX",
+        "META"
+      ],
+      "k": 1,
+      "champion_picks": [
+        "NEM"
+      ],
+      "champion_r": 1.9961,
+      "quality_picks": [
+        "NEM"
+      ],
+      "quality_r": 1.9961,
+      "planned_rr_picks": [
+        "AMD"
+      ],
+      "planned_rr_r": -1.0,
+      "composite_picks": [
+        "META"
+      ],
+      "composite_r": -1.0
+    },
+    {
+      "session_date": "2025-07-10",
+      "symbols": [
+        "ORCL",
+        "NVDA",
+        "F",
+        "AVGO",
+        "AMD"
+      ],
+      "k": 1,
+      "champion_picks": [
+        "ORCL"
+      ],
+      "champion_r": -1.0,
+      "quality_picks": [
+        "AMD"
+      ],
+      "quality_r": 2.0012,
+      "planned_rr_picks": [
+        "AMD"
+      ],
+      "planned_rr_r": 2.0012,
+      "composite_picks": [
+        "AMD"
+      ],
+      "composite_r": 2.0012
+    },
+    {
+      "session_date": "2025-07-14",
+      "symbols": [
+        "ORCL",
+        "AMD",
+        "NVDA",
+        "DELL",
+        "FCX"
+      ],
+      "k": 1,
+      "champion_picks": [
+        "ORCL"
+      ],
+      "champion_r": 2.0008,
+      "quality_picks": [
+        "ORCL"
+      ],
+      "quality_r": 2.0008,
+      "planned_rr_picks": [
+        "ORCL"
+      ],
+      "planned_rr_r": 2.0008,
+      "composite_picks": [
+        "ORCL"
+      ],
+      "composite_r": 2.0008
+    },
+    {
+      "session_date": "2025-07-17",
+      "symbols": [
+        "AMD",
+        "NVDA",
+        "ORCL",
+        "BA",
+        "CAT"
+      ],
+      "k": 1,
+      "champion_picks": [
+        "AMD"
+      ],
+      "champion_r": -1.0,
+      "quality_picks": [
+        "AMD"
+      ],
+      "quality_r": -1.0,
+      "planned_rr_picks": [
+        "NVDA"
+      ],
+      "planned_rr_r": -1.0,
+      "composite_picks": [
+        "AMD"
+      ],
+      "composite_r": -1.0
+    },
+    {
+      "session_date": "2025-07-18",
+      "symbols": [
+        "NVDA",
+        "ORCL",
+        "CAT",
+        "BA"
+      ],
+      "k": 1,
+      "champion_picks": [
+        "CAT"
+      ],
+      "champion_r": 1.9991,
+      "quality_picks": [
+        "ORCL"
+      ],
+      "quality_r": -1.0,
+      "planned_rr_picks": [
+        "ORCL"
+      ],
+      "planned_rr_r": -1.0,
+      "composite_picks": [
+        "ORCL"
+      ],
+      "composite_r": -1.0
+    },
+    {
+      "session_date": "2025-07-22",
+      "symbols": [
+        "AMD",
+        "NVDA",
+        "ORCL",
+        "BA",
+        "AVGO"
+      ],
+      "k": 1,
+      "champion_picks": [
+        "AMD"
+      ],
+      "champion_r": 2.0,
+      "quality_picks": [
+        "ORCL"
+      ],
+      "quality_r": -1.0,
+      "planned_rr_picks": [
+        "AVGO"
+      ],
+      "planned_rr_r": 2.0009,
+      "composite_picks": [
+        "AVGO"
+      ],
+      "composite_r": 2.0009
+    },
+    {
+      "session_date": "2025-07-23",
+      "symbols": [
+        "NVDA",
+        "GOOGL",
+        "ORCL"
+      ],
+      "k": 1,
+      "champion_picks": [
+        "GOOGL"
+      ],
+      "champion_r": 2.0,
+      "quality_picks": [
+        "ORCL"
+      ],
+      "quality_r": -1.0,
+      "planned_rr_picks": [
+        "GOOGL"
+      ],
+      "planned_rr_r": 2.0,
+      "composite_picks": [
+        "ORCL"
+      ],
+      "composite_r": -1.0
+    },
+    {
+      "session_date": "2025-07-28",
+      "symbols": [
+        "AMD",
+        "TMO",
+        "ORCL",
+        "BA",
+        "UBER"
+      ],
+      "k": 1,
+      "champion_picks": [
+        "AMD"
+      ],
+      "champion_r": -1.0,
+      "quality_picks": [
+        "ORCL"
+      ],
+      "quality_r": -1.0,
+      "planned_rr_picks": [
+        "UBER"
+      ],
+      "planned_rr_r": -1.0,
+      "composite_picks": [
+        "ORCL"
+      ],
+      "composite_r": -1.0
+    },
+    {
+      "session_date": "2025-07-31",
+      "symbols": [
+        "NVDA",
+        "ORCL",
+        "AVGO",
+        "CEG"
+      ],
+      "k": 1,
+      "champion_picks": [
+        "CEG"
+      ],
+      "champion_r": -1.0,
+      "quality_picks": [
+        "NVDA"
+      ],
+      "quality_r": -1.0,
+      "planned_rr_picks": [
+        "NVDA"
+      ],
+      "planned_rr_r": -1.0,
+      "composite_picks": [
+        "NVDA"
+      ],
+      "composite_r": -1.0
+    },
+    {
+      "session_date": "2025-08-06",
+      "symbols": [
+        "AMD",
+        "NEM",
+        "WELL",
+        "CAT"
+      ],
+      "k": 1,
+      "champion_picks": [
+        "AMD"
+      ],
+      "champion_r": 2.0008,
+      "quality_picks": [
+        "CAT"
+      ],
+      "quality_r": -1.0,
+      "planned_rr_picks": [
+        "AMD"
+      ],
+      "planned_rr_r": 2.0008,
+      "composite_picks": [
+        "CAT"
+      ],
+      "composite_r": -1.0
+    },
+    {
+      "session_date": "2025-08-12",
+      "symbols": [
+        "NEM",
+        "NVDA",
+        "GOOGL"
+      ],
+      "k": 1,
+      "champion_picks": [
+        "NEM"
+      ],
+      "champion_r": 2.0,
+      "quality_picks": [
+        "NVDA"
+      ],
+      "quality_r": -1.0,
+      "planned_rr_picks": [
+        "NVDA"
+      ],
+      "planned_rr_r": -1.0,
+      "composite_picks": [
+        "NVDA"
+      ],
+      "composite_r": -1.0
+    },
+    {
+      "session_date": "2025-08-13",
+      "symbols": [
+        "TMO",
+        "LOW",
+        "DELL",
+        "AMD"
+      ],
+      "k": 1,
+      "champion_picks": [
+        "TMO"
+      ],
+      "champion_r": -1.0,
+      "quality_picks": [
+        "TMO"
+      ],
+      "quality_r": -1.0,
+      "planned_rr_picks": [
+        "TMO"
+      ],
+      "planned_rr_r": -1.0,
+      "composite_picks": [
+        "TMO"
+      ],
+      "composite_r": -1.0
+    },
+    {
+      "session_date": "2025-08-13",
+      "symbols": [
+        "LOW",
+        "DELL",
+        "AMD"
+      ],
+      "k": 1,
+      "champion_picks": [
+        "LOW"
+      ],
+      "champion_r": 2.0,
+      "quality_picks": [
+        "DELL"
+      ],
+      "quality_r": -1.0,
+      "planned_rr_picks": [
+        "DELL"
+      ],
+      "planned_rr_r": -1.0,
+      "composite_picks": [
+        "DELL"
+      ],
+      "composite_r": -1.0
+    },
+    {
+      "session_date": "2025-09-02",
+      "symbols": [
+        "UNH",
+        "NEM",
+        "AAPL",
+        "SPG"
+      ],
+      "k": 1,
+      "champion_picks": [
+        "NEM"
+      ],
+      "champion_r": -1.0,
+      "quality_picks": [
+        "UNH"
+      ],
+      "quality_r": 1.9994,
+      "planned_rr_picks": [
+        "SPG"
+      ],
+      "planned_rr_r": 2.0,
+      "composite_picks": [
+        "SPG"
+      ],
+      "composite_r": 2.0
+    },
+    {
+      "session_date": "2025-09-05",
+      "symbols": [
+        "UNH",
+        "GOOGL",
+        "FCX",
+        "AXP"
+      ],
+      "k": 1,
+      "champion_picks": [
+        "GOOGL"
+      ],
+      "champion_r": 2.0,
+      "quality_picks": [
+        "UNH"
+      ],
+      "quality_r": 2.0,
+      "planned_rr_picks": [
+        "FCX"
+      ],
+      "planned_rr_r": -1.0,
+      "composite_picks": [
+        "UNH"
+      ],
+      "composite_r": 2.0
+    },
+    {
+      "session_date": "2025-09-19",
+      "symbols": [
+        "TSLA",
+        "AVGO",
+        "NEM"
+      ],
+      "k": 1,
+      "champion_picks": [
+        "TSLA"
+      ],
+      "champion_r": 2.0,
+      "quality_picks": [
+        "AVGO"
+      ],
+      "quality_r": -1.0,
+      "planned_rr_picks": [
+        "AVGO"
+      ],
+      "planned_rr_r": -1.0,
+      "composite_picks": [
+        "AVGO"
+      ],
+      "composite_r": -1.0
+    },
+    {
+      "session_date": "2025-09-25",
+      "symbols": [
+        "UNH",
+        "NEM"
+      ],
+      "k": 1,
+      "champion_picks": [
+        "UNH"
+      ],
+      "champion_r": -1.0,
+      "quality_picks": [
+        "UNH"
+      ],
+      "quality_r": -1.0,
+      "planned_rr_picks": [
+        "UNH"
+      ],
+      "planned_rr_r": -1.0,
+      "composite_picks": [
+        "UNH"
+      ],
+      "composite_r": -1.0
+    },
+    {
+      "session_date": "2025-10-16",
+      "symbols": [
+        "CEG",
+        "NEE",
+        "NEM",
+        "CAT"
+      ],
+      "k": 1,
+      "champion_picks": [
+        "CEG"
+      ],
+      "champion_r": -1.0,
+      "quality_picks": [
+        "NEM"
+      ],
+      "quality_r": -1.0,
+      "planned_rr_picks": [
+        "NEM"
+      ],
+      "planned_rr_r": -1.0,
+      "composite_picks": [
+        "NEM"
+      ],
+      "composite_r": -1.0
+    },
+    {
+      "session_date": "2025-10-20",
+      "symbols": [
+        "NEE",
+        "CEG",
+        "CAT"
+      ],
+      "k": 1,
+      "champion_picks": [
+        "NEE"
+      ],
+      "champion_r": -1.0,
+      "quality_picks": [
+        "CEG"
+      ],
+      "quality_r": -1.0,
+      "planned_rr_picks": [
+        "CAT"
+      ],
+      "planned_rr_r": 2.0004,
+      "composite_picks": [
+        "CAT"
+      ],
+      "composite_r": 2.0004
+    },
+    {
+      "session_date": "2025-11-03",
+      "symbols": [
+        "TMO",
+        "NEE",
+        "CAT",
+        "PLD"
+      ],
+      "k": 1,
+      "champion_picks": [
+        "NEE"
+      ],
+      "champion_r": 1.9969,
+      "quality_picks": [
+        "TMO"
+      ],
+      "quality_r": 2.0,
+      "planned_rr_picks": [
+        "TMO"
+      ],
+      "planned_rr_r": 2.0,
+      "composite_picks": [
+        "TMO"
+      ],
+      "composite_r": 2.0
+    },
+    {
+      "session_date": "2025-11-05",
+      "symbols": [
+        "LLY",
+        "TMO",
+        "CAT"
+      ],
+      "k": 1,
+      "champion_picks": [
+        "LLY"
+      ],
+      "champion_r": 2.0002,
+      "quality_picks": [
+        "TMO"
+      ],
+      "quality_r": 1.9996,
+      "planned_rr_picks": [
+        "LLY"
+      ],
+      "planned_rr_r": 2.0002,
+      "composite_picks": [
+        "LLY"
+      ],
+      "composite_r": 2.0002
+    },
+    {
+      "session_date": "2025-11-12",
+      "symbols": [
+        "AMD",
+        "GOOGL",
+        "GM",
+        "LLY",
+        "HAL"
+      ],
+      "k": 1,
+      "champion_picks": [
+        "AMD"
+      ],
+      "champion_r": -1.0,
+      "quality_picks": [
+        "AMD"
+      ],
+      "quality_r": -1.0,
+      "planned_rr_picks": [
+        "HAL"
+      ],
+      "planned_rr_r": -1.0,
+      "composite_picks": [
+        "AMD"
+      ],
+      "composite_r": -1.0
+    },
+    {
+      "session_date": "2025-11-13",
+      "symbols": [
+        "GM",
+        "LLY",
+        "CSCO",
+        "CAT"
+      ],
+      "k": 1,
+      "champion_picks": [
+        "GM"
+      ],
+      "champion_r": -1.0,
+      "quality_picks": [
+        "CSCO"
+      ],
+      "quality_r": -1.0,
+      "planned_rr_picks": [
+        "CAT"
+      ],
+      "planned_rr_r": -1.0,
+      "composite_picks": [
+        "CAT"
+      ],
+      "composite_r": -1.0
+    },
+    {
+      "session_date": "2025-11-17",
+      "symbols": [
+        "GM",
+        "LLY",
+        "GOOGL",
+        "F",
+        "AMGN"
+      ],
+      "k": 1,
+      "champion_picks": [
+        "GM"
+      ],
+      "champion_r": 2.0,
+      "quality_picks": [
+        "GOOGL"
+      ],
+      "quality_r": 1.9994,
+      "planned_rr_picks": [
+        "LLY"
+      ],
+      "planned_rr_r": 2.0,
+      "composite_picks": [
+        "GOOGL"
+      ],
+      "composite_r": 1.9994
+    },
+    {
+      "session_date": "2025-11-20",
+      "symbols": [
+        "LLY",
+        "WFC",
+        "GOOGL",
+        "WELL"
+      ],
+      "k": 1,
+      "champion_picks": [
+        "LLY"
+      ],
+      "champion_r": -1.0,
+      "quality_picks": [
+        "GOOGL"
+      ],
+      "quality_r": -1.0,
+      "planned_rr_picks": [
+        "WFC"
+      ],
+      "planned_rr_r": -1.0,
+      "composite_picks": [
+        "GOOGL"
+      ],
+      "composite_r": -1.0
+    },
+    {
+      "session_date": "2025-12-04",
+      "symbols": [
+        "MRK",
+        "GOOGL",
+        "FCX",
+        "WMT",
+        "VRTX"
+      ],
+      "k": 1,
+      "champion_picks": [
+        "GOOGL"
+      ],
+      "champion_r": -1.0,
+      "quality_picks": [
+        "VRTX"
+      ],
+      "quality_r": -1.0,
+      "planned_rr_picks": [
+        "MRK"
+      ],
+      "planned_rr_r": -1.0,
+      "composite_picks": [
+        "MRK"
+      ],
+      "composite_r": -1.0
+    },
+    {
+      "session_date": "2025-12-08",
+      "symbols": [
+        "WMT",
+        "AVGO",
+        "VRTX",
+        "META"
+      ],
+      "k": 1,
+      "champion_picks": [
+        "WMT"
+      ],
+      "champion_r": -1.0,
+      "quality_picks": [
+        "VRTX"
+      ],
+      "quality_r": -1.0,
+      "planned_rr_picks": [
+        "VRTX"
+      ],
+      "planned_rr_r": -1.0,
+      "composite_picks": [
+        "VRTX"
+      ],
+      "composite_r": -1.0
+    },
+    {
+      "session_date": "2025-12-17",
+      "symbols": [
+        "TSLA",
+        "GM",
+        "FCX",
+        "NEM",
+        "BA"
+      ],
+      "k": 1,
+      "champion_picks": [
+        "TSLA"
+      ],
+      "champion_r": -1.0,
+      "quality_picks": [
+        "NEM"
+      ],
+      "quality_r": 2.0,
+      "planned_rr_picks": [
+        "FCX"
+      ],
+      "planned_rr_r": 2.0,
+      "composite_picks": [
+        "NEM"
+      ],
+      "composite_r": 2.0
+    },
+    {
+      "session_date": "2025-12-19",
+      "symbols": [
+        "CMG",
+        "FCX",
+        "BA",
+        "TSLA"
+      ],
+      "k": 1,
+      "champion_picks": [
+        "CMG"
+      ],
+      "champion_r": 2.0,
+      "quality_picks": [
+        "TSLA"
+      ],
+      "quality_r": -1.0,
+      "planned_rr_picks": [
+        "TSLA"
+      ],
+      "planned_rr_r": -1.0,
+      "composite_picks": [
+        "TSLA"
+      ],
+      "composite_r": -1.0
+    },
+    {
+      "session_date": "2025-12-26",
+      "symbols": [
+        "FCX",
+        "BA",
+        "NEM",
+        "CRM",
+        "TSLA"
+      ],
+      "k": 1,
+      "champion_picks": [
+        "FCX"
+      ],
+      "champion_r": -1.0,
+      "quality_picks": [
+        "TSLA"
+      ],
+      "quality_r": -1.0,
+      "planned_rr_picks": [
+        "NEM"
+      ],
+      "planned_rr_r": -1.0,
+      "composite_picks": [
+        "CRM"
+      ],
+      "composite_r": -1.0
+    },
+    {
+      "session_date": "2026-01-02",
+      "symbols": [
+        "CAT",
+        "FCX",
+        "NEM"
+      ],
+      "k": 1,
+      "champion_picks": [
+        "CAT"
+      ],
+      "champion_r": 2.0,
+      "quality_picks": [
+        "NEM"
+      ],
+      "quality_r": 2.0,
+      "planned_rr_picks": [
+        "FCX"
+      ],
+      "planned_rr_r": 2.0,
+      "composite_picks": [
+        "FCX"
+      ],
+      "composite_r": 2.0
+    },
+    {
+      "session_date": "2026-01-05",
+      "symbols": [
+        "FCX",
+        "LMT"
+      ],
+      "k": 1,
+      "champion_picks": [
+        "FCX"
+      ],
+      "champion_r": 2.0,
+      "quality_picks": [
+        "LMT"
+      ],
+      "quality_r": -1.0,
+      "planned_rr_picks": [
+        "FCX"
+      ],
+      "planned_rr_r": 2.0,
+      "composite_picks": [
+        "FCX"
+      ],
+      "composite_r": 2.0
+    },
+    {
+      "session_date": "2026-01-08",
+      "symbols": [
+        "ADBE",
+        "BA",
+        "LMT"
+      ],
+      "k": 1,
+      "champion_picks": [
+        "ADBE"
+      ],
+      "champion_r": -1.0,
+      "quality_picks": [
+        "LMT"
+      ],
+      "quality_r": -1.0,
+      "planned_rr_picks": [
+        "BA"
+      ],
+      "planned_rr_r": -1.0,
+      "composite_picks": [
+        "BA"
+      ],
+      "composite_r": -1.0
+    },
+    {
+      "session_date": "2026-01-09",
+      "symbols": [
+        "SLB",
+        "HAL"
+      ],
+      "k": 1,
+      "champion_picks": [
+        "SLB"
+      ],
+      "champion_r": 2.0,
+      "quality_picks": [
+        "SLB"
+      ],
+      "quality_r": 2.0,
+      "planned_rr_picks": [
+        "SLB"
+      ],
+      "planned_rr_r": 2.0,
+      "composite_picks": [
+        "SLB"
+      ],
+      "composite_r": 2.0
+    },
+    {
+      "session_date": "2026-01-12",
+      "symbols": [
+        "FCX",
+        "HAL",
+        "TSLA",
+        "BA"
+      ],
+      "k": 1,
+      "champion_picks": [
+        "FCX"
+      ],
+      "champion_r": 2.0,
+      "quality_picks": [
+        "HAL"
+      ],
+      "quality_r": 2.0,
+      "planned_rr_picks": [
+        "FCX"
+      ],
+      "planned_rr_r": 2.0,
+      "composite_picks": [
+        "FCX"
+      ],
+      "composite_r": 2.0
+    },
+    {
+      "session_date": "2026-01-21",
+      "symbols": [
+        "SLB",
+        "LMT",
+        "BA",
+        "HAL"
+      ],
+      "k": 1,
+      "champion_picks": [
+        "SLB"
+      ],
+      "champion_r": 2.0,
+      "quality_picks": [
+        "HAL"
+      ],
+      "quality_r": 2.0,
+      "planned_rr_picks": [
+        "BA"
+      ],
+      "planned_rr_r": -1.0,
+      "composite_picks": [
+        "HAL"
+      ],
+      "composite_r": 2.0
+    },
+    {
+      "session_date": "2026-01-26",
+      "symbols": [
+        "NEM",
+        "HAL",
+        "AMD",
+        "LMT"
+      ],
+      "k": 1,
+      "champion_picks": [
+        "NEM"
+      ],
+      "champion_r": -1.0,
+      "quality_picks": [
+        "HAL"
+      ],
+      "quality_r": -1.0,
+      "planned_rr_picks": [
+        "NEM"
+      ],
+      "planned_rr_r": -1.0,
+      "composite_picks": [
+        "HAL"
+      ],
+      "composite_r": -1.0
+    },
+    {
+      "session_date": "2026-01-27",
+      "symbols": [
+        "FCX",
+        "LMT",
+        "HAL"
+      ],
+      "k": 1,
+      "champion_picks": [
+        "LMT"
+      ],
+      "champion_r": 1.9995,
+      "quality_picks": [
+        "HAL"
+      ],
+      "quality_r": -1.0,
+      "planned_rr_picks": [
+        "HAL"
+      ],
+      "planned_rr_r": -1.0,
+      "composite_picks": [
+        "HAL"
+      ],
+      "composite_r": -1.0
+    },
+    {
+      "session_date": "2026-01-29",
+      "symbols": [
+        "FCX",
+        "LMT",
+        "GILD"
+      ],
+      "k": 1,
+      "champion_picks": [
+        "LMT"
+      ],
+      "champion_r": -1.0,
+      "quality_picks": [
+        "LMT"
+      ],
+      "quality_r": -1.0,
+      "planned_rr_picks": [
+        "FCX"
+      ],
+      "planned_rr_r": -1.0,
+      "composite_picks": [
+        "FCX"
+      ],
+      "composite_r": -1.0
+    },
+    {
+      "session_date": "2026-01-30",
+      "symbols": [
+        "NEM",
+        "FCX",
+        "HON",
+        "GILD"
+      ],
+      "k": 1,
+      "champion_picks": [
+        "NEM"
+      ],
+      "champion_r": -1.0,
+      "quality_picks": [
+        "NEM"
+      ],
+      "quality_r": -1.0,
+      "planned_rr_picks": [
+        "HON"
+      ],
+      "planned_rr_r": 2.0,
+      "composite_picks": [
+        "NEM"
+      ],
+      "composite_r": -1.0
+    },
+    {
+      "session_date": "2026-02-02",
+      "symbols": [
+        "XOM",
+        "GILD",
+        "HON"
+      ],
+      "k": 1,
+      "champion_picks": [
+        "GILD"
+      ],
+      "champion_r": 2.0018,
+      "quality_picks": [
+        "HON"
+      ],
+      "quality_r": 1.9986,
+      "planned_rr_picks": [
+        "XOM"
+      ],
+      "planned_rr_r": 2.0025,
+      "composite_picks": [
+        "HON"
+      ],
+      "composite_r": 1.9986
+    },
+    {
+      "session_date": "2026-02-06",
+      "symbols": [
+        "CL",
+        "PEP",
+        "VZ",
+        "DE"
+      ],
+      "k": 1,
+      "champion_picks": [
+        "CL"
+      ],
+      "champion_r": -1.0,
+      "quality_picks": [
+        "VZ"
+      ],
+      "quality_r": 2.0056,
+      "planned_rr_picks": [
+        "VZ"
+      ],
+      "planned_rr_r": 2.0056,
+      "composite_picks": [
+        "VZ"
+      ],
+      "composite_r": 2.0056
+    },
+    {
+      "session_date": "2026-02-06",
+      "symbols": [
+        "GILD",
+        "PEP",
+        "VZ",
+        "DE"
+      ],
+      "k": 1,
+      "champion_picks": [
+        "GILD"
+      ],
+      "champion_r": -1.0,
+      "quality_picks": [
+        "VZ"
+      ],
+      "quality_r": 2.0,
+      "planned_rr_picks": [
+        "VZ"
+      ],
+      "planned_rr_r": 2.0,
+      "composite_picks": [
+        "VZ"
+      ],
+      "composite_r": 2.0
+    }
+  ]
+}

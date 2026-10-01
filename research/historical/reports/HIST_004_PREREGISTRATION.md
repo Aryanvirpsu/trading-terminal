@@ -4,6 +4,38 @@ Registered 2026-09-30, BEFORE the `hist001_full_2024_2026_corrected` replay's ch
 reviewed for this purpose. Status: **provisional / exploratory**, same status class as
 `experiments/ch002_slot_ranking/PREREG.md`, which this experiment extends.
 
+**Amendment 2 (2026-10-01, before any HIST-004 result has been computed):** two changes, both made before
+looking at any ranking outcome.
+
+1. **Baseline switch**, same rationale and same baseline as HIST-002's Amendment 1: the capacity-aware
+   ranking test now runs against `exp_dd_001_no_drawdown_v2_complete` (EXP-DD-001's uncapped, complete
+   2024-01-01..2026-03-10 discovery run — 108 trades, +$41.71, max drawdown $125.72), not the $50-capped
+   control, which hides most of the window. **HIST-004 gets the exact same number of entry slots Champion
+   actually used in this baseline — this experiment reorders WHICH candidate fills an already-used slot, it
+   never adds slots.** That is HIST-003's question, not this one.
+2. **Arm definitions corrected to what `decision_capture` actually stores.** Checked directly against
+   `baseline.py`'s `_recording_evaluate`/`_recording_evaluate_canonical` capture code before writing any
+   ranking logic: `expected_r` and a liquidity/execution-confidence score (both referenced in this file's
+   original §Arms below) are **not captured anywhere** in `decision_capture` — only `price`, `stop`,
+   `target`, `quality` (`confidence_quality`), `sector`, `risk_budget`, `data_quality`, and
+   `stock_executable` are. The original arm list could not have been computed as written; rather than
+   silently computing something different while keeping the old arm names, the arms are corrected here,
+   before any ranking result exists:
+   - **CHAMPION** — Champion's real historical pick (ground truth, unchanged).
+   - **HIST-004A** — highest `quality` (`confidence_quality`) desc, tie → symbol. Unchanged in spirit from
+     the original CH-002A/HIST-004A.
+   - **HIST-004B** — highest planned reward:risk ratio, `(target − price) / (price − stop)`, computed purely
+     from the three captured price levels (replaces the uncapturable `expected_r`). Tie → quality.
+   - **HIST-004C** — composite = `quality × planned_RR` (replaces the original formula's
+     execution-confidence term, which does not exist in the captured data; multiplicative, no fitted
+     weights, same no-invented-formula discipline as the original).
+   - **RANDOM** — computed as the exact expected value (the mean resolved outcome across all live candidates
+     in the episode, weighted uniformly), mathematically equivalent to averaging over unlimited random
+     permutations for a single-pick-from-N episode, rather than literally sampling 2000 permutations (no
+     observable difference in result, avoids wasted computation).
+   Every other element of this pre-registration — the choice-episode scope, the metrics, the success
+   criteria, the "don't invent a clever formula after seeing winners" discipline — is unchanged.
+
 ## Why this experiment, and why now
 
 `choice_events()` (`research/historical/hist001/analysis.py`) records full candidate detail every time two
