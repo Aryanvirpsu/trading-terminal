@@ -8,6 +8,20 @@ comparing total risk, drawdown, concentration, and incremental expectancy." HIST
 bare placeholder in the original HIST-001 directive's STOP condition with no defined scope anywhere in this
 repo until that statement; this file is that definition, committed before any result.
 
+**Amendment 1 (2026-10-01, before any HIST-003 result has been computed):** same baseline switch as
+HIST-002/HIST-004's own Amendment 1/2, and for the same reason — the $50-capped control hides more than half
+the 2024-2026 window. HIST-003 runs against `exp_dd_001_no_drawdown_v2_complete` (108 trades, +$41.71, max
+drawdown $125.72, `PAPER_MAX_ENTRIES_PER_DAY=2`) as the **2-entries/day baseline directly, reused as-is, not
+re-run** -- confirmed by inspection that `max_entries_per_day` is a SINGLE gate
+(`lab/paper/risk.py`'s `check_entry()`, reading `paper.config.risk().max_entries_per_day`,
+`PAPER_MAX_ENTRIES_PER_DAY` env var, default 2) with no second hardcoded source the way `max_drawdown` had
+in `canonical/risk_policy.py` -- `canonical/risk_policy.py`'s own module docstring explicitly states
+`max_entries_per_day` is deliberately NOT represented in `STRATEGY_500_POLICY` ("pacing/cooldown behavior
+rather than a capital risk-limit cap... NOT represented here"). This means the 3- and 4-entries/day variants
+require no new patching module -- setting `PAPER_MAX_ENTRIES_PER_DAY=3`/`4` before calling `run_baseline()`
+(still with `disable_drawdown_gate=True`, matching the baseline) is sufficient and complete. Every other
+element of this pre-registration is unchanged.
+
 ## Hypothesis
 
 Champion's current daily entry cap (`max_open_positions=3` opened per day per `PAPER_500_ACCOUNT.md`/
