@@ -1,7 +1,13 @@
 # HIST-005 — concurrent position capacity (3 vs. 4 open positions)
 
 Prepared **2026-10-08**, before any HIST-005 replay or outcome analysis.
-Status: **DRAFT PRE-REGISTRATION — DOCUMENT ONLY; NOT RUN; NOT PROMOTED**.
+Status: **FINAL AS AMENDED BELOW — DOCUMENT ONLY; NOT RUN; NOT PROMOTED**.
+
+**Effective version: Amendment 1 (2026-10-08).** The original registration was
+committed as `7dde0ca`. Its text remains below for the audit trail. Amendment 1
+supersedes the original decision rules and stopping rule, and clarifies measurement
+and the research queue. Unchanged arms, data, controls, and isolation requirements
+remain binding. Finalizing this document does not launch an experiment.
 
 This document reserves HIST-005 for the concurrent-position-cap experiment. It
 does not implement a Challenger, launch a replay, change the Champion, or authorize
@@ -232,3 +238,194 @@ fit a result. A regime-throttle study remains separate and unstarted.
 This task ends with the document. No driver, replay, ledger mutation, merge, push,
 workflow dispatch, or production verification is performed as part of it.
 `ROBINHOOD_TRADING_ENABLED=false` and `BROKER_PROVIDER=none` remain required.
+
+## Amendment 1 — final accuracy and research-speed rules (2026-10-08)
+
+Written after reviewing the registration and implementation, before any HIST-005
+driver, replay, or outcome analysis. This amendment responds to the user's request
+to finalize an accurate plan that finds a profitable strategy as quickly as the
+evidence permits. It changes the research decision process, not the two arms or
+their fixed account controls. Record this amended registration's commit before
+running either arm.
+
+### A1.1 What the existing evidence actually establishes
+
+- HIST-002 exits, HIST-004 ranking, and HIST-003 daily pacing did not beat their
+  respective controls under the tested definitions. This does not prove the
+  Champion is profitable prospectively, or that every alternative exit/ranking
+  policy would fail. Do not reopen these same arms with different weights.
+- HIST-003 establishes that a daily cap above three was inert while the concurrent
+  cap remained three. Generic canonical rejections do not prove every remaining
+  miss was caused solely by the concurrent cap. HIST-005 must identify the real
+  blocking gates and exercise the fourth slot before making a capacity claim.
+- HIST-003's uncapped control reports +$41.71 of evaluation-position realized P&L,
+  $534.38 ending equity for the full account path, and -0.047R mean expectancy on
+  74 gradeable trades out of 108 resolved evaluation trades. These are different
+  measurements and populations; do not conflate $41.71 with the $34.38 whole-path
+  equity increase, or the partial R sample with all trades.
+- The reported $125.72 drawdown uses
+  `hist001/analysis.py::drawdown_and_streaks()`: a closed-trade realized-P&L curve,
+  not a complete marked-equity curve. It can understate open-position losses.
+  Neither that number nor a positive dollar result establishes a usable edge for
+  the fixed $500 account. A losing control may still be useful for comparing arms.
+
+Capacity is a bounded research question, not an assumption that more trading
+creates profit. The objective is positive, repeatable net dollar expectancy within
+the unchanged cash-account controls, supported by adequate risk-normalized and
+prospective evidence. No plan can guarantee a profitable result or a completion
+date for that discovery.
+
+### A1.2 Minimal execution sequence when a run is separately requested
+
+1. **Inspect existing artifacts first.** Check availability, code/config identity,
+   hashes, count-gate attribution, and replay timing. Use existing capped-control
+   artifacts only if their provenance and required measurements match exactly.
+   The uncapped EXP-DD-001 result cannot substitute. Missing artifacts or generic
+   rejection messages are unknowns, not evidence of zero opportunity.
+2. **Prove mechanics on targeted fixtures and a short schedule.** Verify both cap
+   gates, unchanged risk controls, cleanup, accounting, and recording. Smoke
+   results establish mechanics only. Do not select a favorable time slice to
+   screen profitability or build a new general-purpose research framework.
+3. **Run at most one full control and one full Challenger.** Reuse a compatible
+   control if verified; otherwise regenerate it. Prefer an already verified fast
+   engine when parity covers this configuration. Do not spend a full reference
+   replay merely to repeat an established equivalence; check the affected seams.
+   A same-hash dataset and a faster implementation alone do not prove parity.
+4. **Write one paired report and decide.** No 3/4/5/6 sweep, fitted ranking formula,
+   new provider, or second risk lever in this experiment. Do not rerun unchanged
+   full paths after checks pass. Implementation failures may be repaired and
+   rerun with provenance; unfavorable strategy outcomes may not be tuned away.
+
+There is no economic early-stop based on interim P&L. Finish the registered paths
+unless integrity fails or a deterministic no-effect proof is available. Such a
+proof requires complete chronological coverage: before any first arm divergence,
+the control states and decisions are identical and the count cap never uniquely
+blocks an otherwise executable entry, including warm-up. If so, changing that cap
+cannot create a different path. If the necessary gate evidence is absent, do not
+claim this proof. A partial negative result is not a completed experiment.
+
+### A1.3 Exact measurement corrections
+
+The frozen runner computes `account_snapshot` after premarket and market-hours
+work, then stores its equity in decision records named `account_equity_before`.
+Despite the name, that is not a reliable pre-admission snapshot. It also does not
+persist a complete account mark in every cycle. A minimal research-only recorder
+must capture actual pre-admission state for gate attribution, an opening evaluation
+mark before the first evaluation cycle acts, and an end-of-cycle mark on every
+cycle, including cycles without candidate evaluations. Preserve execution order
+and all real decision functions; recording must never change eligibility or fills.
+
+Use the same frozen historical prices and marking convention in both arms. Define
+evaluation gain as final marked equity less the opening evaluation mark. Calculate
+sampled marked drawdown as the largest running-peak-minus-equity decline, including
+the $500 initial equity in the full-path series. Label sampling frequency: marks
+at scheduled cycles still do not measure every intrabar adverse excursion. Yearly
+equity contributions are changes between successive year-boundary marks, with the
+partial first/last periods explicitly identified. Reconcile boundary marks with
+realized and unrealized contributions; do not silently use the last warm-up mark
+as an April opening mark when overnight prices changed.
+
+For trade metrics, evaluation trades mean positions **opened** during the
+evaluation phase, with closed and unresolved positions reported separately.
+Report inherited warm-up positions separately. Whole-account evaluation gain
+includes their subsequent changes in value; trade-level realized P&L need not
+equal that gain. Preserve the registered warm-up behavior in both arms.
+
+For R, retain the recorded entry-time planned risk, initial stop, quantity, and
+modeled costs. If the existing provenance gap persists, capture those values
+observationally when the order is created; do not backfill them from a later moved
+stop. Missing R values remain missing and the coverage is reported for both arms
+and the marginal cohort. Whole-population dollar results do not cure incomplete
+normalized-risk evidence.
+
+Event IDs are local to each arm and can diverge after a retimed close/re-entry.
+Match decisions by `(cycle_id, symbol, direction)` and document deterministic
+episode matching before looking at outcomes. Unmatched episodes stay explicit;
+never join trades on symbol alone or choose matches by similar final P&L.
+Distinct episode counts reduce repeated-scan inflation but do not guarantee
+statistical independence from common market conditions.
+
+Removing the largest event's attributed profit is an arithmetic sensitivity
+diagnostic, not a causal replay of a portfolio that never entered that trade.
+Include displaced-trade losses and disclose unmatched/unrealized residuals rather
+than assigning the entire advantage to literal fourth-slot winners.
+
+### A1.4 Effective decision rules — replaces the original decision-rule section
+
+Apply in this order. Thresholds of $5 and five percentage points are prospectively
+chosen economic screening tolerances, not statistical significance or power
+calculations. Use unrounded values for comparisons and round only for display.
+
+| Result | Required evidence and next action |
+|---|---|
+| **INVALID** | Integrity, provenance, effective controls, accounting, or required measurement is unreliable. Diagnose the specific defect; do not rank the arms. |
+| **INERT** | Full replay or the complete no-effect proof shows the changed cap never affects admission. Keep three and close this lever. Zero evaluation fourth-slot fills alone is insufficient if warm-up paths diverged. |
+| **NOT SUPPORTED** | Valid paired evaluation gain improves by less than $5; or Challenger evaluation gain is nonpositive; or sampled full-path marked drawdown worsens by more than $5; or a fully gradeable resolved fourth-slot cohort has nonpositive mean R. Keep three and close this lever under this definition. |
+| **TENTATIVE / DATA-POOR** | Dollar and drawdown screens pass, but resolution, normalized-risk coverage, episode matching, or concentration evidence cannot support a reliable comparison. Record the uncertainty and the specific additional evidence needed; no production change. |
+| **WORTH PROSPECTIVE VALIDATION** | All dollar/drawdown screens pass; the resolved fourth-slot cohort has complete planned-risk provenance and positive event-weighted mean R at least as high as control's gradeable event-weighted mean R; top-five gross-profit share worsens by no more than five percentage points; the positive paired gain survives removal of the largest positive attributed event contribution; and no unchanged risk control is bypassed. This is a research signal, never a profitability or promotion verdict. |
+
+Report event counts, resolution rates, risk-data coverage, yearly/quarterly and
+sector breakdowns for every result. Sparse or concentrated results remain
+explicitly exploratory. Positive contribution in two years is useful diagnostic
+evidence, not a requirement to wait for two new calendar years or a second
+definition of success.
+
+**Remove the original 30-event gate from historical research triage.** It was an
+operational number, not a statistical justification, and could prevent a cheap
+experiment from yielding a useful research decision. Do not wait to accumulate
+30 live fourth-slot trades just to decide what to investigate next. Equally, two
+winning events are not proof of an edge. The prospective study must pre-register
+its sample/precision requirements and stopping rule, count all attempted variants,
+and retain unspent validation data. No automatic promotion occurs at any count.
+
+The supplied AGENTS.md freeze and graduation requirements still govern production
+changes; the conflicting PROFIT MODE text in the branch's CLAUDE.md does not
+silently override the user's supplied instructions. Historical-only research and
+document work do not modify the frozen pipeline. Live brokerage execution remains
+a separate, unauthorized decision.
+
+### A1.5 Queue ordered by the next useful decision
+
+After the bounded HIST-005 screen, prioritize a separately pre-registered
+**regime-conditioned risk-throttle** study if capacity is inert, unsupported, or
+too sparse to justify further work. The motivation is the existing loss evidence:
+HIST-003's uncapped control reports -$58.79 in 2025 and a 20-trade loss streak.
+This makes loss attribution worth investigating; it does not establish that a
+decision-time regime feature could have predicted those losses.
+
+First inspect existing records for decision-time features and loss concentration.
+Use year/sector attribution to locate a question, never a retrospective rule such
+as "skip 2025." Then register one simple, fixed rule using information available
+before each decision, one unchanged control, and explicit net-profit/drawdown
+criteria. A throttle may reduce risk; it must not raise the account's limits.
+Compare full causal account paths with the $50 drawdown gate retained, and reject
+a zero-trade policy as a profitable strategy. This amendment does not choose or
+run the throttle rule.
+
+If HIST-005 yields a credible validation candidate, choose that validation versus
+the throttle using the observed economic effect, unresolved uncertainty, and
+cost of the next informative test. Do not run a long capacity evidence-collection
+campaign merely because a cap was mechanically binding. Avoid new models, UI work,
+and infrastructure unless a concrete blocker prevents the next valid comparison.
+
+Finish each study with one recorded decision: close it, resolve a named data gap,
+or register a prospective validation. Keep one strategy hypothesis active at a
+time. An untouched-data result and prospective paper evidence must support any
+claim of repeatable profitability; neither a positive reused backtest nor a fixed
+trade count proves it. Continue the existing Champion measurement without silently
+changing its logic, and report fixed-policy failures honestly.
+
+Repeated selection on the same history is a known source of backtest overfitting;
+ordinary holdout methods alone do not automatically correct strategy-selection
+bias. This supports the limited search and explicit validation boundaries above:
+Bailey, Borwein, Lopez de Prado and Zhu,
+[The Probability of Backtest Overfitting (2017)](https://scholarworks.wmich.edu/math_pubs/42/).
+No new cross-validation infrastructure is required by this document.
+
+### A1.6 Final scope
+
+Finalization consists only of this amendment and document checks. No driver,
+replay, new strategy, ledger update, deployment, or fresh production verification
+is authorized or performed by this finalization. The next experiment remains
+unstarted. Record the amended registration commit before a separately requested
+run; do not report that commit as existing until it has actually been created.
