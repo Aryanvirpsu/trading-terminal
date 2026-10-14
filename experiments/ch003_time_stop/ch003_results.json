@@ -1,0 +1,1925 @@
+{
+  "experiment": "CH-003",
+  "kind": "arm_comparison",
+  "provenance": {
+    "backup": "20261012T202501Z",
+    "backup_created_at": "2026-10-12T20:25:02+00:00",
+    "engine": "decision_engine/gates-v1.1",
+    "ledger_sha256": "991d2dab62426c858f50b2039b0075fde63c611761b35da094aca2cc617c0b62",
+    "shadow_sha256": "c35aa01007c41a59db770fb39225385b6cf2245faef287df304c1c6e06bb3a9a",
+    "prereg_sha256": "86a17b3bbc4d2fe95be4a9ad74b7af258d7606be4c54459c36cce548b6936352",
+    "sessions": 17,
+    "tradeable_observations": 284,
+    "oos_from_exclusive": "2026-10-12"
+  },
+  "validity_gate": {
+    "passed": true,
+    "checks": [
+      {
+        "check": "Champion replay enters exactly the cloud's real v1.1 entries (symbol + session)",
+        "passed": true,
+        "replay": [
+          [
+            "DELL",
+            "2026-09-25"
+          ],
+          [
+            "EOG",
+            "2026-10-08"
+          ],
+          [
+            "META",
+            "2026-09-25"
+          ],
+          [
+            "TMO",
+            "2026-10-06"
+          ]
+        ],
+        "actual": [
+          [
+            "DELL",
+            "2026-09-25"
+          ],
+          [
+            "EOG",
+            "2026-10-08"
+          ],
+          [
+            "META",
+            "2026-09-25"
+          ],
+          [
+            "TMO",
+            "2026-10-06"
+          ]
+        ]
+      },
+      {
+        "check": "each fill within 0.1% of the recorded avg_entry",
+        "passed": true,
+        "detail": [
+          {
+            "symbol": "DELL",
+            "replay_fill": 565.6853,
+            "actual": 565.6853
+          },
+          {
+            "symbol": "EOG",
+            "replay_fill": 147.6976,
+            "actual": 147.6976
+          },
+          {
+            "symbol": "META",
+            "replay_fill": 750.5,
+            "actual": 750.5
+          },
+          {
+            "symbol": "TMO",
+            "replay_fill": 666.6862,
+            "actual": 666.6862
+          }
+        ]
+      }
+    ],
+    "skipped_sample": [
+      {
+        "ts": "2026-09-25T16:05:02+00:00",
+        "symbol": "AAPL",
+        "why": "max_positions_per_sector"
+      },
+      {
+        "ts": "2026-09-25T16:20:03+00:00",
+        "symbol": "DELL",
+        "why": "symbol already held or entered this session"
+      },
+      {
+        "ts": "2026-09-25T16:35:00+00:00",
+        "symbol": "DELL",
+        "why": "symbol already held or entered this session"
+      },
+      {
+        "ts": "2026-09-25T16:50:04+00:00",
+        "symbol": "DELL",
+        "why": "symbol already held or entered this session"
+      },
+      {
+        "ts": "2026-09-25T17:05:00+00:00",
+        "symbol": "DELL",
+        "why": "symbol already held or entered this session"
+      },
+      {
+        "ts": "2026-09-25T17:20:03+00:00",
+        "symbol": "META",
+        "why": "symbol already held or entered this session"
+      },
+      {
+        "ts": "2026-09-25T17:20:03+00:00",
+        "symbol": "DELL",
+        "why": "symbol already held or entered this session"
+      },
+      {
+        "ts": "2026-09-25T17:35:02+00:00",
+        "symbol": "META",
+        "why": "symbol already held or entered this session"
+      },
+      {
+        "ts": "2026-09-25T17:35:02+00:00",
+        "symbol": "DELL",
+        "why": "symbol already held or entered this session"
+      },
+      {
+        "ts": "2026-09-25T17:50:03+00:00",
+        "symbol": "META",
+        "why": "symbol already held or entered this session"
+      },
+      {
+        "ts": "2026-09-25T17:50:03+00:00",
+        "symbol": "DELL",
+        "why": "symbol already held or entered this session"
+      },
+      {
+        "ts": "2026-09-25T18:05:04+00:00",
+        "symbol": "META",
+        "why": "symbol already held or entered this session"
+      }
+    ]
+  },
+  "arms": {
+    "CHAMPION": {
+      "5": {
+        "in_sample": {
+          "entries": 4,
+          "closed": 1,
+          "open": 3,
+          "time_stopped": 0,
+          "realized_R": -1.012,
+          "open_mark_R": 0.605,
+          "total_net_R": -0.407,
+          "net_pnl_usd": -2.32,
+          "mean_sessions_held": 6.5,
+          "max_sessions_held": 11,
+          "worst_trade_R": -1.012,
+          "longest_losing_streak": 1,
+          "max_drawdown_usd": 9.4803,
+          "mean_utilisation": 0.2616
+        },
+        "all": {
+          "entries": 4,
+          "closed": 1,
+          "open": 3,
+          "time_stopped": 0,
+          "realized_R": -1.012,
+          "open_mark_R": 0.605,
+          "total_net_R": -0.407,
+          "net_pnl_usd": -2.32,
+          "mean_sessions_held": 6.5,
+          "max_sessions_held": 11,
+          "worst_trade_R": -1.012,
+          "longest_losing_streak": 1,
+          "max_drawdown_usd": 9.4803,
+          "mean_utilisation": 0.2616
+        }
+      },
+      "15": {
+        "in_sample": {
+          "entries": 4,
+          "closed": 1,
+          "open": 3,
+          "time_stopped": 0,
+          "realized_R": -1.036,
+          "open_mark_R": 0.533,
+          "total_net_R": -0.502,
+          "net_pnl_usd": -2.58,
+          "mean_sessions_held": 6.5,
+          "max_sessions_held": 11,
+          "worst_trade_R": -1.036,
+          "longest_losing_streak": 1,
+          "max_drawdown_usd": 9.4696,
+          "mean_utilisation": 0.2552
+        },
+        "all": {
+          "entries": 4,
+          "closed": 1,
+          "open": 3,
+          "time_stopped": 0,
+          "realized_R": -1.036,
+          "open_mark_R": 0.533,
+          "total_net_R": -0.502,
+          "net_pnl_usd": -2.58,
+          "mean_sessions_held": 6.5,
+          "max_sessions_held": 11,
+          "worst_trade_R": -1.036,
+          "longest_losing_streak": 1,
+          "max_drawdown_usd": 9.4696,
+          "mean_utilisation": 0.2552
+        }
+      },
+      "30": {
+        "in_sample": {
+          "entries": 4,
+          "closed": 1,
+          "open": 3,
+          "time_stopped": 0,
+          "realized_R": -1.069,
+          "open_mark_R": 0.432,
+          "total_net_R": -0.636,
+          "net_pnl_usd": -2.98,
+          "mean_sessions_held": 6.5,
+          "max_sessions_held": 11,
+          "worst_trade_R": -1.069,
+          "longest_losing_streak": 1,
+          "max_drawdown_usd": 9.4678,
+          "mean_utilisation": 0.2461
+        },
+        "all": {
+          "entries": 4,
+          "closed": 1,
+          "open": 3,
+          "time_stopped": 0,
+          "realized_R": -1.069,
+          "open_mark_R": 0.432,
+          "total_net_R": -0.636,
+          "net_pnl_usd": -2.98,
+          "mean_sessions_held": 6.5,
+          "max_sessions_held": 11,
+          "worst_trade_R": -1.069,
+          "longest_losing_streak": 1,
+          "max_drawdown_usd": 9.4678,
+          "mean_utilisation": 0.2461
+        }
+      }
+    },
+    "TS3": {
+      "5": {
+        "in_sample": {
+          "entries": 7,
+          "closed": 4,
+          "open": 3,
+          "time_stopped": 3,
+          "realized_R": -1.753,
+          "open_mark_R": 0.355,
+          "total_net_R": -1.398,
+          "net_pnl_usd": -6.81,
+          "mean_sessions_held": 3.29,
+          "max_sessions_held": 7,
+          "worst_trade_R": -1.012,
+          "longest_losing_streak": 3,
+          "max_drawdown_usd": 11.7075,
+          "mean_utilisation": 0.3044
+        },
+        "all": {
+          "entries": 7,
+          "closed": 4,
+          "open": 3,
+          "time_stopped": 3,
+          "realized_R": -1.753,
+          "open_mark_R": 0.355,
+          "total_net_R": -1.398,
+          "net_pnl_usd": -6.81,
+          "mean_sessions_held": 3.29,
+          "max_sessions_held": 7,
+          "worst_trade_R": -1.012,
+          "longest_losing_streak": 3,
+          "max_drawdown_usd": 11.7075,
+          "mean_utilisation": 0.3044
+        }
+      },
+      "15": {
+        "in_sample": {
+          "entries": 7,
+          "closed": 4,
+          "open": 3,
+          "time_stopped": 3,
+          "realized_R": -1.874,
+          "open_mark_R": 0.26,
+          "total_net_R": -1.614,
+          "net_pnl_usd": -7.62,
+          "mean_sessions_held": 3.29,
+          "max_sessions_held": 7,
+          "worst_trade_R": -1.036,
+          "longest_losing_streak": 3,
+          "max_drawdown_usd": 11.9227,
+          "mean_utilisation": 0.2998
+        },
+        "all": {
+          "entries": 7,
+          "closed": 4,
+          "open": 3,
+          "time_stopped": 3,
+          "realized_R": -1.874,
+          "open_mark_R": 0.26,
+          "total_net_R": -1.614,
+          "net_pnl_usd": -7.62,
+          "mean_sessions_held": 3.29,
+          "max_sessions_held": 7,
+          "worst_trade_R": -1.036,
+          "longest_losing_streak": 3,
+          "max_drawdown_usd": 11.9227,
+          "mean_utilisation": 0.2998
+        }
+      },
+      "30": {
+        "in_sample": {
+          "entries": 7,
+          "closed": 4,
+          "open": 3,
+          "time_stopped": 3,
+          "realized_R": -2.046,
+          "open_mark_R": 0.127,
+          "total_net_R": -1.919,
+          "net_pnl_usd": -8.82,
+          "mean_sessions_held": 3.29,
+          "max_sessions_held": 7,
+          "worst_trade_R": -1.069,
+          "longest_losing_streak": 3,
+          "max_drawdown_usd": 12.6557,
+          "mean_utilisation": 0.2919
+        },
+        "all": {
+          "entries": 7,
+          "closed": 4,
+          "open": 3,
+          "time_stopped": 3,
+          "realized_R": -2.046,
+          "open_mark_R": 0.127,
+          "total_net_R": -1.919,
+          "net_pnl_usd": -8.82,
+          "mean_sessions_held": 3.29,
+          "max_sessions_held": 7,
+          "worst_trade_R": -1.069,
+          "longest_losing_streak": 3,
+          "max_drawdown_usd": 12.6557,
+          "mean_utilisation": 0.2919
+        }
+      }
+    },
+    "TS5": {
+      "5": {
+        "in_sample": {
+          "entries": 6,
+          "closed": 3,
+          "open": 3,
+          "time_stopped": 2,
+          "realized_R": -1.734,
+          "open_mark_R": 1.546,
+          "total_net_R": -0.188,
+          "net_pnl_usd": -2.13,
+          "mean_sessions_held": 4.17,
+          "max_sessions_held": 6,
+          "worst_trade_R": -1.012,
+          "longest_losing_streak": 3,
+          "max_drawdown_usd": 8.8376,
+          "mean_utilisation": 0.3088
+        },
+        "all": {
+          "entries": 6,
+          "closed": 3,
+          "open": 3,
+          "time_stopped": 2,
+          "realized_R": -1.734,
+          "open_mark_R": 1.546,
+          "total_net_R": -0.188,
+          "net_pnl_usd": -2.13,
+          "mean_sessions_held": 4.17,
+          "max_sessions_held": 6,
+          "worst_trade_R": -1.012,
+          "longest_losing_streak": 3,
+          "max_drawdown_usd": 8.8376,
+          "mean_utilisation": 0.3088
+        }
+      },
+      "15": {
+        "in_sample": {
+          "entries": 6,
+          "closed": 3,
+          "open": 3,
+          "time_stopped": 2,
+          "realized_R": -1.802,
+          "open_mark_R": 1.415,
+          "total_net_R": -0.387,
+          "net_pnl_usd": -2.73,
+          "mean_sessions_held": 4.17,
+          "max_sessions_held": 6,
+          "worst_trade_R": -1.036,
+          "longest_losing_streak": 3,
+          "max_drawdown_usd": 9.2606,
+          "mean_utilisation": 0.3027
+        },
+        "all": {
+          "entries": 6,
+          "closed": 3,
+          "open": 3,
+          "time_stopped": 2,
+          "realized_R": -1.802,
+          "open_mark_R": 1.415,
+          "total_net_R": -0.387,
+          "net_pnl_usd": -2.73,
+          "mean_sessions_held": 4.17,
+          "max_sessions_held": 6,
+          "worst_trade_R": -1.036,
+          "longest_losing_streak": 3,
+          "max_drawdown_usd": 9.2606,
+          "mean_utilisation": 0.3027
+        }
+      },
+      "30": {
+        "in_sample": {
+          "entries": 6,
+          "closed": 3,
+          "open": 3,
+          "time_stopped": 2,
+          "realized_R": -1.9,
+          "open_mark_R": 1.233,
+          "total_net_R": -0.667,
+          "net_pnl_usd": -3.61,
+          "mean_sessions_held": 4.17,
+          "max_sessions_held": 6,
+          "worst_trade_R": -1.069,
+          "longest_losing_streak": 3,
+          "max_drawdown_usd": 9.8982,
+          "mean_utilisation": 0.2935
+        },
+        "all": {
+          "entries": 6,
+          "closed": 3,
+          "open": 3,
+          "time_stopped": 2,
+          "realized_R": -1.9,
+          "open_mark_R": 1.233,
+          "total_net_R": -0.667,
+          "net_pnl_usd": -3.61,
+          "mean_sessions_held": 4.17,
+          "max_sessions_held": 6,
+          "worst_trade_R": -1.069,
+          "longest_losing_streak": 3,
+          "max_drawdown_usd": 9.8982,
+          "mean_utilisation": 0.2935
+        }
+      }
+    },
+    "TS8": {
+      "5": {
+        "in_sample": {
+          "entries": 6,
+          "closed": 3,
+          "open": 3,
+          "time_stopped": 2,
+          "realized_R": -1.544,
+          "open_mark_R": 0.688,
+          "total_net_R": -0.856,
+          "net_pnl_usd": -5.6,
+          "mean_sessions_held": 4.17,
+          "max_sessions_held": 9,
+          "worst_trade_R": -1.012,
+          "longest_losing_streak": 2,
+          "max_drawdown_usd": 11.4656,
+          "mean_utilisation": 0.2825
+        },
+        "all": {
+          "entries": 6,
+          "closed": 3,
+          "open": 3,
+          "time_stopped": 2,
+          "realized_R": -1.544,
+          "open_mark_R": 0.688,
+          "total_net_R": -0.856,
+          "net_pnl_usd": -5.6,
+          "mean_sessions_held": 4.17,
+          "max_sessions_held": 9,
+          "worst_trade_R": -1.012,
+          "longest_losing_streak": 2,
+          "max_drawdown_usd": 11.4656,
+          "mean_utilisation": 0.2825
+        }
+      },
+      "15": {
+        "in_sample": {
+          "entries": 6,
+          "closed": 3,
+          "open": 3,
+          "time_stopped": 2,
+          "realized_R": -1.615,
+          "open_mark_R": 0.57,
+          "total_net_R": -1.044,
+          "net_pnl_usd": -6.11,
+          "mean_sessions_held": 4.17,
+          "max_sessions_held": 9,
+          "worst_trade_R": -1.036,
+          "longest_losing_streak": 2,
+          "max_drawdown_usd": 11.6861,
+          "mean_utilisation": 0.2764
+        },
+        "all": {
+          "entries": 6,
+          "closed": 3,
+          "open": 3,
+          "time_stopped": 2,
+          "realized_R": -1.615,
+          "open_mark_R": 0.57,
+          "total_net_R": -1.044,
+          "net_pnl_usd": -6.11,
+          "mean_sessions_held": 4.17,
+          "max_sessions_held": 9,
+          "worst_trade_R": -1.036,
+          "longest_losing_streak": 2,
+          "max_drawdown_usd": 11.6861,
+          "mean_utilisation": 0.2764
+        }
+      },
+      "30": {
+        "in_sample": {
+          "entries": 6,
+          "closed": 3,
+          "open": 3,
+          "time_stopped": 2,
+          "realized_R": -1.716,
+          "open_mark_R": 0.407,
+          "total_net_R": -1.308,
+          "net_pnl_usd": -6.78,
+          "mean_sessions_held": 4.17,
+          "max_sessions_held": 9,
+          "worst_trade_R": -1.069,
+          "longest_losing_streak": 2,
+          "max_drawdown_usd": 11.9212,
+          "mean_utilisation": 0.2665
+        },
+        "all": {
+          "entries": 6,
+          "closed": 3,
+          "open": 3,
+          "time_stopped": 2,
+          "realized_R": -1.716,
+          "open_mark_R": 0.407,
+          "total_net_R": -1.308,
+          "net_pnl_usd": -6.78,
+          "mean_sessions_held": 4.17,
+          "max_sessions_held": 9,
+          "worst_trade_R": -1.069,
+          "longest_losing_streak": 2,
+          "max_drawdown_usd": 11.9212,
+          "mean_utilisation": 0.2665
+        }
+      }
+    },
+    "TS10": {
+      "5": {
+        "in_sample": {
+          "entries": 6,
+          "closed": 3,
+          "open": 3,
+          "time_stopped": 2,
+          "realized_R": -1.256,
+          "open_mark_R": 1.383,
+          "total_net_R": 0.126,
+          "net_pnl_usd": -1.29,
+          "mean_sessions_held": 4.33,
+          "max_sessions_held": 11,
+          "worst_trade_R": -1.012,
+          "longest_losing_streak": 1,
+          "max_drawdown_usd": 9.4803,
+          "mean_utilisation": 0.2704
+        },
+        "all": {
+          "entries": 6,
+          "closed": 3,
+          "open": 3,
+          "time_stopped": 2,
+          "realized_R": -1.256,
+          "open_mark_R": 1.383,
+          "total_net_R": 0.126,
+          "net_pnl_usd": -1.29,
+          "mean_sessions_held": 4.33,
+          "max_sessions_held": 11,
+          "worst_trade_R": -1.012,
+          "longest_losing_streak": 1,
+          "max_drawdown_usd": 9.4803,
+          "mean_utilisation": 0.2704
+        }
+      },
+      "15": {
+        "in_sample": {
+          "entries": 6,
+          "closed": 3,
+          "open": 3,
+          "time_stopped": 2,
+          "realized_R": -1.331,
+          "open_mark_R": 1.234,
+          "total_net_R": -0.096,
+          "net_pnl_usd": -1.9,
+          "mean_sessions_held": 4.33,
+          "max_sessions_held": 11,
+          "worst_trade_R": -1.036,
+          "longest_losing_streak": 1,
+          "max_drawdown_usd": 9.4696,
+          "mean_utilisation": 0.2644
+        },
+        "all": {
+          "entries": 6,
+          "closed": 3,
+          "open": 3,
+          "time_stopped": 2,
+          "realized_R": -1.331,
+          "open_mark_R": 1.234,
+          "total_net_R": -0.096,
+          "net_pnl_usd": -1.9,
+          "mean_sessions_held": 4.33,
+          "max_sessions_held": 11,
+          "worst_trade_R": -1.036,
+          "longest_losing_streak": 1,
+          "max_drawdown_usd": 9.4696,
+          "mean_utilisation": 0.2644
+        }
+      },
+      "30": {
+        "in_sample": {
+          "entries": 6,
+          "closed": 3,
+          "open": 3,
+          "time_stopped": 2,
+          "realized_R": -1.438,
+          "open_mark_R": 1.031,
+          "total_net_R": -0.407,
+          "net_pnl_usd": -2.83,
+          "mean_sessions_held": 4.33,
+          "max_sessions_held": 11,
+          "worst_trade_R": -1.069,
+          "longest_losing_streak": 1,
+          "max_drawdown_usd": 9.4678,
+          "mean_utilisation": 0.255
+        },
+        "all": {
+          "entries": 6,
+          "closed": 3,
+          "open": 3,
+          "time_stopped": 2,
+          "realized_R": -1.438,
+          "open_mark_R": 1.031,
+          "total_net_R": -0.407,
+          "net_pnl_usd": -2.83,
+          "mean_sessions_held": 4.33,
+          "max_sessions_held": 11,
+          "worst_trade_R": -1.069,
+          "longest_losing_streak": 1,
+          "max_drawdown_usd": 9.4678,
+          "mean_utilisation": 0.255
+        }
+      }
+    }
+  },
+  "positions": {
+    "CHAMPION": [
+      {
+        "symbol": "TMO",
+        "sector": "health_care",
+        "event_id": "evt_TMO_LONG_20261006T1420",
+        "entry_ts": "2026-10-06T14:20:00+00:00",
+        "entry_session": "2026-10-06",
+        "fill": 666.6862,
+        "stop": 640.31,
+        "target": 717.45,
+        "qty": 0.187292,
+        "r_price": 26.3762,
+        "state": "stop",
+        "exit_ts": "2026-10-08T09:45:00-04:00",
+        "exit_price": 639.9898,
+        "mark_price": null,
+        "R": -1.0121,
+        "pnl_usd": -5.0,
+        "sessions_held": 2,
+        "touched_1r": false,
+        "ambiguous": false,
+        "notional": 124.86
+      },
+      {
+        "symbol": "DELL",
+        "sector": "technology",
+        "event_id": "evt_DELL_LONG_20260925T1315",
+        "entry_ts": "2026-09-25T16:05:02+00:00",
+        "entry_session": "2026-09-25",
+        "fill": 565.6853,
+        "stop": 517.79,
+        "target": 659.78,
+        "qty": 0.103833,
+        "r_price": 47.8953,
+        "state": "open",
+        "exit_ts": null,
+        "exit_price": null,
+        "mark_price": 576.47,
+        "R": 0.2252,
+        "pnl_usd": 1.1198,
+        "sessions_held": 11,
+        "touched_1r": false,
+        "ambiguous": false,
+        "notional": 58.74
+      },
+      {
+        "symbol": "META",
+        "sector": "communication",
+        "event_id": "evt_META_LONG_20260925T1315",
+        "entry_ts": "2026-09-25T17:05:00+00:00",
+        "entry_session": "2026-09-25",
+        "fill": 750.5,
+        "stop": 706.2,
+        "target": 839.43,
+        "qty": 0.111974,
+        "r_price": 44.3,
+        "state": "open",
+        "exit_ts": null,
+        "exit_price": null,
+        "mark_price": 743.11,
+        "R": -0.1668,
+        "pnl_usd": -0.8275,
+        "sessions_held": 11,
+        "touched_1r": false,
+        "ambiguous": false,
+        "notional": 84.04
+      },
+      {
+        "symbol": "EOG",
+        "sector": "energy",
+        "event_id": "evt_EOG_LONG_20261008T1405",
+        "entry_ts": "2026-10-08T14:05:07+00:00",
+        "entry_session": "2026-10-08",
+        "fill": 147.6976,
+        "stop": 142.53,
+        "target": 157.6,
+        "qty": 0.846324,
+        "r_price": 5.1676,
+        "state": "open",
+        "exit_ts": null,
+        "exit_price": null,
+        "mark_price": 150.52,
+        "R": 0.5462,
+        "pnl_usd": 2.3887,
+        "sessions_held": 2,
+        "touched_1r": false,
+        "ambiguous": false,
+        "notional": 125.0
+      }
+    ],
+    "TS3": [
+      {
+        "symbol": "DELL",
+        "sector": "technology",
+        "event_id": "evt_DELL_LONG_20260925T1315",
+        "entry_ts": "2026-09-25T16:05:02+00:00",
+        "entry_session": "2026-09-25",
+        "fill": 565.6853,
+        "stop": 517.79,
+        "target": 659.78,
+        "qty": 0.103833,
+        "r_price": 47.8953,
+        "state": "time_stop",
+        "exit_ts": "2026-10-01T09:35:00-04:00",
+        "exit_price": 542.3387,
+        "mark_price": null,
+        "R": -0.4875,
+        "pnl_usd": -2.4242,
+        "sessions_held": 4,
+        "touched_1r": false,
+        "ambiguous": false,
+        "notional": 58.74
+      },
+      {
+        "symbol": "META",
+        "sector": "communication",
+        "event_id": "evt_META_LONG_20260925T1315",
+        "entry_ts": "2026-09-25T17:05:00+00:00",
+        "entry_session": "2026-09-25",
+        "fill": 750.5,
+        "stop": 706.2,
+        "target": 839.43,
+        "qty": 0.111974,
+        "r_price": 44.3,
+        "state": "time_stop",
+        "exit_ts": "2026-10-01T09:35:00-04:00",
+        "exit_price": 728.7355,
+        "mark_price": null,
+        "R": -0.4913,
+        "pnl_usd": -2.4371,
+        "sessions_held": 4,
+        "touched_1r": false,
+        "ambiguous": false,
+        "notional": 84.04
+      },
+      {
+        "symbol": "TMO",
+        "sector": "health_care",
+        "event_id": "evt_TMO_LONG_20261006T1420",
+        "entry_ts": "2026-10-06T14:20:00+00:00",
+        "entry_session": "2026-10-06",
+        "fill": 666.6862,
+        "stop": 640.31,
+        "target": 717.45,
+        "qty": 0.187292,
+        "r_price": 26.3762,
+        "state": "stop",
+        "exit_ts": "2026-10-08T09:45:00-04:00",
+        "exit_price": 639.9898,
+        "mark_price": null,
+        "R": -1.0121,
+        "pnl_usd": -5.0,
+        "sessions_held": 2,
+        "touched_1r": false,
+        "ambiguous": false,
+        "notional": 124.86
+      },
+      {
+        "symbol": "GOOGL",
+        "sector": "communication",
+        "event_id": "evt_GOOGL_LONG_20261006T1850",
+        "entry_ts": "2026-10-06T18:50:04+00:00",
+        "entry_session": "2026-10-06",
+        "fill": 348.7285,
+        "stop": 335.06,
+        "target": 374.95,
+        "qty": 0.358445,
+        "r_price": 13.6685,
+        "state": "time_stop",
+        "exit_ts": "2026-10-12T09:35:00-04:00",
+        "exit_price": 351.9839,
+        "mark_price": null,
+        "R": 0.2382,
+        "pnl_usd": 1.1669,
+        "sessions_held": 4,
+        "touched_1r": false,
+        "ambiguous": false,
+        "notional": 125.0
+      },
+      {
+        "symbol": "NVDA",
+        "sector": "technology",
+        "event_id": "evt_NVDA_LONG_20260925T1315",
+        "entry_ts": "2026-10-01T13:35:00+00:00",
+        "entry_session": "2026-10-01",
+        "fill": 228.6084,
+        "stop": 222.11,
+        "target": 245.36,
+        "qty": 0.546786,
+        "r_price": 6.4984,
+        "state": "open",
+        "exit_ts": null,
+        "exit_price": null,
+        "mark_price": 226.42,
+        "R": -0.3368,
+        "pnl_usd": -1.1966,
+        "sessions_held": 7,
+        "touched_1r": true,
+        "ambiguous": false,
+        "notional": 125.0
+      },
+      {
+        "symbol": "EOG",
+        "sector": "energy",
+        "event_id": "evt_EOG_LONG_20261008T1405",
+        "entry_ts": "2026-10-08T14:05:07+00:00",
+        "entry_session": "2026-10-08",
+        "fill": 147.6976,
+        "stop": 142.53,
+        "target": 157.6,
+        "qty": 0.846324,
+        "r_price": 5.1676,
+        "state": "open",
+        "exit_ts": null,
+        "exit_price": null,
+        "mark_price": 150.52,
+        "R": 0.5462,
+        "pnl_usd": 2.3887,
+        "sessions_held": 2,
+        "touched_1r": false,
+        "ambiguous": false,
+        "notional": 125.0
+      },
+      {
+        "symbol": "AMGN",
+        "sector": "health_care",
+        "event_id": "evt_AMGN_LONG_20261007T1820",
+        "entry_ts": "2026-10-12T14:05:07+00:00",
+        "entry_session": "2026-10-12",
+        "fill": 415.2849,
+        "stop": 399.6,
+        "target": 443.5,
+        "qty": 0.300998,
+        "r_price": 15.6849,
+        "state": "open",
+        "exit_ts": null,
+        "exit_price": null,
+        "mark_price": 417.57,
+        "R": 0.1457,
+        "pnl_usd": 0.6878,
+        "sessions_held": 0,
+        "touched_1r": false,
+        "ambiguous": false,
+        "notional": 125.0
+      }
+    ],
+    "TS5": [
+      {
+        "symbol": "DELL",
+        "sector": "technology",
+        "event_id": "evt_DELL_LONG_20260925T1315",
+        "entry_ts": "2026-09-25T16:05:02+00:00",
+        "entry_session": "2026-09-25",
+        "fill": 565.6853,
+        "stop": 517.79,
+        "target": 659.78,
+        "qty": 0.103833,
+        "r_price": 47.8953,
+        "state": "time_stop",
+        "exit_ts": "2026-10-05T09:35:00-04:00",
+        "exit_price": 556.7715,
+        "mark_price": null,
+        "R": -0.1861,
+        "pnl_usd": -0.9256,
+        "sessions_held": 6,
+        "touched_1r": false,
+        "ambiguous": false,
+        "notional": 58.74
+      },
+      {
+        "symbol": "META",
+        "sector": "communication",
+        "event_id": "evt_META_LONG_20260925T1315",
+        "entry_ts": "2026-09-25T17:05:00+00:00",
+        "entry_session": "2026-09-25",
+        "fill": 750.5,
+        "stop": 706.2,
+        "target": 839.43,
+        "qty": 0.111974,
+        "r_price": 44.3,
+        "state": "time_stop",
+        "exit_ts": "2026-10-05T09:35:00-04:00",
+        "exit_price": 726.7564,
+        "mark_price": null,
+        "R": -0.536,
+        "pnl_usd": -2.6587,
+        "sessions_held": 6,
+        "touched_1r": false,
+        "ambiguous": false,
+        "notional": 84.04
+      },
+      {
+        "symbol": "TMO",
+        "sector": "health_care",
+        "event_id": "evt_TMO_LONG_20261006T1420",
+        "entry_ts": "2026-10-06T14:20:00+00:00",
+        "entry_session": "2026-10-06",
+        "fill": 666.6862,
+        "stop": 640.31,
+        "target": 717.45,
+        "qty": 0.187292,
+        "r_price": 26.3762,
+        "state": "stop",
+        "exit_ts": "2026-10-08T09:45:00-04:00",
+        "exit_price": 639.9898,
+        "mark_price": null,
+        "R": -1.0121,
+        "pnl_usd": -5.0,
+        "sessions_held": 2,
+        "touched_1r": false,
+        "ambiguous": false,
+        "notional": 124.86
+      },
+      {
+        "symbol": "AAPL",
+        "sector": "technology",
+        "event_id": "evt_AAPL_LONG_20260925T1350",
+        "entry_ts": "2026-10-05T14:05:02+00:00",
+        "entry_session": "2026-10-05",
+        "fill": 334.0237,
+        "stop": 324.07,
+        "target": 353.27,
+        "qty": 0.374225,
+        "r_price": 9.9537,
+        "state": "open",
+        "exit_ts": null,
+        "exit_price": null,
+        "mark_price": 341.06,
+        "R": 0.7069,
+        "pnl_usd": 2.6331,
+        "sessions_held": 5,
+        "touched_1r": false,
+        "ambiguous": false,
+        "notional": 125.0
+      },
+      {
+        "symbol": "GOOGL",
+        "sector": "communication",
+        "event_id": "evt_GOOGL_LONG_20261006T1850",
+        "entry_ts": "2026-10-06T18:50:04+00:00",
+        "entry_session": "2026-10-06",
+        "fill": 348.7285,
+        "stop": 335.06,
+        "target": 374.95,
+        "qty": 0.358445,
+        "r_price": 13.6685,
+        "state": "open",
+        "exit_ts": null,
+        "exit_price": null,
+        "mark_price": 352.73,
+        "R": 0.2928,
+        "pnl_usd": 1.4343,
+        "sessions_held": 4,
+        "touched_1r": false,
+        "ambiguous": false,
+        "notional": 125.0
+      },
+      {
+        "symbol": "EOG",
+        "sector": "energy",
+        "event_id": "evt_EOG_LONG_20261008T1405",
+        "entry_ts": "2026-10-08T14:05:07+00:00",
+        "entry_session": "2026-10-08",
+        "fill": 147.6976,
+        "stop": 142.53,
+        "target": 157.6,
+        "qty": 0.846324,
+        "r_price": 5.1676,
+        "state": "open",
+        "exit_ts": null,
+        "exit_price": null,
+        "mark_price": 150.52,
+        "R": 0.5462,
+        "pnl_usd": 2.3887,
+        "sessions_held": 2,
+        "touched_1r": false,
+        "ambiguous": false,
+        "notional": 125.0
+      }
+    ],
+    "TS8": [
+      {
+        "symbol": "DELL",
+        "sector": "technology",
+        "event_id": "evt_DELL_LONG_20260925T1315",
+        "entry_ts": "2026-09-25T16:05:02+00:00",
+        "entry_session": "2026-09-25",
+        "fill": 565.6853,
+        "stop": 517.79,
+        "target": 659.78,
+        "qty": 0.103833,
+        "r_price": 47.8953,
+        "state": "time_stop",
+        "exit_ts": "2026-10-08T09:35:00-04:00",
+        "exit_price": 568.9454,
+        "mark_price": null,
+        "R": 0.0681,
+        "pnl_usd": 0.3385,
+        "sessions_held": 9,
+        "touched_1r": false,
+        "ambiguous": false,
+        "notional": 58.74
+      },
+      {
+        "symbol": "META",
+        "sector": "communication",
+        "event_id": "evt_META_LONG_20260925T1315",
+        "entry_ts": "2026-09-25T17:05:00+00:00",
+        "entry_session": "2026-09-25",
+        "fill": 750.5,
+        "stop": 706.2,
+        "target": 839.43,
+        "qty": 0.111974,
+        "r_price": 44.3,
+        "state": "time_stop",
+        "exit_ts": "2026-10-08T09:35:00-04:00",
+        "exit_price": 723.9079,
+        "mark_price": null,
+        "R": -0.6003,
+        "pnl_usd": -2.9776,
+        "sessions_held": 9,
+        "touched_1r": false,
+        "ambiguous": false,
+        "notional": 84.04
+      },
+      {
+        "symbol": "TMO",
+        "sector": "health_care",
+        "event_id": "evt_TMO_LONG_20261006T1420",
+        "entry_ts": "2026-10-06T14:20:00+00:00",
+        "entry_session": "2026-10-06",
+        "fill": 666.6862,
+        "stop": 640.31,
+        "target": 717.45,
+        "qty": 0.187292,
+        "r_price": 26.3762,
+        "state": "stop",
+        "exit_ts": "2026-10-08T09:45:00-04:00",
+        "exit_price": 639.9898,
+        "mark_price": null,
+        "R": -1.0121,
+        "pnl_usd": -5.0,
+        "sessions_held": 2,
+        "touched_1r": false,
+        "ambiguous": false,
+        "notional": 124.86
+      },
+      {
+        "symbol": "EOG",
+        "sector": "energy",
+        "event_id": "evt_EOG_LONG_20261008T1405",
+        "entry_ts": "2026-10-08T14:05:07+00:00",
+        "entry_session": "2026-10-08",
+        "fill": 147.6976,
+        "stop": 142.53,
+        "target": 157.6,
+        "qty": 0.846324,
+        "r_price": 5.1676,
+        "state": "open",
+        "exit_ts": null,
+        "exit_price": null,
+        "mark_price": 150.52,
+        "R": 0.5462,
+        "pnl_usd": 2.3887,
+        "sessions_held": 2,
+        "touched_1r": false,
+        "ambiguous": false,
+        "notional": 125.0
+      },
+      {
+        "symbol": "CSCO",
+        "sector": "technology",
+        "event_id": "evt_CSCO_LONG_20261005T1335",
+        "entry_ts": "2026-10-08T14:20:02+00:00",
+        "entry_session": "2026-10-08",
+        "fill": 117.5074,
+        "stop": 112.97,
+        "target": 124.49,
+        "qty": 1.063763,
+        "r_price": 4.5374,
+        "state": "open",
+        "exit_ts": null,
+        "exit_price": null,
+        "mark_price": 115.33,
+        "R": -0.4799,
+        "pnl_usd": -2.3163,
+        "sessions_held": 2,
+        "touched_1r": false,
+        "ambiguous": false,
+        "notional": 125.0
+      },
+      {
+        "symbol": "PG",
+        "sector": "consumer_staples",
+        "event_id": "evt_PG_LONG_20261008T1720",
+        "entry_ts": "2026-10-09T13:35:01+00:00",
+        "entry_session": "2026-10-09",
+        "fill": 150.8207,
+        "stop": 147.01,
+        "target": 158.0,
+        "qty": 0.828799,
+        "r_price": 3.8107,
+        "state": "open",
+        "exit_ts": null,
+        "exit_price": null,
+        "mark_price": 153.19,
+        "R": 0.6218,
+        "pnl_usd": 1.9637,
+        "sessions_held": 1,
+        "touched_1r": false,
+        "ambiguous": false,
+        "notional": 125.0
+      }
+    ],
+    "TS10": [
+      {
+        "symbol": "TMO",
+        "sector": "health_care",
+        "event_id": "evt_TMO_LONG_20261006T1420",
+        "entry_ts": "2026-10-06T14:20:00+00:00",
+        "entry_session": "2026-10-06",
+        "fill": 666.6862,
+        "stop": 640.31,
+        "target": 717.45,
+        "qty": 0.187292,
+        "r_price": 26.3762,
+        "state": "stop",
+        "exit_ts": "2026-10-08T09:45:00-04:00",
+        "exit_price": 639.9898,
+        "mark_price": null,
+        "R": -1.0121,
+        "pnl_usd": -5.0,
+        "sessions_held": 2,
+        "touched_1r": false,
+        "ambiguous": false,
+        "notional": 124.86
+      },
+      {
+        "symbol": "DELL",
+        "sector": "technology",
+        "event_id": "evt_DELL_LONG_20260925T1315",
+        "entry_ts": "2026-09-25T16:05:02+00:00",
+        "entry_session": "2026-09-25",
+        "fill": 565.6853,
+        "stop": 517.79,
+        "target": 659.78,
+        "qty": 0.103833,
+        "r_price": 47.8953,
+        "state": "time_stop",
+        "exit_ts": "2026-10-12T09:35:00-04:00",
+        "exit_price": 577.711,
+        "mark_price": null,
+        "R": 0.2511,
+        "pnl_usd": 1.2487,
+        "sessions_held": 11,
+        "touched_1r": false,
+        "ambiguous": false,
+        "notional": 58.74
+      },
+      {
+        "symbol": "META",
+        "sector": "communication",
+        "event_id": "evt_META_LONG_20260925T1315",
+        "entry_ts": "2026-09-25T17:05:00+00:00",
+        "entry_session": "2026-09-25",
+        "fill": 750.5,
+        "stop": 706.2,
+        "target": 839.43,
+        "qty": 0.111974,
+        "r_price": 44.3,
+        "state": "time_stop",
+        "exit_ts": "2026-10-12T09:35:00-04:00",
+        "exit_price": 728.5555,
+        "mark_price": null,
+        "R": -0.4954,
+        "pnl_usd": -2.4572,
+        "sessions_held": 11,
+        "touched_1r": false,
+        "ambiguous": false,
+        "notional": 84.04
+      },
+      {
+        "symbol": "EOG",
+        "sector": "energy",
+        "event_id": "evt_EOG_LONG_20261008T1405",
+        "entry_ts": "2026-10-08T14:05:07+00:00",
+        "entry_session": "2026-10-08",
+        "fill": 147.6976,
+        "stop": 142.53,
+        "target": 157.6,
+        "qty": 0.846324,
+        "r_price": 5.1676,
+        "state": "open",
+        "exit_ts": null,
+        "exit_price": null,
+        "mark_price": 150.52,
+        "R": 0.5462,
+        "pnl_usd": 2.3887,
+        "sessions_held": 2,
+        "touched_1r": false,
+        "ambiguous": false,
+        "notional": 125.0
+      },
+      {
+        "symbol": "AMGN",
+        "sector": "health_care",
+        "event_id": "evt_AMGN_LONG_20261007T1820",
+        "entry_ts": "2026-10-12T14:05:07+00:00",
+        "entry_session": "2026-10-12",
+        "fill": 415.2849,
+        "stop": 399.6,
+        "target": 443.5,
+        "qty": 0.300998,
+        "r_price": 15.6849,
+        "state": "open",
+        "exit_ts": null,
+        "exit_price": null,
+        "mark_price": 417.57,
+        "R": 0.1457,
+        "pnl_usd": 0.6878,
+        "sessions_held": 0,
+        "touched_1r": false,
+        "ambiguous": false,
+        "notional": 125.0
+      },
+      {
+        "symbol": "WMT",
+        "sector": "consumer_staples",
+        "event_id": "evt_WMT_LONG_20261008T1720",
+        "entry_ts": "2026-10-12T14:35:01+00:00",
+        "entry_session": "2026-10-12",
+        "fill": 111.4614,
+        "stop": 109.09,
+        "target": 118.91,
+        "qty": 1.121464,
+        "r_price": 2.3714,
+        "state": "open",
+        "exit_ts": null,
+        "exit_price": null,
+        "mark_price": 113.1,
+        "R": 0.691,
+        "pnl_usd": 1.8376,
+        "sessions_held": 0,
+        "touched_1r": false,
+        "ambiguous": false,
+        "notional": 125.0
+      }
+    ]
+  },
+  "deltas": {
+    "TS3": {
+      "5": {
+        "total_net_R": -0.991,
+        "net_pnl_usd": -4.49,
+        "max_drawdown_usd": 2.227,
+        "entries": 3,
+        "mean_utilisation": 0.0428
+      },
+      "15": {
+        "total_net_R": -1.112,
+        "net_pnl_usd": -5.04,
+        "max_drawdown_usd": 2.453,
+        "entries": 3,
+        "mean_utilisation": 0.0446
+      },
+      "30": {
+        "total_net_R": -1.283,
+        "net_pnl_usd": -5.84,
+        "max_drawdown_usd": 3.188,
+        "entries": 3,
+        "mean_utilisation": 0.0458
+      }
+    },
+    "TS5": {
+      "5": {
+        "total_net_R": 0.219,
+        "net_pnl_usd": 0.19,
+        "max_drawdown_usd": -0.643,
+        "entries": 2,
+        "mean_utilisation": 0.0472
+      },
+      "15": {
+        "total_net_R": 0.115,
+        "net_pnl_usd": -0.15,
+        "max_drawdown_usd": -0.209,
+        "entries": 2,
+        "mean_utilisation": 0.0475
+      },
+      "30": {
+        "total_net_R": -0.031,
+        "net_pnl_usd": -0.63,
+        "max_drawdown_usd": 0.43,
+        "entries": 2,
+        "mean_utilisation": 0.0474
+      }
+    },
+    "TS8": {
+      "5": {
+        "total_net_R": -0.449,
+        "net_pnl_usd": -3.28,
+        "max_drawdown_usd": 1.985,
+        "entries": 2,
+        "mean_utilisation": 0.0209
+      },
+      "15": {
+        "total_net_R": -0.542,
+        "net_pnl_usd": -3.53,
+        "max_drawdown_usd": 2.216,
+        "entries": 2,
+        "mean_utilisation": 0.0212
+      },
+      "30": {
+        "total_net_R": -0.672,
+        "net_pnl_usd": -3.8,
+        "max_drawdown_usd": 2.453,
+        "entries": 2,
+        "mean_utilisation": 0.0204
+      }
+    },
+    "TS10": {
+      "5": {
+        "total_net_R": 0.533,
+        "net_pnl_usd": 1.03,
+        "max_drawdown_usd": 0.0,
+        "entries": 2,
+        "mean_utilisation": 0.0088
+      },
+      "15": {
+        "total_net_R": 0.406,
+        "net_pnl_usd": 0.68,
+        "max_drawdown_usd": 0.0,
+        "entries": 2,
+        "mean_utilisation": 0.0092
+      },
+      "30": {
+        "total_net_R": 0.229,
+        "net_pnl_usd": 0.15,
+        "max_drawdown_usd": 0.0,
+        "entries": 2,
+        "mean_utilisation": 0.0089
+      }
+    }
+  },
+  "opportunity_cost": {
+    "TS3": {
+      "entries_only_because_a_slot_was_released": [
+        {
+          "symbol": "GOOGL",
+          "sector": "communication",
+          "event_id": "evt_GOOGL_LONG_20261006T1850",
+          "entry_ts": "2026-10-06T18:50:04+00:00",
+          "entry_session": "2026-10-06",
+          "fill": 348.7285,
+          "stop": 335.06,
+          "target": 374.95,
+          "qty": 0.358445,
+          "r_price": 13.6685,
+          "state": "time_stop",
+          "exit_ts": "2026-10-12T09:35:00-04:00",
+          "exit_price": 351.9839,
+          "mark_price": null,
+          "R": 0.2382,
+          "pnl_usd": 1.1669,
+          "sessions_held": 4,
+          "touched_1r": false,
+          "ambiguous": false,
+          "notional": 125.0
+        },
+        {
+          "symbol": "NVDA",
+          "sector": "technology",
+          "event_id": "evt_NVDA_LONG_20260925T1315",
+          "entry_ts": "2026-10-01T13:35:00+00:00",
+          "entry_session": "2026-10-01",
+          "fill": 228.6084,
+          "stop": 222.11,
+          "target": 245.36,
+          "qty": 0.546786,
+          "r_price": 6.4984,
+          "state": "open",
+          "exit_ts": null,
+          "exit_price": null,
+          "mark_price": 226.42,
+          "R": -0.3368,
+          "pnl_usd": -1.1966,
+          "sessions_held": 7,
+          "touched_1r": true,
+          "ambiguous": false,
+          "notional": 125.0
+        },
+        {
+          "symbol": "AMGN",
+          "sector": "health_care",
+          "event_id": "evt_AMGN_LONG_20261007T1820",
+          "entry_ts": "2026-10-12T14:05:07+00:00",
+          "entry_session": "2026-10-12",
+          "fill": 415.2849,
+          "stop": 399.6,
+          "target": 443.5,
+          "qty": 0.300998,
+          "r_price": 15.6849,
+          "state": "open",
+          "exit_ts": null,
+          "exit_price": null,
+          "mark_price": 417.57,
+          "R": 0.1457,
+          "pnl_usd": 0.6878,
+          "sessions_held": 0,
+          "touched_1r": false,
+          "ambiguous": false,
+          "notional": 125.0
+        }
+      ],
+      "champion_entries_not_made_in_this_arm": []
+    },
+    "TS5": {
+      "entries_only_because_a_slot_was_released": [
+        {
+          "symbol": "AAPL",
+          "sector": "technology",
+          "event_id": "evt_AAPL_LONG_20260925T1350",
+          "entry_ts": "2026-10-05T14:05:02+00:00",
+          "entry_session": "2026-10-05",
+          "fill": 334.0237,
+          "stop": 324.07,
+          "target": 353.27,
+          "qty": 0.374225,
+          "r_price": 9.9537,
+          "state": "open",
+          "exit_ts": null,
+          "exit_price": null,
+          "mark_price": 341.06,
+          "R": 0.7069,
+          "pnl_usd": 2.6331,
+          "sessions_held": 5,
+          "touched_1r": false,
+          "ambiguous": false,
+          "notional": 125.0
+        },
+        {
+          "symbol": "GOOGL",
+          "sector": "communication",
+          "event_id": "evt_GOOGL_LONG_20261006T1850",
+          "entry_ts": "2026-10-06T18:50:04+00:00",
+          "entry_session": "2026-10-06",
+          "fill": 348.7285,
+          "stop": 335.06,
+          "target": 374.95,
+          "qty": 0.358445,
+          "r_price": 13.6685,
+          "state": "open",
+          "exit_ts": null,
+          "exit_price": null,
+          "mark_price": 352.73,
+          "R": 0.2928,
+          "pnl_usd": 1.4343,
+          "sessions_held": 4,
+          "touched_1r": false,
+          "ambiguous": false,
+          "notional": 125.0
+        }
+      ],
+      "champion_entries_not_made_in_this_arm": []
+    },
+    "TS8": {
+      "entries_only_because_a_slot_was_released": [
+        {
+          "symbol": "CSCO",
+          "sector": "technology",
+          "event_id": "evt_CSCO_LONG_20261005T1335",
+          "entry_ts": "2026-10-08T14:20:02+00:00",
+          "entry_session": "2026-10-08",
+          "fill": 117.5074,
+          "stop": 112.97,
+          "target": 124.49,
+          "qty": 1.063763,
+          "r_price": 4.5374,
+          "state": "open",
+          "exit_ts": null,
+          "exit_price": null,
+          "mark_price": 115.33,
+          "R": -0.4799,
+          "pnl_usd": -2.3163,
+          "sessions_held": 2,
+          "touched_1r": false,
+          "ambiguous": false,
+          "notional": 125.0
+        },
+        {
+          "symbol": "PG",
+          "sector": "consumer_staples",
+          "event_id": "evt_PG_LONG_20261008T1720",
+          "entry_ts": "2026-10-09T13:35:01+00:00",
+          "entry_session": "2026-10-09",
+          "fill": 150.8207,
+          "stop": 147.01,
+          "target": 158.0,
+          "qty": 0.828799,
+          "r_price": 3.8107,
+          "state": "open",
+          "exit_ts": null,
+          "exit_price": null,
+          "mark_price": 153.19,
+          "R": 0.6218,
+          "pnl_usd": 1.9637,
+          "sessions_held": 1,
+          "touched_1r": false,
+          "ambiguous": false,
+          "notional": 125.0
+        }
+      ],
+      "champion_entries_not_made_in_this_arm": []
+    },
+    "TS10": {
+      "entries_only_because_a_slot_was_released": [
+        {
+          "symbol": "AMGN",
+          "sector": "health_care",
+          "event_id": "evt_AMGN_LONG_20261007T1820",
+          "entry_ts": "2026-10-12T14:05:07+00:00",
+          "entry_session": "2026-10-12",
+          "fill": 415.2849,
+          "stop": 399.6,
+          "target": 443.5,
+          "qty": 0.300998,
+          "r_price": 15.6849,
+          "state": "open",
+          "exit_ts": null,
+          "exit_price": null,
+          "mark_price": 417.57,
+          "R": 0.1457,
+          "pnl_usd": 0.6878,
+          "sessions_held": 0,
+          "touched_1r": false,
+          "ambiguous": false,
+          "notional": 125.0
+        },
+        {
+          "symbol": "WMT",
+          "sector": "consumer_staples",
+          "event_id": "evt_WMT_LONG_20261008T1720",
+          "entry_ts": "2026-10-12T14:35:01+00:00",
+          "entry_session": "2026-10-12",
+          "fill": 111.4614,
+          "stop": 109.09,
+          "target": 118.91,
+          "qty": 1.121464,
+          "r_price": 2.3714,
+          "state": "open",
+          "exit_ts": null,
+          "exit_price": null,
+          "mark_price": 113.1,
+          "R": 0.691,
+          "pnl_usd": 1.8376,
+          "sessions_held": 0,
+          "touched_1r": false,
+          "ambiguous": false,
+          "notional": 125.0
+        }
+      ],
+      "champion_entries_not_made_in_this_arm": []
+    }
+  },
+  "time_stop_regret": {
+    "TS3": [
+      {
+        "symbol": "DELL",
+        "entry_session": "2026-09-25",
+        "sessions_held_at_exit": 4,
+        "realized_R": -0.4875,
+        "R_if_held_champion_exits": 0.225,
+        "held_outcome": "open",
+        "regret_R": 0.713
+      },
+      {
+        "symbol": "META",
+        "entry_session": "2026-09-25",
+        "sessions_held_at_exit": 4,
+        "realized_R": -0.4913,
+        "R_if_held_champion_exits": -0.167,
+        "held_outcome": "open",
+        "regret_R": 0.324
+      },
+      {
+        "symbol": "GOOGL",
+        "entry_session": "2026-10-06",
+        "sessions_held_at_exit": 4,
+        "realized_R": 0.2382,
+        "R_if_held_champion_exits": 0.293,
+        "held_outcome": "open",
+        "regret_R": 0.055
+      }
+    ],
+    "TS5": [
+      {
+        "symbol": "DELL",
+        "entry_session": "2026-09-25",
+        "sessions_held_at_exit": 6,
+        "realized_R": -0.1861,
+        "R_if_held_champion_exits": 0.225,
+        "held_outcome": "open",
+        "regret_R": 0.411
+      },
+      {
+        "symbol": "META",
+        "entry_session": "2026-09-25",
+        "sessions_held_at_exit": 6,
+        "realized_R": -0.536,
+        "R_if_held_champion_exits": -0.167,
+        "held_outcome": "open",
+        "regret_R": 0.369
+      }
+    ],
+    "TS8": [
+      {
+        "symbol": "DELL",
+        "entry_session": "2026-09-25",
+        "sessions_held_at_exit": 9,
+        "realized_R": 0.0681,
+        "R_if_held_champion_exits": 0.225,
+        "held_outcome": "open",
+        "regret_R": 0.157
+      },
+      {
+        "symbol": "META",
+        "entry_session": "2026-09-25",
+        "sessions_held_at_exit": 9,
+        "realized_R": -0.6003,
+        "R_if_held_champion_exits": -0.167,
+        "held_outcome": "open",
+        "regret_R": 0.433
+      }
+    ],
+    "TS10": [
+      {
+        "symbol": "DELL",
+        "entry_session": "2026-09-25",
+        "sessions_held_at_exit": 11,
+        "realized_R": 0.2511,
+        "R_if_held_champion_exits": 0.225,
+        "held_outcome": "open",
+        "regret_R": -0.026
+      },
+      {
+        "symbol": "META",
+        "entry_session": "2026-09-25",
+        "sessions_held_at_exit": 11,
+        "realized_R": -0.4954,
+        "R_if_held_champion_exits": -0.167,
+        "held_outcome": "open",
+        "regret_R": 0.329
+      }
+    ]
+  },
+  "leave_one_event_out": {
+    "TS3": {
+      "5": {
+        "min_delta_R": -1.228,
+        "min_when_dropping_event": "evt_GOOGL_LONG_20261006T1850",
+        "max_delta_R": -0.277,
+        "events": 7,
+        "note": "accounting robustness (positions of one event removed from both tallies), not a re-simulation"
+      },
+      "15": {
+        "min_delta_R": -1.294,
+        "min_when_dropping_event": "evt_GOOGL_LONG_20261006T1850",
+        "max_delta_R": -0.396,
+        "events": 7,
+        "note": "accounting robustness (positions of one event removed from both tallies), not a re-simulation"
+      },
+      "30": {
+        "min_delta_R": -1.386,
+        "min_when_dropping_event": "evt_GOOGL_LONG_20261006T1850",
+        "max_delta_R": -0.563,
+        "events": 7,
+        "note": "accounting robustness (positions of one event removed from both tallies), not a re-simulation"
+      }
+    },
+    "TS5": {
+      "5": {
+        "min_delta_R": -0.488,
+        "min_when_dropping_event": "evt_AAPL_LONG_20260925T1350",
+        "max_delta_R": 0.631,
+        "events": 6,
+        "note": "accounting robustness (positions of one event removed from both tallies), not a re-simulation"
+      },
+      "15": {
+        "min_delta_R": -0.537,
+        "min_when_dropping_event": "evt_AAPL_LONG_20260925T1350",
+        "max_delta_R": 0.533,
+        "events": 6,
+        "note": "accounting robustness (positions of one event removed from both tallies), not a re-simulation"
+      },
+      "30": {
+        "min_delta_R": -0.606,
+        "min_when_dropping_event": "evt_AAPL_LONG_20260925T1350",
+        "max_delta_R": 0.397,
+        "events": 6,
+        "note": "accounting robustness (positions of one event removed from both tallies), not a re-simulation"
+      }
+    },
+    "TS8": {
+      "5": {
+        "min_delta_R": -1.071,
+        "min_when_dropping_event": "evt_PG_LONG_20261008T1720",
+        "max_delta_R": 0.031,
+        "events": 6,
+        "note": "accounting robustness (positions of one event removed from both tallies), not a re-simulation"
+      },
+      "15": {
+        "min_delta_R": -1.102,
+        "min_when_dropping_event": "evt_PG_LONG_20261008T1720",
+        "max_delta_R": -0.049,
+        "events": 6,
+        "note": "accounting robustness (positions of one event removed from both tallies), not a re-simulation"
+      },
+      "30": {
+        "min_delta_R": -1.148,
+        "min_when_dropping_event": "evt_PG_LONG_20261008T1720",
+        "max_delta_R": -0.161,
+        "events": 6,
+        "note": "accounting robustness (positions of one event removed from both tallies), not a re-simulation"
+      }
+    },
+    "TS10": {
+      "5": {
+        "min_delta_R": -0.157,
+        "min_when_dropping_event": "evt_WMT_LONG_20261008T1720",
+        "max_delta_R": 0.863,
+        "events": 6,
+        "note": "accounting robustness (positions of one event removed from both tallies), not a re-simulation"
+      },
+      "15": {
+        "min_delta_R": -0.209,
+        "min_when_dropping_event": "evt_WMT_LONG_20261008T1720",
+        "max_delta_R": 0.745,
+        "events": 6,
+        "note": "accounting robustness (positions of one event removed from both tallies), not a re-simulation"
+      },
+      "30": {
+        "min_delta_R": -0.284,
+        "min_when_dropping_event": "evt_WMT_LONG_20261008T1720",
+        "max_delta_R": 0.584,
+        "events": 6,
+        "note": "accounting robustness (positions of one event removed from both tallies), not a re-simulation"
+      }
+    }
+  },
+  "out_of_sample": {
+    "CHAMPION": {
+      "positions": 0,
+      "eligible_for_time_stop": 0
+    },
+    "TS3": {
+      "positions": 0,
+      "eligible_for_time_stop": 0
+    },
+    "TS5": {
+      "positions": 0,
+      "eligible_for_time_stop": 0
+    },
+    "TS8": {
+      "positions": 0,
+      "eligible_for_time_stop": 0
+    },
+    "TS10": {
+      "positions": 0,
+      "eligible_for_time_stop": 0
+    }
+  },
+  "in_sample_reading": {
+    "per_arm": [
+      {
+        "arm": "TS3",
+        "meets_all_criteria": false,
+        "delta_R_5bps": -0.991,
+        "delta_R_15bps": -1.112,
+        "loeo_min_5bps": -1.228,
+        "loeo_min_15bps": -1.294,
+        "drawdown_delta_5bps": 2.227
+      },
+      {
+        "arm": "TS5",
+        "meets_all_criteria": false,
+        "delta_R_5bps": 0.219,
+        "delta_R_15bps": 0.115,
+        "loeo_min_5bps": -0.488,
+        "loeo_min_15bps": -0.537,
+        "drawdown_delta_5bps": -0.643
+      },
+      {
+        "arm": "TS8",
+        "meets_all_criteria": false,
+        "delta_R_5bps": -0.449,
+        "delta_R_15bps": -0.542,
+        "loeo_min_5bps": -1.071,
+        "loeo_min_15bps": -1.102,
+        "drawdown_delta_5bps": 1.985
+      },
+      {
+        "arm": "TS10",
+        "meets_all_criteria": false,
+        "delta_R_5bps": 0.533,
+        "delta_R_15bps": 0.406,
+        "loeo_min_5bps": -0.157,
+        "loeo_min_15bps": -0.209,
+        "drawdown_delta_5bps": 0.0
+      }
+    ],
+    "arms_meeting_criteria": 0,
+    "directionally_supported": false,
+    "text": "NOT supported by the pre-registered criteria (fewer than 3 of 4 arms meet all of them)",
+    "caveat": "in-sample and exploratory; the hypothesis came from this same sample; no threshold is chosen as best; cannot promote"
+  },
+  "promotion_gate": {
+    "auto_promote": false,
+    "eligible": false,
+    "checks": [
+      {
+        "check": "Stage A validity gate passed",
+        "passed": true
+      },
+      {
+        "check": "evaluated on out-of-sample sessions only (entered after 2026-10-12)",
+        "passed": false,
+        "detail": "no out-of-sample positions yet \u2014 sync a later backup and re-run"
+      },
+      {
+        "check": ">= 15 OOS positions eligible for the time stop",
+        "passed": false,
+        "detail": {
+          "TS3": 0,
+          "TS5": 0,
+          "TS8": 0,
+          "TS10": 0
+        }
+      },
+      {
+        "check": "threshold N declared in writing before the OOS window was read (PROMOTION_LOG.md)",
+        "passed": false
+      },
+      {
+        "check": "delta total net R > 0 at 5, 15 and 30 bps on OOS; leave-one-event-out min > 0; drawdown within $2.50",
+        "passed": false,
+        "detail": "not evaluable without OOS data"
+      }
+    ],
+    "reason": "In-sample results can never promote. A promotion is a human decision recorded in PROMOTION_LOG.md."
+  },
+  "notes": [
+    "Costs: slippage 5/15/30 bps (gap 25/35/50). Open positions are marked at the last bar, not realised.",
+    "total_net_R = realized + open marks, in R of price risk at fill; net_pnl_usd uses the post-risk-fix sizing.",
+    "Champion arm == the cloud's real behaviour only to the extent Stage A passes (it did, or this file would not exist)."
+  ]
+}

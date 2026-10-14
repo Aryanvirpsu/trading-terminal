@@ -1,0 +1,446 @@
+{
+  "provenance": {
+    "backup": "20261012T202501Z",
+    "backup_created_at": "2026-10-12T20:25:02+00:00",
+    "engine": "decision_engine/gates-v1.1",
+    "ledger_sha256": "991d2dab62426c858f50b2039b0075fde63c611761b35da094aca2cc617c0b62",
+    "shadow_sha256": "c35aa01007c41a59db770fb39225385b6cf2245faef287df304c1c6e06bb3a9a"
+  },
+  "v11_signals": 245,
+  "label_counts": {
+    "MONITOR": 111,
+    "REJECT": 78,
+    "TRADEABLE": 56
+  },
+  "executed_by_label": {
+    "TRADEABLE": 4,
+    "MONITOR": 0,
+    "REJECT": 0
+  },
+  "failed_gate_frequency": {
+    "REJECT": {
+      "quality_threshold": 78,
+      "conviction": 78,
+      "signal_disagreement": 7,
+      "signal_alignment": 2
+    },
+    "MONITOR": {
+      "conviction": 111
+    },
+    "TRADEABLE": {}
+  },
+  "quality_range_by_label": {
+    "REJECT": [
+      0.3,
+      44.8
+    ],
+    "MONITOR": [
+      45.0,
+      59.9
+    ],
+    "TRADEABLE": [
+      60.0,
+      68.7
+    ]
+  },
+  "quality_inputs_median_by_label": {
+    "REJECT": {
+      "aligned": 0.158,
+      "famconf": 0.53,
+      "cov": 64.3,
+      "liq": 1.0
+    },
+    "MONITOR": {
+      "aligned": 0.245,
+      "famconf": 0.54,
+      "cov": 64.4,
+      "liq": 1.0
+    },
+    "TRADEABLE": {
+      "aligned": 0.318,
+      "famconf": 0.56,
+      "cov": 64.5,
+      "liq": 1.0
+    }
+  },
+  "max_alignment_observed": 0.364,
+  "quality_quantiles": {
+    "p25": 43.7,
+    "p50": 49.8,
+    "p75": 59.5,
+    "p90": 64.1,
+    "max": 68.7,
+    "share_ge_60": 0.229
+  },
+  "quality_by_alignment": {
+    "0.0-0.1": {
+      "n": 14,
+      "quality_median": 19.1,
+      "quality_max": 33.5
+    },
+    "0.1-0.2": {
+      "n": 56,
+      "quality_median": 39.9,
+      "quality_max": 53.1
+    },
+    "0.2-0.3": {
+      "n": 124,
+      "quality_median": 51.2,
+      "quality_max": 62.8
+    },
+    "0.3-0.4": {
+      "n": 49,
+      "quality_median": 64.1,
+      "quality_max": 68.7
+    }
+  },
+  "event_outcomes_by_first_label": {
+    "events_measured": 40,
+    "by_label": {
+      "TRADEABLE": {
+        "events": 10,
+        "target": 0,
+        "stop": 3,
+        "open": 7,
+        "mean_R_open_marked": 0.14,
+        "median_R": 0.28
+      },
+      "MONITOR": {
+        "events": 12,
+        "target": 0,
+        "stop": 6,
+        "open": 6,
+        "mean_R_open_marked": -0.15,
+        "median_R": -0.29
+      },
+      "REJECT": {
+        "events": 18,
+        "target": 1,
+        "stop": 7,
+        "open": 10,
+        "mean_R_open_marked": 0.4,
+        "median_R": 0.53
+      }
+    },
+    "note": "no costs, stop-first on ambiguity, open positions marked at the last bar; small n, in-sample, descriptive"
+  },
+  "funnel_regular_cycles": {
+    "cycles": 264,
+    "summed": {
+      "scanner_detections": 4831,
+      "finalists": 1319,
+      "TRADEABLE": 284,
+      "MONITOR": 599,
+      "REJECT": 436,
+      "capacity_eligible": 284,
+      "instrument_no_trade": 1313,
+      "stock_executable_at_decision": 6,
+      "entry_blocked_pre_broker": 169,
+      "orders_attempted": 4,
+      "entries": 4
+    },
+    "top_reasons": {
+      "gate:conviction": 1035,
+      "champion:unchanged observation - not re-journaled": 659,
+      "gate:quality_threshold": 436,
+      "champion:stock leg not canonically executable": 355,
+      "champion:existing position/open order - no duplicate entry": 298,
+      "gate:signal_disagreement": 39,
+      "gate:signal_alignment": 11,
+      "champion:daily order cap reached": 3
+    },
+    "note": "an observation repeats every 15 minutes, so these are observations, not independent setups"
+  },
+  "tradeable_observations": {
+    "n": 284,
+    "distinct_events": 20,
+    "executed": 4,
+    "without_any_fit_violation": 6,
+    "fit_violations": {
+      "max_positions_per_sector": 231,
+      "max_sector_exposure": 151,
+      "max_open_positions": 119
+    }
+  },
+  "tradeable_events": {
+    "n": 20,
+    "attribution_at_first_look": {
+      "blocked: max_open_positions": 6,
+      "entered": 4,
+      "blocked: max_positions_per_sector, max_sector_exposure": 4,
+      "blocked: max_open_positions, max_positions_per_sector, max_sector_exposure": 4,
+      "blocked: daily order cap reached": 1,
+      "blocked: max_positions_per_sector": 1
+    },
+    "events": [
+      {
+        "date": "2026-09-25",
+        "symbol": "AAPL",
+        "sector": "technology",
+        "outcome": "blocked: max_positions_per_sector, max_sector_exposure"
+      },
+      {
+        "date": "2026-09-25",
+        "symbol": "DELL",
+        "sector": "technology",
+        "outcome": "entered"
+      },
+      {
+        "date": "2026-09-25",
+        "symbol": "META",
+        "sector": "communication",
+        "outcome": "entered"
+      },
+      {
+        "date": "2026-09-25",
+        "symbol": "MSFT",
+        "sector": "technology",
+        "outcome": "blocked: max_positions_per_sector, max_sector_exposure"
+      },
+      {
+        "date": "2026-09-25",
+        "symbol": "TMO",
+        "sector": "health_care",
+        "outcome": "blocked: daily order cap reached"
+      },
+      {
+        "date": "2026-09-29",
+        "symbol": "AMD",
+        "sector": "technology",
+        "outcome": "blocked: max_positions_per_sector"
+      },
+      {
+        "date": "2026-09-29",
+        "symbol": "NVDA",
+        "sector": "technology",
+        "outcome": "blocked: max_positions_per_sector, max_sector_exposure"
+      },
+      {
+        "date": "2026-09-30",
+        "symbol": "META",
+        "sector": "communication",
+        "outcome": "blocked: max_positions_per_sector, max_sector_exposure"
+      },
+      {
+        "date": "2026-10-06",
+        "symbol": "CSCO",
+        "sector": "technology",
+        "outcome": "blocked: max_open_positions, max_positions_per_sector, max_sector_exposure"
+      },
+      {
+        "date": "2026-10-06",
+        "symbol": "FCX",
+        "sector": "materials",
+        "outcome": "blocked: max_open_positions"
+      },
+      {
+        "date": "2026-10-06",
+        "symbol": "GOOGL",
+        "sector": "communication",
+        "outcome": "blocked: max_open_positions, max_positions_per_sector, max_sector_exposure"
+      },
+      {
+        "date": "2026-10-06",
+        "symbol": "TMO",
+        "sector": "health_care",
+        "outcome": "entered"
+      },
+      {
+        "date": "2026-10-08",
+        "symbol": "CVX",
+        "sector": "energy",
+        "outcome": "blocked: max_open_positions, max_positions_per_sector, max_sector_exposure"
+      },
+      {
+        "date": "2026-10-08",
+        "symbol": "EOG",
+        "sector": "energy",
+        "outcome": "entered"
+      },
+      {
+        "date": "2026-10-08",
+        "symbol": "PG",
+        "sector": "consumer_staples",
+        "outcome": "blocked: max_open_positions"
+      },
+      {
+        "date": "2026-10-08",
+        "symbol": "XOM",
+        "sector": "energy",
+        "outcome": "blocked: max_open_positions, max_positions_per_sector, max_sector_exposure"
+      },
+      {
+        "date": "2026-10-09",
+        "symbol": "AMGN",
+        "sector": "health_care",
+        "outcome": "blocked: max_open_positions"
+      },
+      {
+        "date": "2026-10-09",
+        "symbol": "TMO",
+        "sector": "health_care",
+        "outcome": "blocked: max_open_positions"
+      },
+      {
+        "date": "2026-10-09",
+        "symbol": "TSLA",
+        "sector": "consumer_discretionary",
+        "outcome": "blocked: max_open_positions"
+      },
+      {
+        "date": "2026-10-09",
+        "symbol": "WMT",
+        "sector": "consumer_staples",
+        "outcome": "blocked: max_open_positions"
+      }
+    ]
+  },
+  "slot_occupancy_1000_et": [
+    {
+      "date": "2026-09-25",
+      "open": 0,
+      "symbols": []
+    },
+    {
+      "date": "2026-09-28",
+      "open": 2,
+      "symbols": [
+        "DELL",
+        "META"
+      ]
+    },
+    {
+      "date": "2026-09-29",
+      "open": 2,
+      "symbols": [
+        "DELL",
+        "META"
+      ]
+    },
+    {
+      "date": "2026-09-30",
+      "open": 2,
+      "symbols": [
+        "DELL",
+        "META"
+      ]
+    },
+    {
+      "date": "2026-10-01",
+      "open": 2,
+      "symbols": [
+        "DELL",
+        "META"
+      ]
+    },
+    {
+      "date": "2026-10-02",
+      "open": 2,
+      "symbols": [
+        "DELL",
+        "META"
+      ]
+    },
+    {
+      "date": "2026-10-05",
+      "open": 2,
+      "symbols": [
+        "DELL",
+        "META"
+      ]
+    },
+    {
+      "date": "2026-10-06",
+      "open": 2,
+      "symbols": [
+        "DELL",
+        "META"
+      ]
+    },
+    {
+      "date": "2026-10-07",
+      "open": 3,
+      "symbols": [
+        "DELL",
+        "META",
+        "TMO"
+      ]
+    },
+    {
+      "date": "2026-10-08",
+      "open": 2,
+      "symbols": [
+        "DELL",
+        "META"
+      ]
+    },
+    {
+      "date": "2026-10-09",
+      "open": 3,
+      "symbols": [
+        "DELL",
+        "META",
+        "EOG"
+      ]
+    },
+    {
+      "date": "2026-10-12",
+      "open": 3,
+      "symbols": [
+        "DELL",
+        "META",
+        "EOG"
+      ]
+    }
+  ],
+  "positions": [
+    {
+      "symbol": "HAL",
+      "sector": "energy",
+      "opened_at": "2026-09-11T17:04:31.257230+00:00",
+      "closed_at": "2026-09-17T17:41:14.536397+00:00",
+      "status": "closed",
+      "exit_reason": "exit_stop"
+    },
+    {
+      "symbol": "AMD",
+      "sector": "technology",
+      "opened_at": "2026-09-17T17:41:07.430660+00:00",
+      "closed_at": "2026-09-21T18:50:41.773960+00:00",
+      "status": "closed",
+      "exit_reason": "exit_target"
+    },
+    {
+      "symbol": "DELL",
+      "sector": "technology",
+      "opened_at": "2026-09-25T16:05:23.101150+00:00",
+      "closed_at": null,
+      "status": "open",
+      "exit_reason": null
+    },
+    {
+      "symbol": "META",
+      "sector": "communication",
+      "opened_at": "2026-09-25T17:05:21.964993+00:00",
+      "closed_at": null,
+      "status": "open",
+      "exit_reason": null
+    },
+    {
+      "symbol": "TMO",
+      "sector": "health_care",
+      "opened_at": "2026-10-06T14:20:36.982587+00:00",
+      "closed_at": "2026-10-08T13:47:45.614385+00:00",
+      "status": "closed",
+      "exit_reason": "exit_stop"
+    },
+    {
+      "symbol": "EOG",
+      "sector": "energy",
+      "opened_at": "2026-10-08T14:05:36.430277+00:00",
+      "closed_at": null,
+      "status": "open",
+      "exit_reason": null
+    }
+  ]
+}

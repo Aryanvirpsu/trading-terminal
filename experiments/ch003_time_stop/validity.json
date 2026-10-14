@@ -1,0 +1,144 @@
+{
+  "provenance": {
+    "backup": "20261012T202501Z",
+    "backup_created_at": "2026-10-12T20:25:02+00:00",
+    "engine": "decision_engine/gates-v1.1",
+    "ledger_sha256": "991d2dab62426c858f50b2039b0075fde63c611761b35da094aca2cc617c0b62",
+    "shadow_sha256": "c35aa01007c41a59db770fb39225385b6cf2245faef287df304c1c6e06bb3a9a",
+    "prereg_sha256": "86a17b3bbc4d2fe95be4a9ad74b7af258d7606be4c54459c36cce548b6936352",
+    "sessions": 17,
+    "tradeable_observations": 284,
+    "oos_from_exclusive": "2026-10-12"
+  },
+  "passed": true,
+  "checks": [
+    {
+      "check": "Champion replay enters exactly the cloud's real v1.1 entries (symbol + session)",
+      "passed": true,
+      "replay": [
+        [
+          "DELL",
+          "2026-09-25"
+        ],
+        [
+          "EOG",
+          "2026-10-08"
+        ],
+        [
+          "META",
+          "2026-09-25"
+        ],
+        [
+          "TMO",
+          "2026-10-06"
+        ]
+      ],
+      "actual": [
+        [
+          "DELL",
+          "2026-09-25"
+        ],
+        [
+          "EOG",
+          "2026-10-08"
+        ],
+        [
+          "META",
+          "2026-09-25"
+        ],
+        [
+          "TMO",
+          "2026-10-06"
+        ]
+      ]
+    },
+    {
+      "check": "each fill within 0.1% of the recorded avg_entry",
+      "passed": true,
+      "detail": [
+        {
+          "symbol": "DELL",
+          "replay_fill": 565.6853,
+          "actual": 565.6853
+        },
+        {
+          "symbol": "EOG",
+          "replay_fill": 147.6976,
+          "actual": 147.6976
+        },
+        {
+          "symbol": "META",
+          "replay_fill": 750.5,
+          "actual": 750.5
+        },
+        {
+          "symbol": "TMO",
+          "replay_fill": 666.6862,
+          "actual": 666.6862
+        }
+      ]
+    }
+  ],
+  "skipped_sample": [
+    {
+      "ts": "2026-09-25T16:05:02+00:00",
+      "symbol": "AAPL",
+      "why": "max_positions_per_sector"
+    },
+    {
+      "ts": "2026-09-25T16:20:03+00:00",
+      "symbol": "DELL",
+      "why": "symbol already held or entered this session"
+    },
+    {
+      "ts": "2026-09-25T16:35:00+00:00",
+      "symbol": "DELL",
+      "why": "symbol already held or entered this session"
+    },
+    {
+      "ts": "2026-09-25T16:50:04+00:00",
+      "symbol": "DELL",
+      "why": "symbol already held or entered this session"
+    },
+    {
+      "ts": "2026-09-25T17:05:00+00:00",
+      "symbol": "DELL",
+      "why": "symbol already held or entered this session"
+    },
+    {
+      "ts": "2026-09-25T17:20:03+00:00",
+      "symbol": "META",
+      "why": "symbol already held or entered this session"
+    },
+    {
+      "ts": "2026-09-25T17:20:03+00:00",
+      "symbol": "DELL",
+      "why": "symbol already held or entered this session"
+    },
+    {
+      "ts": "2026-09-25T17:35:02+00:00",
+      "symbol": "META",
+      "why": "symbol already held or entered this session"
+    },
+    {
+      "ts": "2026-09-25T17:35:02+00:00",
+      "symbol": "DELL",
+      "why": "symbol already held or entered this session"
+    },
+    {
+      "ts": "2026-09-25T17:50:03+00:00",
+      "symbol": "META",
+      "why": "symbol already held or entered this session"
+    },
+    {
+      "ts": "2026-09-25T17:50:03+00:00",
+      "symbol": "DELL",
+      "why": "symbol already held or entered this session"
+    },
+    {
+      "ts": "2026-09-25T18:05:04+00:00",
+      "symbol": "META",
+      "why": "symbol already held or entered this session"
+    }
+  ]
+}
