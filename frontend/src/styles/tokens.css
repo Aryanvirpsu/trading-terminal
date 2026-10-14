@@ -1,0 +1,35 @@
+/* ───────────────────────────────────────────────────────────────────────────
+   Design tokens — flat dark, minimal. See frontend/DESIGN.md.
+   One accent (blue). Green / red / amber are reserved for meaning (P&L, verdicts, freshness).
+   No glow, blur, gradients or background effects anywhere.
+   ─────────────────────────────────────────────────────────────────────────── */
+:root {
+  --bg: #0b0d12;
+  --bg2: #0e1117;
+  --surface: #12151c;
+  --surface2: #171b24;
+  --hover: #1b2029;
+  --line: #222834;
+  --line2: #2d3442;
+
+  --text: #e6e9f0;
+  --dim: #9aa3b6;
+  --dim2: #6f7a90;
+
+  --accent: #4c8dff;
+  --accent-dim: rgba(76, 141, 255, 0.13);
+  --green: #2fd37f;
+  --red: #f0566a;
+  --amber: #e7b341;
+  --violet: #9b8cf0;
+  --cash: #e7b341;
+  --chart-grid: rgba(255, 255, 255, 0.05);
+
+  --mono: 'JetBrains Mono Variable', 'JetBrains Mono', ui-monospace, 'SF Mono', Menlo, Consolas, monospace;
+  --sans: 'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+
+  --ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --r: 8px;
+  --r-sm: 5px;
+
+}

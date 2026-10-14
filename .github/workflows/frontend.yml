@@ -1,0 +1,36 @@
+name: Terminal UI
+
+# Type-checks and builds the React terminal (frontend/) and runs the tests for the read-only
+# research endpoints it depends on. Does not build or publish any image.
+on:
+  push:
+    paths: ["frontend/**", "dashboard/research_api.py", "tests/unit/test_research_api.py", ".github/workflows/frontend.yml"]
+  pull_request:
+    paths: ["frontend/**", "dashboard/research_api.py", "tests/unit/test_research_api.py", ".github/workflows/frontend.yml"]
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: Install (lockfile only)
+        run: npm ci --no-audit --no-fund
+        working-directory: frontend
+      - name: Type-check and build
+        run: npm run build
+        working-directory: frontend
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Research endpoint tests
+        run: |
+          pip install flask pytest
+          python -m pytest tests/unit/test_research_api.py -q -p no:cacheprovider

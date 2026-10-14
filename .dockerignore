@@ -92,3 +92,6 @@ htmlcov/
 # Large generated / local-only artifacts not needed at image runtime
 graphify-out/
 *.pdf
+
+# Terminal UI source: built separately, never part of the MCP image (additive; nothing above changed)
+frontend/

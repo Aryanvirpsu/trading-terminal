@@ -18,7 +18,7 @@ import sys
 # pip-installed in this interpreter (falls back to the src/ layout).
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
 
-from flask import Flask, jsonify, render_template_string
+from flask import Flask, abort, jsonify, render_template_string, send_from_directory
 
 from tradingview_mcp.core.services import strategy_service as strategy
 
@@ -570,10 +570,71 @@ setInterval(tickCountdown, 1000);
 """
 
 
+from research_api import bp as _research_bp  # read-only experiments / strategy-watchlist / docs
+
+app.register_blueprint(_research_bp)
+
+
+@app.route("/api/cloud/<path:rest>")
+def cloud_mirror_proxy(rest):
+    """Read-only view of the mirrored CLOUD ledger. Answered by dashboard/cloud_viewer.py, a SEPARATE process
+    pointed at a copy of the cloud ledger, so the local ledger (Case 2) can never be reached through this route."""
+    import urllib.error
+    import urllib.request
+    from flask import Response, request
+    url = f"http://127.0.0.1:{os.environ.get('CLOUD_VIEWER_PORT', '5058')}/api/cloud/{rest}"
+    if request.query_string:
+        url += "?" + request.query_string.decode("utf-8", "replace")
+    try:
+        with urllib.request.urlopen(url, timeout=60) as r:
+            return Response(r.read(), status=r.status, mimetype="application/json")
+    except urllib.error.HTTPError as e:           # the viewer's own answer (e.g. 503 no_mirror) passes through
+        return Response(e.read(), status=e.code, mimetype="application/json")
+    except Exception:
+        return jsonify({"state": "unavailable", "reason": "The cloud mirror viewer is not running. Start everything with: python scripts/run_terminal.py"}), 503
+
+_UI_DIST = os.path.join(os.path.dirname(__file__), "ui_dist")
+
+
+def _ui_index():
+    # index.html names hashed bundles, so it must never be cached: a rebuild is picked up on reload.
+    resp = send_from_directory(_UI_DIST, "index.html")
+    resp.headers["Cache-Control"] = "no-cache"
+    return resp
+
+
+@app.route("/ui/")
+def ui_root():
+    if not os.path.exists(os.path.join(_UI_DIST, "index.html")):
+        abort(404)
+    return _ui_index()
+
+
+@app.route("/ui/<path:filename>")
+def ui_assets(filename):
+    # Built React frontend (frontend/ -> `npm run build` -> dashboard/ui_dist). Files under
+    # assets/ carry a content hash in their name, so they are cached for a year; anything
+    # else is revalidated every time.
+    if not os.path.isdir(_UI_DIST):
+        abort(404)
+    hashed = filename.startswith("assets/")
+    return send_from_directory(_UI_DIST, filename, max_age=31536000 if hashed else 0)
+
+
+@app.route("/legacy")
+def legacy_terminal():
+    # The previous single-file terminal, kept reachable until the React UI is signed off.
+    with open(os.path.join(os.path.dirname(__file__), "terminal.html"), encoding="utf-8") as f:
+        return f.read()
+
+
 @app.route("/")
 def index():
-    # New institutional terminal UI lives in terminal.html; fall back to the
-    # legacy PAGE only if the file is missing.
+    # React terminal (dashboard/ui_dist) when it has been built; otherwise the
+    # legacy single-file terminal.html; otherwise the original PAGE.
+    built = os.path.join(_UI_DIST, "index.html")
+    if os.path.exists(built):
+        return _ui_index()
     tpl = os.path.join(os.path.dirname(__file__), "terminal.html")
     if os.path.exists(tpl):
         with open(tpl, encoding="utf-8") as f:

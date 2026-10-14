@@ -307,3 +307,12 @@ __pycache__/
 node_modules/
 .venv/
 venv/
+
+# Terminal UI (frontend/): the build output Flask serves, and TypeScript build info.
+# scripts/run_terminal.py (or `npm --prefix frontend run build`) regenerates dashboard/ui_dist.
+dashboard/ui_dist/
+*.tsbuildinfo
+
+# The terminal UI is a real npm project: its manifest and lockfile ARE source (CI runs `npm ci`). The rules above ignore them repo-wide.
+!frontend/package.json
+!frontend/package-lock.json
