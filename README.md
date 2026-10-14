@@ -71,7 +71,19 @@ and major foreign listings — served at `http://127.0.0.1:5057`.
 - **Forecast benchmark** (`lab/forecast_benchmark.py`) — leakage-free walk-forward harness
   that gates any heavy time-series model against simple baselines before adoption.
 
-Run: `python dashboard/app.py` → open `http://127.0.0.1:5057`. See
+Run the whole terminal (API + React UI) with one command:
+
+```bash
+python scripts/run_terminal.py          # builds the UI if it is stale, serves UI + API on http://127.0.0.1:5057
+python scripts/run_terminal.py --dev    # + Vite hot-reload UI on http://127.0.0.1:5173/ui/ (stops both on Ctrl+C)
+```
+
+Needs Python 3.11+ and Node 20+ (Node is only needed to build/develop the UI; without a built bundle
+`python dashboard/app.py` still serves the legacy page at `/`). The UI lives in [`frontend/`](frontend/README.md);
+the old single-file terminal stays reachable at `/legacy`. The terminal is read-only and paper-only.
+To see what the cloud runtime is doing from the local dashboard (read-only snapshot, never merged with your local ledger):
+`python scripts/sync_cloud_data.py`, then use **Ledger: Cloud** in the top bar — see [`docs/CLOUD_SYNC.md`](docs/CLOUD_SYNC.md).
+See
 [`TERMINAL_AUDIT.md`](TERMINAL_AUDIT.md), [`MODEL_EVALUATION.md`](MODEL_EVALUATION.md),
 [`DATA_PROVIDER_MATRIX.md`](DATA_PROVIDER_MATRIX.md) and
 [`VERIFICATION_REPORT.md`](VERIFICATION_REPORT.md).
