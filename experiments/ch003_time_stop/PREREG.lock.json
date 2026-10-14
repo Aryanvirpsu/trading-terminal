@@ -1,0 +1,10 @@
+{
+  "file": "PREREG.md",
+  "sha256": "86a17b3bbc4d2fe95be4a9ad74b7af258d7606be4c54459c36cce548b6936352",
+  "locked_at": "2026-10-14T00:40:51.437713+00:00",
+  "locked_by": "Claude (Sonnet 5.5), at the user's direction",
+  "repo_head_at_lock": "51cf80ea031facf89c5efcf50becb3b234423aa5",
+  "results_computed_before_lock": false,
+  "data_seen_before_lock": "the descriptive diagnosis in ../diagnosis_no_entries_20261013 only (backup 20261012T202501Z)",
+  "note": "ch003.py verifies this hash before running; an edited pre-registration invalidates the experiment. Commit PREREG.md and this file BEFORE RESULTS.md exists."
+}

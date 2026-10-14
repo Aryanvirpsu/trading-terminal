@@ -9,3 +9,7 @@
 # docs/C0_DEPENDENCY_FREEZE.md); this makes that the enforced, permanent policy rather
 # than an accident of how they happened to be created.
 docker/** text=auto eol=lf
+
+# CH-003 hash-locked files (PREREG.md, PREREG.lock.json, engine.py, ch003.py, CODE.lock.json) are verified by sha256 over their exact
+# bytes. Same failure mode as docker/ above: with core.autocrlf=true a Windows checkout would rewrite them to CRLF and break the lock.
+experiments/ch003_time_stop/** text=auto eol=lf
