@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 ## [Unreleased]
 
 ### Fixed
+- **Paper ledger: phantom exit fills (2026-10-16 `ledger_inconsistent`)**: a target touched but not traded through queued
+  another full-size exit order on every tracker cycle (the tracker's `high` is the running daily high); when the high
+  cleared the target they all filled in one pass and every fill after the first had no position behind it, so `reconcile()`
+  failed permanently. `process_order` now cancels an exit order that has no open position (no fill row);
+  `manage_open_positions` keeps one working exit order per symbol and intent; `_partial` can no longer fill more than was
+  ordered; a partial exit's realized P&L is carried into the close and counted in the account's cash; `reconcile()` leaves
+  audited phantom fills out of the rebuild and lists them; `health()` returns the reconcile amounts and degrades on
+  historical phantoms; the ops workflow takes the off-host backup even when the health probe fails.
+  See `docs/LEDGER_RECONCILE_INCIDENT_20261016.md`.
 - **`coin_analysis` ATR null bug**: `tradingview_ta` omits the `ATR` column from
   its analysis payload, which left `indicators["ATR"]` (and every downstream
   consumer — stop-loss sizing, trade-quality score, volatility metrics) at
