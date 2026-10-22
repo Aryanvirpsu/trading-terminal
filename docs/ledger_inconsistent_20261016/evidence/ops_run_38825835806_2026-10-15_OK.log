@@ -1,0 +1,325 @@
+probe	UNKNOWN STEP	﻿2026-10-15T23:49:13.1159858Z Current runner version: '2.337.0'
+##[group]Runner Image Provisioner
+Hosted Compute Agent
+Version: 20261012.601
+Commit: f3dc54e1fb89da6852db922499a0233137369e1d
+Build Date: 2026-10-12T17:48:21Z
+Worker ID: {fbda8572-2b4a-4760-ab01-33f083d270c0}
+Region: centralus
+Cloud: Azure
+##[endgroup]
+##[group]Operating System
+Ubuntu
+24.04.5
+LTS
+##[endgroup]
+##[group]Runner Image
+Image: ***-24.04
+Version: 20261012.334.1
+Included Software: https://github.com/actions/runner-images/blob/***24/20261012.334/images/***/Ubuntu2404-Readme.md
+Image Release: https://github.com/actions/runner-images/releases/tag/***24%2F20261012.334
+##[endgroup]
+##[group]GITHUB_TOKEN Permissions
+Contents: read
+Metadata: read
+##[endgroup]
+Secret source: Actions
+Cache mode: write
+Prepare workflow directory
+Prepare all required actions
+Complete job name: probe
+##[group]Run install -m 700 -d ~/.ssh
+^[[36;1minstall -m 700 -d ~/.ssh^[[0m
+^[[36;1mprintf '%s\n' "***^[[0m
+^[[36;1m***^[[0m
+^[[36;1m***^[[0m
+^[[36;1m***^[[0m
+^[[36;1m***^[[0m
+^[[36;1m***^[[0m
+^[[36;1m***" > ~/.ssh/k && chmod 600 ~/.ssh/k^[[0m
+^[[36;1mprintf '%s\n' "***^[[0m
+^[[36;1m***" > ~/.ssh/known_hosts^[[0m
+^[[36;1mecho "SSH=ssh -i $HOME/.ssh/k -o IdentitiesOnly=yes -o BatchMode=yes ***@***" >> "$GITHUB_ENV"^[[0m
+shell: /usr/bin/bash -e {0}
+##[endgroup]
+##[group]Run $SSH status | tee status.json
+^[[36;1m$SSH status | tee status.json^[[0m
+shell: /usr/bin/bash -e {0}
+env:
+  SSH: ssh -i /home/runner/.ssh/k -o IdentitiesOnly=yes -o BatchMode=yes ***@***
+##[endgroup]
+{
+  "healthy": true,
+  "unhealthy": [],
+  "degraded": [],
+  "in_session": false,
+  "session_date": "2026-10-15",
+  "et_now": "2026-10-15T19:49:15-04:00",
+  "heartbeat_age_s": 1.472313,
+  "last_discovery": {
+    "at": "2026-10-15T19:50:37+00:00",
+    "slot": "2026-10-15:discovery@1550",
+    "cycle_id": "2026-10-15T1550",
+    "state": "ok",
+    "session_type": "post_cutoff",
+    "entries_allowed": false,
+    "finalists": 5,
+    "tradeable": 3,
+    "entries": 0,
+    "account": {
+      "cash": 169.12,
+      "available_cash": 169.12,
+      "buying_power": 69.12,
+      "open_positions": 3,
+      "entries_today": 1,
+      "sector_positions": {
+        "communication": 1,
+        "energy": 1,
+        "health_care": 1
+      },
+      "equity": 497.34
+    }
+  },
+  "last_tracker": {
+    "at": "2026-10-15T20:04:18+00:00",
+    "scope": "all",
+    "symbols": 24,
+    "exits": 0,
+    "quote_age_s_max": 9.5,
+    "quotes_missing": []
+  },
+  "last_backup": {
+    "at": "2026-10-15T20:10:09+00:00",
+    "ok": true,
+    "path": "/data/case1/paper/backups/20261015T201009Z"
+  },
+  "last_exception": null,
+  "counters": {
+    "discovery_runs": 405,
+    "tracker_fast": 4690,
+    "tracker_full": 1185,
+    "discovery_failures": 0,
+    "provider_failures": 0
+  },
+  "disk": {
+    "free_pct": 87.6,
+    "free_gb": 44.6,
+    "low": false
+  },
+  "shadow": {
+    "ok": true,
+    "last_cycle": {
+      "cycle_id": "2026-10-15T1550",
+      "session_date": "2026-10-15",
+      "scan_ts": "2026-10-15T19:50:06+00:00",
+      "finalists": 5,
+      "eligible": 3
+    },
+    "counts": {
+      "shadow_cycles": 405,
+      "shadow_candidates": 2021,
+      "shadow_events": 59,
+      "shadow_bars_5m": 40404,
+      "shadow_ch001_results": 2
+    },
+    "path": "/data/case1/paper/shadow/shadow_candidates.db"
+  },
+  "restore_ok": true,
+  "started_at": "2026-10-08T05:42:48+00:00",
+  "code_version": "b236d54a469475b7c6ac7c1980b1e4b30e10de0d",
+  "offhost": {
+    "backup": "20261014T202503Z",
+    "at": "2026-10-15T00:04:24+00:00",
+    "age_hours": 23.7
+  },
+  "latest_backup": "20261015T202501Z"
+}
+##[group]Run $SSH health
+^[[36;1m$SSH health^[[0m
+shell: /usr/bin/bash -e {0}
+env:
+  SSH: ssh -i /home/runner/.ssh/k -o IdentitiesOnly=yes -o BatchMode=yes ***@***
+##[endgroup]
+healthy
+##[group]Run $SSH evidence
+^[[36;1m$SSH evidence^[[0m
+shell: /usr/bin/bash -e {0}
+env:
+  SSH: ssh -i /home/runner/.ssh/k -o IdentitiesOnly=yes -o BatchMode=yes ***@***
+##[endgroup]
+{
+  "version": "v1.1",
+  "boundary": {
+    "version": "v1.1",
+    "at": "2026-09-25T13:35:22.033300+00:00",
+    "cycle_id": "2026-09-25T0935",
+    "session_date": "2026-09-25",
+    "equity": 504.66,
+    "cash": 504.66,
+    "open_positions": 0,
+    "realized_pnl": 4.66,
+    "entries_today": 0,
+    "ledger_signals": 55,
+    "ledger_orders": 4,
+    "ledger_positions": 2,
+    "note": "starting snapshot taken before the first real in-session cycle of this version"
+  },
+  "current_equity": 496.86,
+  "v11_pnl": -7.8,
+  "ledger_signals_by_engine_version": {
+    "decision_engine/gates-v1": 55,
+    "decision_engine/gates-v1.1": 307
+  },
+  "v11_positions_opened": 5,
+  "v11_positions_closed": 2
+}
+Cleaning up orphan processes
+backup	UNKNOWN STEP	﻿2026-10-15T23:49:26.9312434Z Current runner version: '2.337.0'
+##[group]Runner Image Provisioner
+Hosted Compute Agent
+Version: 20261012.601
+Commit: f3dc54e1fb89da6852db922499a0233137369e1d
+Build Date: 2026-10-12T17:48:21Z
+Worker ID: {51c0632a-753c-40f6-a189-72cb6a3ac885}
+Region: westcentralus
+Cloud: Azure
+##[endgroup]
+##[group]Operating System
+Ubuntu
+24.04.5
+LTS
+##[endgroup]
+##[group]Runner Image
+Image: ***-24.04
+Version: 20261012.334.1
+Included Software: https://github.com/actions/runner-images/blob/***24/20261012.334/images/***/Ubuntu2404-Readme.md
+Image Release: https://github.com/actions/runner-images/releases/tag/***24%2F20261012.334
+##[endgroup]
+##[group]GITHUB_TOKEN Permissions
+Contents: read
+Metadata: read
+##[endgroup]
+Secret source: Actions
+Cache mode: write
+Prepare workflow directory
+Prepare all required actions
+Getting action download info
+Download action repository 'actions/upload-artifact@v4' (SHA:ea165f8d65b6e75b540449e92b4886f43607fa02)
+Complete job name: backup
+##[group]Run install -m 700 -d ~/.ssh
+^[[36;1minstall -m 700 -d ~/.ssh^[[0m
+^[[36;1mprintf '%s\n' "***^[[0m
+^[[36;1m***^[[0m
+^[[36;1m***^[[0m
+^[[36;1m***^[[0m
+^[[36;1m***^[[0m
+^[[36;1m***^[[0m
+^[[36;1m***" > ~/.ssh/k && chmod 600 ~/.ssh/k^[[0m
+^[[36;1mprintf '%s\n' "***^[[0m
+^[[36;1m***" > ~/.ssh/known_hosts^[[0m
+^[[36;1mecho "SSH=ssh -i $HOME/.ssh/k -o IdentitiesOnly=yes -o BatchMode=yes ***@***" >> "$GITHUB_ENV"^[[0m
+shell: /usr/bin/bash -e {0}
+##[endgroup]
+##[group]Run $SSH verify-backup | tee host-verify.json
+^[[36;1m$SSH verify-backup | tee host-verify.json^[[0m
+shell: /usr/bin/bash -e {0}
+env:
+  SSH: ssh -i /home/runner/.ssh/k -o IdentitiesOnly=yes -o BatchMode=yes ***@***
+##[endgroup]
+{
+  "backup": "20261015T202501Z",
+  "ok": true,
+  "problems": [],
+  "manifest": {
+    "created_iso": "2026-10-15T20:25:03+00:00",
+    "reason": "ops",
+    "runtime_version": "b236d54a469475b7c6ac7c1980b1e4b30e10de0d",
+    "engine_version": "decision_engine/gates-v1.1",
+    "ok": true
+  },
+  "files": {
+    "robinhood_500_baseline.db": {
+      "sha256_match": true,
+      "integrity": "ok",
+      "bytes": 2940928
+    },
+    "shadow__shadow_candidates.db": {
+      "sha256_match": true,
+      "integrity": "ok",
+      "bytes": 9662464
+    }
+  }
+}
+##[group]Run $SSH backup-pull > backup.tgz && ls -l backup.tgz
+^[[36;1m$SSH backup-pull > backup.tgz && ls -l backup.tgz^[[0m
+shell: /usr/bin/bash -e {0}
+env:
+  SSH: ssh -i /home/runner/.ssh/k -o IdentitiesOnly=yes -o BatchMode=yes ***@***
+##[endgroup]
+-rw-r--r-- 1 runner runner 2336798 Oct 15 23:49 backup.tgz
+##[group]Run mkdir verify && tar -xzf backup.tgz -C verify
+^[[36;1mmkdir verify && tar -xzf backup.tgz -C verify^[[0m
+^[[36;1md=$(ls verify | head -1)^[[0m
+^[[36;1mpython3 - "verify/$d" <<'PY'^[[0m
+^[[36;1mimport hashlib, json, os, sqlite3, sys^[[0m
+^[[36;1md = sys.argv[1]^[[0m
+^[[36;1mm = json.load(open(os.path.join(d, "MANIFEST.json")))^[[0m
+^[[36;1massert m["ok"], "host-side manifest not ok"^[[0m
+^[[36;1mnames = sorted(m["files"])^[[0m
+^[[36;1massert any(n.startswith("shadow__") for n in names), "shadow DB missing from backup"^[[0m
+^[[36;1massert any(not n.startswith("shadow__") for n in names), "ledger missing from backup"^[[0m
+^[[36;1mfor n, meta in m["files"].items():^[[0m
+^[[36;1m    p = os.path.join(d, n)^[[0m
+^[[36;1m    assert hashlib.sha256(open(p, "rb").read()).hexdigest() == meta["sha256"], f"sha mismatch {n}"^[[0m
+^[[36;1m    assert sqlite3.connect(p).execute("PRAGMA integrity_check").fetchone()[0] == "ok", f"integrity {n}"^[[0m
+^[[36;1m    print("verified", n, os.path.getsize(p), "bytes")^[[0m
+^[[36;1mprint("backup", os.path.basename(d), "verified off-host")^[[0m
+^[[36;1mPY^[[0m
+^[[36;1mecho "BACKUP_NAME=$d" >> "$GITHUB_ENV"^[[0m
+shell: /usr/bin/bash -e {0}
+env:
+  SSH: ssh -i /home/runner/.ssh/k -o IdentitiesOnly=yes -o BatchMode=yes ***@***
+##[endgroup]
+verified robinhood_500_baseline.db 2940928 bytes
+verified shadow__shadow_candidates.db 9662464 bytes
+backup 20261015T202501Z verified off-host
+##[group]Run actions/upload-artifact@v4
+with:
+  name: avdi-***-backup-20
+  path: backup.tgz
+  retention-days: 90
+  if-no-files-found: error
+  compression-level: 6
+  overwrite: false
+  include-hidden-files: false
+env:
+  SSH: ssh -i /home/runner/.ssh/k -o IdentitiesOnly=yes -o BatchMode=yes ***@***
+  BACKUP_NAME: 20261015T202501Z
+##[endgroup]
+(node:2195) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+(Use `node --trace-deprecation ...` to show where the warning was created)
+With the provided path, there will be 1 file uploaded
+Artifact name is valid!
+Root directory input is valid!
+Beginning upload of artifact content to blob storage
+(node:2195) [DEP0169] DeprecationWarning: `url.parse()` behavior is not standardized and prone to errors that have security implications. Use the WHATWG URL API instead. CVEs are not issued for `url.parse()` vulnerabilities.
+Uploaded bytes 2315146
+Finished uploading artifact content to blob storage!
+SHA256 digest of uploaded artifact zip is 38e1c015cf1602bfb1b8ffb2f914d3d1939e6182806e4251eb8478fd1a68a29d
+Finalizing artifact upload
+Artifact avdi-***-backup-20.zip successfully finalized. Artifact ID 12014184836
+Artifact avdi-***-backup-20 has been successfully uploaded! Final size is 2315146 bytes. Artifact ID is 12014184836
+Artifact download URL: https://github.com/Aryanvirpsu/trading-terminal/actions/runs/38825835806/artifacts/12014184836
+##[group]Run $SSH "offhost-ack $BACKUP_NAME"
+^[[36;1m$SSH "offhost-ack $BACKUP_NAME"^[[0m
+shell: /usr/bin/bash -e {0}
+env:
+  SSH: ssh -i /home/runner/.ssh/k -o IdentitiesOnly=yes -o BatchMode=yes ***@***
+  BACKUP_NAME: 20261015T202501Z
+##[endgroup]
+{
+  "backup": "20261015T202501Z",
+  "at": "2026-10-15T23:49:34+00:00"
+}
+Cleaning up orphan processes
+##[warning]Node.js 20 is deprecated. The following actions target Node.js 20 but are being forced to run on Node.js 24: actions/upload-artifact@v4. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/

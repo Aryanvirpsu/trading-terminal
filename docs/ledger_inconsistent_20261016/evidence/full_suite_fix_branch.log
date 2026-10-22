@@ -1,0 +1,178 @@
+........................................................................ [  4%]
+..........................................................F..F.......... [  9%]
+........................................................................ [ 14%]
+........................................................................ [ 19%]
+........................................................................ [ 24%]
+........................................................................ [ 29%]
+..............F..................F...F.................................. [ 34%]
+........................................................................ [ 39%]
+........................................................................ [ 44%]
+........................................................................ [ 49%]
+........................................................................ [ 54%]
+........................................................................ [ 59%]
+........................................................................ [ 64%]
+........................................................................ [ 69%]
+........................................................................ [ 74%]
+........................................................................ [ 79%]
+........................................................................ [ 84%]
+........................................................................ [ 89%]
+........................................................................ [ 94%]
+........................................................................ [ 99%]
+..                                                                       [100%]
+================================== FAILURES ===================================
+___________ test_oi_policy_has_no_overlapping_hard_and_soft_ranges ____________
+
+    def test_oi_policy_has_no_overlapping_hard_and_soft_ranges():
+        """Invariant (v1.1 correction 1): the canonical OI policy must be exactly
+        one two-threshold model (OI<X -> HARD FAIL, X<=OI<Y -> SOFT, OI>=Y ->
+        ADEQUATE+). X and Y are explicitly left open (v1.1 §v6 — INSUFFICIENT DATA);
+        this test does NOT assume X=50 or X=250.
+    
+        Instead it proves the CURRENT problem the lock exists to fix: today's two
+        competing implementations do not even agree on how many thresholds exist,
+        let alone where they sit.
+    
+        Exercises: options_grading.grade_contract(), options_desk.analyse_contract().
+    
+        Expected: FAIL — reuses the audit's Phase 1 OI sweep, where the two
+        functions disagreed at OI=50 and OI=100.
+    
+        Deliberately left red (Phase 3, Canonical Option Architecture v1.1 Step
+        10 migration): per the migration's own rule, legacy scoring functions
+        are not required to agree with each other, only to be unable to
+        override canonical's `eligible`/`quantity`/`executable` authority for
+        ANY live execution path — that containment is what actually matters,
+        and it is proven, green, and structural (grep-based, not fixture-based)
+        in tests/unit/test_pipeline3_canonical_migration.py::
+        test_legacy_grader_disagreement_cannot_override_d. This test stays red
+        forever as an honest record that grade_contract()/analyse_contract()
+        themselves were never unified — that was explicitly out of scope.
+        """
+        disagreements = []
+        for oi in (0, 25, 50, 100, 150, 200, 249, 250, 1000):
+            gc_c, ad_c, spot, side, dte, session_open = _make_fixture(oi=oi)
+            gc = grade_contract(gc_c, spot, side, dte)
+            ad = OD.analyse_contract(ad_c, spot=spot, cfg=_OD_CFG, contracts=1,
+                                      session_open=session_open)
+            if gc["tradeable"] != ad["tradeable"]:
+                disagreements.append((oi, gc["tradeable"], ad["tradeable"]))
+    
+>       assert not disagreements, (
+            "grade_contract() and analyse_contract() disagree on tradeability at "
+            f"OI values {disagreements} — there is no single, agreed OI threshold "
+            "model today. This test asserts AGREEMENT between the two current "
+            "implementations, not a specific X/Y number (those remain open per "
+            "v1.1 §v6)."
+        )
+E       AssertionError: grade_contract() and analyse_contract() disagree on tradeability at OI values [(50, True, False), (100, True, False), (150, True, False), (200, True, False), (249, True, False)] — there is no single, agreed OI threshold model today. This test asserts AGREEMENT between the two current implementations, not a specific X/Y number (those remain open per v1.1 §v6).
+E       assert not [(50, True, False), (100, True, False), (150, True, False), (200, True, False), (249, True, False)]
+
+tests\unit\test_canonical_v11_invariants.py:492: AssertionError
+______________ test_contract_quality_identical_across_pipelines _______________
+
+    def test_contract_quality_identical_across_pipelines():
+        """Load-bearing quality invariant, unchanged from the completed divergence
+        audit (Phase 1) and architecture v1.0/v1.1. The same contract must be
+        judged identically by every pipeline's grader.
+    
+        Exercises: options_grading.grade_contract(), options_desk.analyse_contract().
+    
+        Expected: FAIL — reuses the audit's fixtures for missing Greeks, 0-DTE-
+        adjacent DTE, and a stale quote, all of which disagreed in Phase 1.
+    
+        Deliberately left red (Phase 3, Canonical Option Architecture v1.1 Step
+        10 migration) — see test_oi_policy_has_no_overlapping_hard_and_soft_ranges
+        above for why: the two legacy functions were never required to agree,
+        only to be unable to override canonical's execution authority, which
+        test_pipeline3_canonical_migration.py::test_legacy_grader_disagreement_cannot_override_d
+        proves structurally and keeps green.
+        """
+        cases = {
+            "OI=100": _make_fixture(oi=100),
+            "MISSING_DELTA": _make_fixture(delta=None),
+            "DTE=3": _make_fixture(dte=3),
+            "STALE_QUOTE_72h": _make_fixture(fresh_quote=False, quote_age_hours=72),
+        }
+        disagreements = {}
+        for name, (gc_c, ad_c, spot, side, dte, session_open) in cases.items():
+            gc = grade_contract(gc_c, spot, side, dte)
+            ad = OD.analyse_contract(ad_c, spot=spot, cfg=_OD_CFG, contracts=1,
+                                      session_open=session_open)
+            if gc["tradeable"] != ad["tradeable"]:
+                disagreements[name] = (gc["tradeable"], ad["tradeable"])
+    
+>       assert not disagreements, (
+            f"grade_contract() vs analyse_contract() disagree on: {disagreements} "
+            "— reproduces Phase 1 of the divergence audit; canonical layer A does "
+            "not exist yet to unify them."
+        )
+E       AssertionError: grade_contract() vs analyse_contract() disagree on: {'OI=100': (True, False), 'MISSING_DELTA': (True, False), 'DTE=3': (True, False), 'STALE_QUOTE_72h': (True, False)} — reproduces Phase 1 of the divergence audit; canonical layer A does not exist yet to unify them.
+E       assert not {'OI=100': (True, False), 'MISSING_DELTA': (True, False), 'DTE=3': (True, False), 'STALE_QUOTE_72h': (True, False)}
+
+tests\unit\test_canonical_v11_invariants.py:605: AssertionError
+_________________________ test_transformers_available _________________________
+
+    def test_transformers_available():
+>       assert fb.available() is True          # torch + transformers were installed
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       assert False is True
+E        +  where False = <function available at 0x000001BA29B071C0>()
+E        +    where <function available at 0x000001BA29B071C0> = fb.available
+
+tests\unit\test_finbert_sentiment.py:61: AssertionError
+_______________________________ test_available ________________________________
+
+    def test_available():
+        """Test that the model dependencies are available."""
+>       assert fb.available() is True
+E       assert False is True
+E        +  where False = <function available at 0x000001BA29B071C0>()
+E        +    where <function available at 0x000001BA29B071C0> = fb.available
+
+tests\unit\test_finbert_service.py:37: AssertionError
+______________________________ test_score_force _______________________________
+
+    @pytest.mark.slow
+    def test_score_force():
+        """Test scoring with force=True to load the actual model."""
+        res = fb.score(["Nvidia beats earnings expectations", "Company goes bankrupt"], force=True)
+        assert len(res) == 2
+>       assert res[0]["backend"] == "finbert"
+E       AssertionError: assert 'lexical' == 'finbert'
+E         
+E         - finbert
+E         + lexical
+
+tests\unit\test_finbert_service.py:67: AssertionError
+============================== warnings summary ===============================
+tests\unit\test_finbert_service.py:62
+  C:\Users\aryan vir\AppData\Local\Temp\claude\C--Users-aryan-vir-Aryan-vir-projectsnstuff-trading-terminal\3059552e-cbae-48c1-9c1c-6af21cb8dd08\scratchpad\fixwt\tests\unit\test_finbert_service.py:62: PytestUnknownMarkWarning: Unknown pytest.mark.slow - is this a typo?  You can register custom marks to avoid this warning - for details, see https://docs.pytest.org/en/stable/how-to/mark.html
+    @pytest.mark.slow
+
+tests\unit\test_finbert_service.py:80
+  C:\Users\aryan vir\AppData\Local\Temp\claude\C--Users-aryan-vir-Aryan-vir-projectsnstuff-trading-terminal\3059552e-cbae-48c1-9c1c-6af21cb8dd08\scratchpad\fixwt\tests\unit\test_finbert_service.py:80: PytestUnknownMarkWarning: Unknown pytest.mark.slow - is this a typo?  You can register custom marks to avoid this warning - for details, see https://docs.pytest.org/en/stable/how-to/mark.html
+    @pytest.mark.slow
+
+tests\unit\test_finbert_service.py:90
+  C:\Users\aryan vir\AppData\Local\Temp\claude\C--Users-aryan-vir-Aryan-vir-projectsnstuff-trading-terminal\3059552e-cbae-48c1-9c1c-6af21cb8dd08\scratchpad\fixwt\tests\unit\test_finbert_service.py:90: PytestUnknownMarkWarning: Unknown pytest.mark.slow - is this a typo?  You can register custom marks to avoid this warning - for details, see https://docs.pytest.org/en/stable/how-to/mark.html
+    @pytest.mark.slow
+
+tests/unit/test_decision_logic.py: 1 warning
+tests/unit/test_errors.py: 1 warning
+tests/unit/test_evidence_boundary.py: 4 warnings
+tests/unit/test_evidence_graduation.py: 3 warnings
+tests/unit/test_exchange_fixes.py: 1 warning
+tests/unit/test_executable_risk.py: 1 warning
+tests/unit/test_exit_without_position_no_phantom_fill.py: 1 warning
+tests/unit/test_finbert_sentiment.py: 1 warning
+  C:\Users\aryan vir\AppData\Roaming\Python\Python314\site-packages\tradingview_ta\main.py:90: UserWarning: Interval is empty or not valid, defaulting to 1 day.
+    warnings.warn(
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ===========================
+FAILED tests/unit/test_canonical_v11_invariants.py::test_oi_policy_has_no_overlapping_hard_and_soft_ranges
+FAILED tests/unit/test_canonical_v11_invariants.py::test_contract_quality_identical_across_pipelines
+FAILED tests/unit/test_finbert_sentiment.py::test_transformers_available - as...
+FAILED tests/unit/test_finbert_service.py::test_available - assert False is True
+FAILED tests/unit/test_finbert_service.py::test_score_force - AssertionError:...
+5 failed, 1437 passed, 16 warnings in 57.11s

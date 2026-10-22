@@ -9,7 +9,7 @@
   "evidence/ops_run_39348702596_2026-10-20_FAILED.log": "ea92621bcc8cfd1208f42a3437d690c694908c842c9416125e7fcf8b4c175a1c",
   "evidence/ops_run_39519269890_2026-10-21_FAILED.log": "2bbfc69660c92c7f1f89244c4494ae8e8f514f0949c920843291ba2f217b9869",
   "evidence/ops_run_39698049160_2026-10-22_FAILED.log": "77c7b1401adb77840e461f3a802ff973843b7731c3d71bbe37f71b05bd0f4068",
-  "evidence/ops_run_39709406747_2026-10-22_DISPATCH_from_fix_branch.log": "a9326cf15143d1bc4868b58942ee3e6645de3058f84ffbbe1b6023019d3a1477",
+  "evidence/ops_run_39709406747_2026-10-22_dispatch.log": "a9326cf15143d1bc4868b58942ee3e6645de3058f84ffbbe1b6023019d3a1477",
   "host_evidence_analysis.py": "241c42d7e9165e76543911be205da719bb7c32a987694295831f8b475da78344",
   "host_evidence_results.json": "f9b0aaee2aec6211dbb93ecaf531699a8eed4a1728cf08b9faa393a8472a650d",
   "public_bars_oct16_check.json": "c82c88afa43928a88c2035d52b45305068c5c76c0bdd1cbe1003647312000f8f",
@@ -19,7 +19,7 @@
   "verify_fix_on_damaged_ledger.py": "7e6003ab8e67ecf93c1d42cd87a3c1e2fac54a4109e22d626e25881e0da07b91",
   "verify_fix_results.json": "8dc945e061e566e2fb273e87b8217f967bd195a714aeeb17bdcff35514f51e82"
  },
- "generated_utc": "2026-10-22T02:18:48+00:00",
+ "generated_utc": "2026-10-22T02:19:28+00:00",
  "mirror_sha256": {
   "20261015T202501Z/MANIFEST.json": "52602d7b6266b84b013d7d48d2c99a8610bd15de9856d4c0603308b47ab2e6f1",
   "20261015T202501Z/robinhood_500_baseline.db": "ae3bc665ba05205b64ab2631f3f3f9a6a379f40f25292ac0ddc9d706add0defe",
