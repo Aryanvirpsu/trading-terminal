@@ -1,0 +1,9 @@
+{
+ "data_sha256": {
+  "prices_daily.json.gz": "8438e2f6ec6def85c570f947e2c9628607186c3e344dc58c97c4188ae32fffc1",
+  "universe.json": "c196da609fd942abf22db2048e8f19963ebd5264789a9059379a5e760cdd70fc"
+ },
+ "locked_at_utc": "2026-10-22T04:35:03+00:00",
+ "note": "Locked before any outcome of this strategy was computed on real data. The engine was written and tested on synthetic series only.",
+ "prereg_sha256": "5eef2670802139599de5419806e2bfd45424210c0dd0a8d1bda79bec9efea640"
+}

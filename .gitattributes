@@ -3,3 +3,7 @@
 docker/** text=auto eol=lf
 deploy/** text eol=lf
 *.sh text eol=lf
+# CH-005: hash-locked protocol, code and data must keep byte-exact content on core.autocrlf=true checkouts
+experiments/ch005_pullback_uptrend/** text=auto eol=lf
+experiments/ch005_pullback_uptrend/data/*.gz binary
+tests/unit/test_ch005_engine.py text eol=lf
