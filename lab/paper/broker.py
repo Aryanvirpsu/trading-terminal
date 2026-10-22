@@ -546,13 +546,38 @@ def snapshot_equity(session_date: Optional[str] = None) -> Dict[str, Any]:
 RECONCILE_TOLERANCE_USD = 0.05
 
 
+def phantom_fills() -> List[Dict[str, Any]]:
+    """Fills recorded for an EXIT order that had no open position left to sell.
+
+    Before the fix in process_order() (2026-10 incident: several pending exit orders for one position all filled in one
+    pass), such an order still inserted a fill row, and the position code then logged `exit_without_position` against the
+    order.  That fill never moved any shares or cash in the positions table, so counting it would make reconcile() fail for
+    ever.  A fill is treated as phantom only when ALL hold: its order is an exit (intent != 'entry'), and the ledger itself
+    audited `exit_without_position` for that exact order.  Anything else that disagrees with the positions table still
+    fails closed.  New phantom fills cannot be created any more (process_order cancels such orders without a fill), so a
+    non-empty result is only ever historical and is surfaced, not hidden (reconcile() lists it; health() degrades)."""
+    rows = db.query("""SELECT f.fill_id, f.order_id, o.symbol, o.side, f.quantity, f.price, f.fees
+                       FROM fills f JOIN orders o ON o.order_id=f.order_id
+                       WHERE o.intent != 'entry' AND EXISTS (
+                           SELECT 1 FROM audit a WHERE a.entity='order' AND a.entity_id=o.order_id
+                                                   AND a.event='exit_without_position')""")
+    return [{"fill_id": r["fill_id"], "order_id": r["order_id"], "symbol": r["symbol"], "side": r["side"],
+             "quantity": r["quantity"], "price": r["price"], "fees": r["fees"] or 0.0,
+             "notional": round(r["quantity"] * r["price"], 4)} for r in rows]
+
+
 def reconcile() -> Dict[str, Any]:
     """Independent P&L check: rebuild cash from fills and compare to the ledger.
-    A mismatch beyond RECONCILE_TOLERANCE_USD is a data-integrity violation and must fail loudly."""
+    A mismatch beyond RECONCILE_TOLERANCE_USD is a data-integrity violation and must fail loudly.
+    Audited phantom fills (see phantom_fills()) are excluded from the rebuild and listed in the result."""
     cash = cfg.account().initial_cash
-    for f in db.query("""SELECT f.quantity, f.price, f.fees, o.side
+    phantom = phantom_fills()
+    phantom_ids = {p["fill_id"] for p in phantom}
+    for f in db.query("""SELECT f.fill_id, f.quantity, f.price, f.fees, o.side
                          FROM fills f JOIN orders o ON o.order_id=f.order_id
                          ORDER BY f.filled_at"""):
+        if f["fill_id"] in phantom_ids:
+            continue
         notional = f["quantity"] * f["price"]
         cash += (-notional if f["side"] == "BUY" else notional) - (f["fees"] or 0)
     st = risk_mod.account_state()
@@ -564,5 +589,5 @@ def reconcile() -> Dict[str, Any]:
     ok = abs(delta) <= RECONCILE_TOLERANCE_USD
     return {"reconciled": ok, "cash_from_fills": cash_r,
             "cash_from_state": st["cash"], "delta": delta,
-            "equity": st["equity"],
+            "equity": st["equity"], "excluded_phantom_fills": phantom,
             "note": "ok" if ok else "MISMATCH — investigate before trusting P&L"}

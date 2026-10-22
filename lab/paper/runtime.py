@@ -768,13 +768,21 @@ def health(now: Optional[dt.datetime] = None, state: Optional[Dict[str, Any]] = 
     if dup:
         degraded.append("duplicate_runtime_attempted")
     led = ledger_status()
+    reconcile_detail: Optional[Dict[str, Any]] = None
     if not led["ok"]:
         bad.append("db_inaccessible")
     else:
         try:
             from . import broker
-            if not broker.reconcile()["reconciled"]:
+            rec = broker.reconcile()
+            # The amounts, not just the verdict: a failure must explain itself in the very first status read.
+            reconcile_detail = {"reconciled": rec["reconciled"], "delta": rec["delta"],
+                                "cash_from_fills": rec["cash_from_fills"], "cash_from_state": rec["cash_from_state"],
+                                "excluded_phantom_fills": len(rec.get("excluded_phantom_fills") or [])}
+            if not rec["reconciled"]:
                 bad.append("ledger_inconsistent")
+            if rec.get("excluded_phantom_fills"):
+                degraded.append("phantom_fills_excluded")      # historical, audited; visible until someone reviews it
         except Exception:
             bad.append("db_inaccessible")
     dsk = disk_status()
@@ -812,6 +820,7 @@ def health(now: Optional[dt.datetime] = None, state: Optional[Dict[str, Any]] = 
             "heartbeat_age_s": hb_age, "last_discovery": state.get("last_discovery"),
             "last_tracker": state.get("last_tracker"), "last_backup": state.get("last_backup"),
             "last_exception": state.get("last_exception"), "counters": ctr, "disk": dsk,
-            "shadow": sh, "restore_ok": state.get("restore_ok"), "started_at": state.get("started_at"),
+            "shadow": sh, "reconcile": reconcile_detail,
+            "restore_ok": state.get("restore_ok"), "started_at": state.get("started_at"),
             "code_version": os.environ.get("AVDI_CODE_VERSION", "unknown"), "offhost": oh,
             "latest_backup": latest_backup()}
