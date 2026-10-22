@@ -1,0 +1,968 @@
+{
+ "fetch_errors": {},
+ "fetched_at_utc": "2026-10-22T04:27:19+00:00",
+ "per_symbol": {
+  "AAPL": {
+   "first": "2014-01-02",
+   "last": "2026-10-21",
+   "n": 3220,
+   "null_rows": 0,
+   "splits": [
+    [
+     "2014-06-09",
+     7.0,
+     1.0
+    ],
+    [
+     "2020-08-31",
+     4.0,
+     1.0
+    ]
+   ],
+   "tz": "America/New_York"
+  },
+  "ABBV": {
+   "first": "2014-01-02",
+   "last": "2026-10-21",
+   "n": 3220,
+   "null_rows": 0,
+   "splits": [],
+   "tz": "America/New_York"
+  },
+  "ABT": {
+   "first": "2014-01-02",
+   "last": "2026-10-21",
+   "n": 3220,
+   "null_rows": 0,
+   "splits": [],
+   "tz": "America/New_York"
+  },
+  "ADBE": {
+   "first": "2014-01-02",
+   "last": "2026-10-21",
+   "n": 3220,
+   "null_rows": 0,
+   "splits": [],
+   "tz": "America/New_York"
+  },
+  "AEP": {
+   "first": "2014-01-02",
+   "last": "2026-10-21",
+   "n": 3220,
+   "null_rows": 0,
+   "splits": [],
+   "tz": "America/New_York"
+  },
+  "AMD": {
+   "first": "2014-01-02",
+   "last": "2026-10-21",
+   "n": 3220,
+   "null_rows": 0,
+   "splits": [],
+   "tz": "America/New_York"
+  },
+  "AMGN": {
+   "first": "2014-01-02",
+   "last": "2026-10-21",
+   "n": 3220,
+   "null_rows": 0,
+   "splits": [],
+   "tz": "America/New_York"
+  },
+  "AMT": {
+   "first": "2014-01-02",
+   "last": "2026-10-21",
+   "n": 3220,
+   "null_rows": 0,
+   "splits": [],
+   "tz": "America/New_York"
+  },
+  "AMZN": {
+   "first": "2014-01-02",
+   "last": "2026-10-21",
+   "n": 3220,
+   "null_rows": 0,
+   "splits": [
+    [
+     "2022-06-06",
+     20.0,
+     1.0
+    ]
+   ],
+   "tz": "America/New_York"
+  },
+  "APD": {
+   "first": "2014-01-02",
+   "last": "2026-10-21",
+   "n": 3220,
+   "null_rows": 0,
+   "splits": [
+    [
+     "2016-10-03",
+     1081.0,
+     1000.0
+    ]
+   ],
+   "tz": "America/New_York"
+  },
+  "AVB": {
+   "first": "2026-08-14",
+   "last": "2026-08-14",
+   "n": 1,
+   "null_rows": 0,
+   "splits": [
+    [
+     "2026-08-14",
+     2.793,
+     1.0
+    ]
+   ],
+   "tz": "America/New_York"
+  },
+  "AVGO": {
+   "first": "2014-01-02",
+   "last": "2026-10-21",
+   "n": 3220,
+   "null_rows": 0,
+   "splits": [
+    [
+     "2024-07-15",
+     10.0,
+     1.0
+    ]
+   ],
+   "tz": "America/New_York"
+  },
+  "AXP": {
+   "first": "2014-01-02",
+   "last": "2026-10-21",
+   "n": 3220,
+   "null_rows": 0,
+   "splits": [],
+   "tz": "America/New_York"
+  },
+  "BA": {
+   "first": "2014-01-02",
+   "last": "2026-10-21",
+   "n": 3220,
+   "null_rows": 0,
+   "splits": [],
+   "tz": "America/New_York"
+  },
+  "BAC": {
+   "first": "2014-01-02",
+   "last": "2026-10-21",
+   "n": 3220,
+   "null_rows": 0,
+   "splits": [],
+   "tz": "America/New_York"
+  },
+  "BRK-B": {
+   "first": "2014-01-02",
+   "last": "2026-10-21",
+   "n": 3220,
+   "null_rows": 0,
+   "splits": [],
+   "tz": "America/New_York"
+  },
+  "CAT": {
+   "first": "2014-01-02",
+   "last": "2026-10-21",
+   "n": 3220,
+   "null_rows": 0,
+   "splits": [],
+   "tz": "America/New_York"
+  },
+  "CB": {
+   "first": "2014-01-02",
+   "last": "2026-10-21",
+   "n": 3220,
+   "null_rows": 0,
+   "splits": [],
+   "tz": "America/New_York"
+  },
+  "CCI": {
+   "first": "2014-01-02",
+   "last": "2026-10-21",
+   "n": 3220,
+   "null_rows": 0,
+   "splits": [],
+   "tz": "America/New_York"
+  },
+  "CEG": {
+   "first": "2022-01-19",
+   "last": "2026-10-21",
+   "n": 1194,
+   "null_rows": 0,
+   "splits": [],
+   "tz": "America/New_York"
+  },
+  "CL": {
+   "first": "2014-01-02",
+   "last": "2026-10-21",
+   "n": 3220,
+   "null_rows": 0,
+   "splits": [],
+   "tz": "America/New_York"
+  },
+  "CMG": {
+   "first": "2014-01-02",
+   "last": "2026-10-21",
+   "n": 3220,
+   "null_rows": 0,
+   "splits": [
+    [
+     "2024-06-26",
+     50.0,
+     1.0
+    ]
+   ],
+   "tz": "America/New_York"
+  },
+  "COP": {
+   "first": "2014-01-02",
+   "last": "2026-10-21",
+   "n": 3220,
+   "null_rows": 0,
+   "splits": [],
+   "tz": "America/New_York"
+  },
+  "COST": {
+   "first": "2014-01-02",
+   "last": "2026-10-21",
+   "n": 3220,
+   "null_rows": 0,
+   "splits": [],
+   "tz": "America/New_York"
+  },
+  "CRM": {
+   "first": "2014-01-02",
+   "last": "2026-10-21",
+   "n": 3220,
+   "null_rows": 0,
+   "splits": [],
+   "tz": "America/New_York"
+  },
+  "CSCO": {
+   "first": "2014-01-02",
+   "last": "2026-10-21",
+   "n": 3220,
+   "null_rows": 0,
+   "splits": [],
+   "tz": "America/New_York"
+  },
+  "CVX": {
+   "first": "2014-01-02",
+   "last": "2026-10-21",
+   "n": 3220,
+   "null_rows": 0,
+   "splits": [],
+   "tz": "America/New_York"
+  },
+  "DE": {
+   "first": "2014-01-02",
+   "last": "2026-10-21",
+   "n": 3220,
+   "null_rows": 0,
+   "splits": [],
+   "tz": "America/New_York"
+  },
+  "DELL": {
+   "first": "2016-08-17",
+   "last": "2026-10-21",
+   "n": 2559,
+   "null_rows": 0,
+   "splits": [
+    [
+     "2018-12-28",
+     1806.0,
+     1000.0
+    ],
+    [
+     "2021-11-02",
+     1973.0,
+     1000.0
+    ]
+   ],
+   "tz": "America/New_York"
+  },
+  "DIS": {
+   "first": "2014-01-02",
+   "last": "2026-10-21",
+   "n": 3220,
+   "null_rows": 0,
+   "splits": [],
+   "tz": "America/New_York"
+  },
+  "DUK": {
+   "first": "2014-01-02",
+   "last": "2026-10-21",
+   "n": 3220,
+   "null_rows": 0,
+   "splits": [],
+   "tz": "America/New_York"
+  },
+  "EOG": {
+   "first": "2014-01-02",
+   "last": "2026-10-21",
+   "n": 3220,
+   "null_rows": 0,
+   "splits": [
+    [
+     "2014-04-01",
+     2.0,
+     1.0
+    ]
+   ],
+   "tz": "America/New_York"
+  },
+  "EQIX": {
+   "first": "2014-01-02",
+   "last": "2026-10-21",
+   "n": 3220,
+   "null_rows": 0,
+   "splits": [],
+   "tz": "America/New_York"
+  },
+  "EXC": {
+   "first": "2014-01-02",
+   "last": "2026-10-21",
+   "n": 3220,
+   "null_rows": 0,
+   "splits": [
+    [
+     "2022-02-02",
+     1402.0,
+     1000.0
+    ]
+   ],
+   "tz": "America/New_York"
+  },
+  "F": {
+   "first": "2014-01-02",
+   "last": "2026-10-21",
+   "n": 3220,
+   "null_rows": 0,
+   "splits": [],
+   "tz": "America/New_York"
+  },
+  "FCX": {
+   "first": "2014-01-02",
+   "last": "2026-10-21",
+   "n": 3220,
+   "null_rows": 0,
+   "splits": [],
+   "tz": "America/New_York"
+  },
+  "GILD": {
+   "first": "2014-01-02",
+   "last": "2026-10-21",
+   "n": 3220,
+   "null_rows": 0,
+   "splits": [],
+   "tz": "America/New_York"
+  },
+  "GM": {
+   "first": "2014-01-02",
+   "last": "2026-10-21",
+   "n": 3220,
+   "null_rows": 0,
+   "splits": [],
+   "tz": "America/New_York"
+  },
+  "GOOGL": {
+   "first": "2014-01-02",
+   "last": "2026-10-21",
+   "n": 3220,
+   "null_rows": 0,
+   "splits": [
+    [
+     "2014-04-03",
+     1998.0,
+     1000.0
+    ],
+    [
+     "2022-07-18",
+     20.0,
+     1.0
+    ]
+   ],
+   "tz": "America/New_York"
+  },
+  "HAL": {
+   "first": "2014-01-02",
+   "last": "2026-10-21",
+   "n": 3220,
+   "null_rows": 0,
+   "splits": [],
+   "tz": "America/New_York"
+  },
+  "HD": {
+   "first": "2014-01-02",
+   "last": "2026-10-21",
+   "n": 3220,
+   "null_rows": 0,
+   "splits": [],
+   "tz": "America/New_York"
+  },
+  "HON": {
+   "first": "2014-01-02",
+   "last": "2026-10-21",
+   "n": 3220,
+   "null_rows": 0,
+   "splits": [
+    [
+     "2016-10-03",
+     10000.0,
+     9947.0
+    ],
+    [
+     "2018-10-01",
+     1011.0,
+     1000.0
+    ],
+    [
+     "2018-10-29",
+     1032.0,
+     1000.0
+    ],
+    [
+     "2025-10-30",
+     1061.0,
+     1000.0
+    ],
+    [
+     "2026-06-29",
+     1907.0,
+     2000.0
+    ]
+   ],
+   "tz": "America/New_York"
+  },
+  "JNJ": {
+   "first": "2014-01-02",
+   "last": "2026-10-21",
+   "n": 3220,
+   "null_rows": 0,
+   "splits": [],
+   "tz": "America/New_York"
+  },
+  "JPM": {
+   "first": "2014-01-02",
+   "last": "2026-10-21",
+   "n": 3220,
+   "null_rows": 0,
+   "splits": [],
+   "tz": "America/New_York"
+  },
+  "KMB": {
+   "first": "2014-01-02",
+   "last": "2026-10-21",
+   "n": 3220,
+   "null_rows": 0,
+   "splits": [
+    [
+     "2014-11-03",
+     1043.0,
+     1000.0
+    ]
+   ],
+   "tz": "America/New_York"
+  },
+  "KO": {
+   "first": "2014-01-02",
+   "last": "2026-10-21",
+   "n": 3220,
+   "null_rows": 0,
+   "splits": [],
+   "tz": "America/New_York"
+  },
+  "LIN": {
+   "first": "2014-01-02",
+   "last": "2026-10-21",
+   "n": 3220,
+   "null_rows": 0,
+   "splits": [],
+   "tz": "America/New_York"
+  },
+  "LLY": {
+   "first": "2014-01-02",
+   "last": "2026-10-21",
+   "n": 3220,
+   "null_rows": 0,
+   "splits": [],
+   "tz": "America/New_York"
+  },
+  "LMT": {
+   "first": "2014-01-02",
+   "last": "2026-10-21",
+   "n": 3220,
+   "null_rows": 0,
+   "splits": [],
+   "tz": "America/New_York"
+  },
+  "LOW": {
+   "first": "2014-01-02",
+   "last": "2026-10-21",
+   "n": 3220,
+   "null_rows": 0,
+   "splits": [],
+   "tz": "America/New_York"
+  },
+  "MA": {
+   "first": "2014-01-02",
+   "last": "2026-10-21",
+   "n": 3220,
+   "null_rows": 0,
+   "splits": [
+    [
+     "2014-01-22",
+     10.0,
+     1.0
+    ]
+   ],
+   "tz": "America/New_York"
+  },
+  "MCD": {
+   "first": "2014-01-02",
+   "last": "2026-10-21",
+   "n": 3220,
+   "null_rows": 0,
+   "splits": [],
+   "tz": "America/New_York"
+  },
+  "MDLZ": {
+   "first": "2014-01-02",
+   "last": "2026-10-21",
+   "n": 3220,
+   "null_rows": 0,
+   "splits": [],
+   "tz": "America/New_York"
+  },
+  "META": {
+   "first": "2014-01-02",
+   "last": "2026-10-21",
+   "n": 3220,
+   "null_rows": 0,
+   "splits": [],
+   "tz": "America/New_York"
+  },
+  "MLM": {
+   "first": "2014-01-02",
+   "last": "2026-10-21",
+   "n": 3220,
+   "null_rows": 0,
+   "splits": [],
+   "tz": "America/New_York"
+  },
+  "MRK": {
+   "first": "2014-01-02",
+   "last": "2026-10-21",
+   "n": 3220,
+   "null_rows": 0,
+   "splits": [
+    [
+     "2021-06-03",
+     1048.0,
+     1000.0
+    ]
+   ],
+   "tz": "America/New_York"
+  },
+  "MSFT": {
+   "first": "2014-01-02",
+   "last": "2026-10-21",
+   "n": 3220,
+   "null_rows": 0,
+   "splits": [],
+   "tz": "America/New_York"
+  },
+  "NEE": {
+   "first": "2014-01-02",
+   "last": "2026-10-21",
+   "n": 3220,
+   "null_rows": 0,
+   "splits": [
+    [
+     "2020-10-27",
+     4.0,
+     1.0
+    ]
+   ],
+   "tz": "America/New_York"
+  },
+  "NEM": {
+   "first": "2014-01-02",
+   "last": "2026-10-21",
+   "n": 3220,
+   "null_rows": 0,
+   "splits": [],
+   "tz": "America/New_York"
+  },
+  "NFLX": {
+   "first": "2014-01-02",
+   "last": "2026-10-21",
+   "n": 3220,
+   "null_rows": 0,
+   "splits": [
+    [
+     "2015-07-15",
+     7.0,
+     1.0
+    ],
+    [
+     "2025-11-17",
+     10.0,
+     1.0
+    ]
+   ],
+   "tz": "America/New_York"
+  },
+  "NVDA": {
+   "first": "2014-01-02",
+   "last": "2026-10-21",
+   "n": 3220,
+   "null_rows": 0,
+   "splits": [
+    [
+     "2021-07-20",
+     4.0,
+     1.0
+    ],
+    [
+     "2024-06-10",
+     10.0,
+     1.0
+    ]
+   ],
+   "tz": "America/New_York"
+  },
+  "O": {
+   "first": "2014-01-02",
+   "last": "2026-10-21",
+   "n": 3220,
+   "null_rows": 0,
+   "splits": [
+    [
+     "2021-11-15",
+     1032.0,
+     1000.0
+    ]
+   ],
+   "tz": "America/New_York"
+  },
+  "ORCL": {
+   "first": "2014-01-02",
+   "last": "2026-10-21",
+   "n": 3220,
+   "null_rows": 0,
+   "splits": [],
+   "tz": "America/New_York"
+  },
+  "OXY": {
+   "first": "2014-01-02",
+   "last": "2026-10-21",
+   "n": 3220,
+   "null_rows": 0,
+   "splits": [
+    [
+     "2014-12-01",
+     1042.0,
+     1000.0
+    ],
+    [
+     "2016-02-25",
+     10000.0,
+     9983.0
+    ]
+   ],
+   "tz": "America/New_York"
+  },
+  "PEP": {
+   "first": "2014-01-02",
+   "last": "2026-10-21",
+   "n": 3220,
+   "null_rows": 0,
+   "splits": [],
+   "tz": "America/New_York"
+  },
+  "PG": {
+   "first": "2014-01-02",
+   "last": "2026-10-21",
+   "n": 3220,
+   "null_rows": 0,
+   "splits": [],
+   "tz": "America/New_York"
+  },
+  "PGR": {
+   "first": "2014-01-02",
+   "last": "2026-10-21",
+   "n": 3220,
+   "null_rows": 0,
+   "splits": [],
+   "tz": "America/New_York"
+  },
+  "PLD": {
+   "first": "2014-01-02",
+   "last": "2026-10-21",
+   "n": 3220,
+   "null_rows": 0,
+   "splits": [],
+   "tz": "America/New_York"
+  },
+  "RTX": {
+   "first": "2014-01-02",
+   "last": "2026-10-21",
+   "n": 3220,
+   "null_rows": 0,
+   "splits": [
+    [
+     "2020-04-03",
+     15890.0,
+     10000.0
+    ]
+   ],
+   "tz": "America/New_York"
+  },
+  "SBUX": {
+   "first": "2014-01-02",
+   "last": "2026-10-21",
+   "n": 3220,
+   "null_rows": 0,
+   "splits": [
+    [
+     "2015-04-09",
+     2.0,
+     1.0
+    ]
+   ],
+   "tz": "America/New_York"
+  },
+  "SHW": {
+   "first": "2014-01-02",
+   "last": "2026-10-21",
+   "n": 3220,
+   "null_rows": 0,
+   "splits": [
+    [
+     "2021-04-01",
+     3.0,
+     1.0
+    ]
+   ],
+   "tz": "America/New_York"
+  },
+  "SLB": {
+   "first": "2014-01-02",
+   "last": "2026-10-21",
+   "n": 3220,
+   "null_rows": 0,
+   "splits": [],
+   "tz": "America/New_York"
+  },
+  "SO": {
+   "first": "2014-01-02",
+   "last": "2026-10-21",
+   "n": 3220,
+   "null_rows": 0,
+   "splits": [],
+   "tz": "America/New_York"
+  },
+  "SPG": {
+   "first": "2014-01-02",
+   "last": "2026-10-21",
+   "n": 3220,
+   "null_rows": 0,
+   "splits": [
+    [
+     "2014-05-29",
+     1063.0,
+     1000.0
+    ]
+   ],
+   "tz": "America/New_York"
+  },
+  "SPY": {
+   "first": "2014-01-02",
+   "last": "2026-10-21",
+   "n": 3220,
+   "null_rows": 0,
+   "splits": [],
+   "tz": "America/New_York"
+  },
+  "T": {
+   "first": "2014-01-02",
+   "last": "2026-10-21",
+   "n": 3220,
+   "null_rows": 0,
+   "splits": [
+    [
+     "2022-04-11",
+     1324.0,
+     1000.0
+    ]
+   ],
+   "tz": "America/New_York"
+  },
+  "TMO": {
+   "first": "2014-01-02",
+   "last": "2026-10-21",
+   "n": 3220,
+   "null_rows": 0,
+   "splits": [],
+   "tz": "America/New_York"
+  },
+  "TMUS": {
+   "first": "2014-01-02",
+   "last": "2026-10-21",
+   "n": 3220,
+   "null_rows": 0,
+   "splits": [],
+   "tz": "America/New_York"
+  },
+  "TSLA": {
+   "first": "2014-01-02",
+   "last": "2026-10-21",
+   "n": 3220,
+   "null_rows": 0,
+   "splits": [
+    [
+     "2020-08-31",
+     5.0,
+     1.0
+    ],
+    [
+     "2022-08-25",
+     3.0,
+     1.0
+    ]
+   ],
+   "tz": "America/New_York"
+  },
+  "UBER": {
+   "first": "2019-05-10",
+   "last": "2026-10-21",
+   "n": 1873,
+   "null_rows": 0,
+   "splits": [],
+   "tz": "America/New_York"
+  },
+  "UNH": {
+   "first": "2014-01-02",
+   "last": "2026-10-21",
+   "n": 3220,
+   "null_rows": 0,
+   "splits": [],
+   "tz": "America/New_York"
+  },
+  "UNP": {
+   "first": "2014-01-02",
+   "last": "2026-10-21",
+   "n": 3220,
+   "null_rows": 0,
+   "splits": [
+    [
+     "2014-06-09",
+     2.0,
+     1.0
+    ]
+   ],
+   "tz": "America/New_York"
+  },
+  "UPS": {
+   "first": "2014-01-02",
+   "last": "2026-10-21",
+   "n": 3220,
+   "null_rows": 0,
+   "splits": [],
+   "tz": "America/New_York"
+  },
+  "V": {
+   "first": "2014-01-02",
+   "last": "2026-10-21",
+   "n": 3220,
+   "null_rows": 0,
+   "splits": [
+    [
+     "2015-03-19",
+     4.0,
+     1.0
+    ]
+   ],
+   "tz": "America/New_York"
+  },
+  "VMC": {
+   "first": "2014-01-02",
+   "last": "2026-10-21",
+   "n": 3220,
+   "null_rows": 0,
+   "splits": [],
+   "tz": "America/New_York"
+  },
+  "VRTX": {
+   "first": "2014-01-02",
+   "last": "2026-10-21",
+   "n": 3220,
+   "null_rows": 0,
+   "splits": [],
+   "tz": "America/New_York"
+  },
+  "VZ": {
+   "first": "2014-01-02",
+   "last": "2026-10-21",
+   "n": 3220,
+   "null_rows": 0,
+   "splits": [],
+   "tz": "America/New_York"
+  },
+  "WELL": {
+   "first": "2014-01-02",
+   "last": "2026-10-21",
+   "n": 3220,
+   "null_rows": 0,
+   "splits": [],
+   "tz": "America/New_York"
+  },
+  "WFC": {
+   "first": "2014-01-02",
+   "last": "2026-10-21",
+   "n": 3220,
+   "null_rows": 0,
+   "splits": [],
+   "tz": "America/New_York"
+  },
+  "WMT": {
+   "first": "2014-01-02",
+   "last": "2026-10-21",
+   "n": 3220,
+   "null_rows": 0,
+   "splits": [
+    [
+     "2024-02-26",
+     3.0,
+     1.0
+    ]
+   ],
+   "tz": "America/New_York"
+  },
+  "XOM": {
+   "first": "2014-01-02",
+   "last": "2026-10-21",
+   "n": 3220,
+   "null_rows": 0,
+   "splits": [],
+   "tz": "America/New_York"
+  }
+ },
+ "requested_window": [
+  "2014-01-01",
+  "2026-10-22"
+ ],
+ "sha256": {
+  "prices_daily.json.gz": "8438e2f6ec6def85c570f947e2c9628607186c3e344dc58c97c4188ae32fffc1",
+  "universe.json": "c196da609fd942abf22db2048e8f19963ebd5264789a9059379a5e760cdd70fc"
+ },
+ "source": "Yahoo Finance chart API v8, interval=1d, split-adjusted OHLCV, NOT dividend-adjusted",
+ "symbols_fetched": 91,
+ "symbols_requested": 91
+}

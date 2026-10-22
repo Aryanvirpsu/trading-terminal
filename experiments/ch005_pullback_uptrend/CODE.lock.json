@@ -1,0 +1,11 @@
+{
+ "frozen_at_utc": "2026-10-22T04:35:12+00:00",
+ "note": "frozen before any outcome was computed on real data",
+ "sha256": {
+  "ch005.py": "064bc8cd916a5ff5dbf467cadceaf8fb88a6c223199a8d0fbffed75305eaa355",
+  "data/prices_daily.json.gz": "8438e2f6ec6def85c570f947e2c9628607186c3e344dc58c97c4188ae32fffc1",
+  "data/universe.json": "c196da609fd942abf22db2048e8f19963ebd5264789a9059379a5e760cdd70fc",
+  "engine.py": "375e7472158ea0133341c05719062892fafa8e264beaff25d295d8119e8a031d",
+  "tests/unit/test_ch005_engine.py": "6f73b6e71556cee6c884e781653b73377065cacc9164ca42a33ccdf5d3684baa"
+ }
+}
