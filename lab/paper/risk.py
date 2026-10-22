@@ -117,10 +117,14 @@ def account_state(session_date: Optional[str] = None) -> Dict[str, Any]:
 
 
 def _last_mark(symbol: str) -> Optional[float]:
-    row = db.query_one(
-        "SELECT f.price FROM fills f JOIN orders o ON o.order_id=f.order_id "
-        "WHERE o.symbol=? ORDER BY f.filled_at DESC LIMIT 1", (symbol,))
-    return row["price"] if row else None
+    rows = db.query(
+        "SELECT f.fill_id, f.price FROM fills f JOIN orders o ON o.order_id=f.order_id "
+        "WHERE o.symbol=? ORDER BY f.filled_at DESC, f.fill_id DESC LIMIT 200", (symbol,))
+    phantom = db.phantom_fill_ids() if rows else set()      # a sale that never happened is not a price anyone traded at
+    for r in rows:
+        if r["fill_id"] not in phantom:
+            return r["price"]
+    return None
 
 
 _MARK_CACHE: Dict[str, tuple] = {}   # symbol -> (price, fetched_at_monotonic)

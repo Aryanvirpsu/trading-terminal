@@ -416,6 +416,40 @@ def query(sql: str, params: tuple = ()) -> List[Dict[str, Any]]:
     return [dict(r) for r in connect().execute(sql, params).fetchall()]
 
 
+# A "phantom" fill is a fill row that never moved shares or cash in the positions table: before the 2026-10 fix, several pending
+# exit orders for one position could all fill in one pass; the first closed the position, the rest inserted a fill row and the
+# ledger audited `exit_without_position` for them.  Fill rows are append-only, so those rows cannot be removed.
+#
+# This is the ONLY definition (reconcile, health, report and risk all use it).  A fill is phantom only when ALL of these hold,
+# each checked from the ledger's own rows:
+#   1. its order is an exit (intent != 'entry'): entry fills are never excluded;
+#   2. the ledger audited `exit_without_position` for that order AT OR AFTER the fill was written (the audit is written by the
+#      same call that inserted the fill);
+#   3. the order has exactly as many such audit events as fills, so one legitimate fill plus one phantom fill on the same order
+#      is ambiguous and is NOT excluded (it keeps failing closed);
+#   4. no position in that symbol was open at the fill's timestamp (a sale while shares were held is never phantom).
+# Anything else that disagrees with the positions table still fails closed.
+PHANTOM_FILLS_SQL = """
+SELECT f.fill_id, f.order_id, o.symbol, o.side, f.quantity, f.price, f.fees, f.filled_at
+FROM fills f JOIN orders o ON o.order_id = f.order_id
+WHERE o.intent != 'entry'
+  AND EXISTS (SELECT 1 FROM audit a WHERE a.entity='order' AND a.entity_id=f.order_id
+                AND a.event='exit_without_position' AND a.at >= f.filled_at)
+  AND (SELECT COUNT(*) FROM audit a WHERE a.entity='order' AND a.entity_id=f.order_id AND a.event='exit_without_position')
+    = (SELECT COUNT(*) FROM fills f2 WHERE f2.order_id=f.order_id)
+  AND NOT EXISTS (SELECT 1 FROM positions p WHERE p.symbol=o.symbol AND p.opened_at <= f.filled_at
+                  AND (p.closed_at IS NULL OR f.filled_at <= p.closed_at))
+ORDER BY f.filled_at, f.fill_id"""
+
+
+def phantom_fill_rows() -> List[Dict[str, Any]]:
+    return query(PHANTOM_FILLS_SQL)
+
+
+def phantom_fill_ids() -> set:
+    return {r["fill_id"] for r in phantom_fill_rows()}
+
+
 def query_one(sql: str, params: tuple = ()) -> Optional[Dict[str, Any]]:
     row = connect().execute(sql, params).fetchone()
     return dict(row) if row else None

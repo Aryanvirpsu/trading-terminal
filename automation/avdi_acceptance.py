@@ -100,6 +100,7 @@ def main(argv=None) -> int:
             "WHERE session_date=? ORDER BY created_at", (day,))],
         "fills_today": [dict(r) for r in lc.execute(
             "SELECT f.* FROM fills f JOIN orders o ON o.order_id=f.order_id WHERE o.session_date=?", (day,))],
+        "phantom_fill_ids_excluded_by_reconcile": [r["fill_id"] for r in lc.execute(db.PHANTOM_FILLS_SQL)],
         "open_positions": [dict(r) for r in lc.execute("SELECT * FROM positions WHERE status='open'")],
         "counts": {t: lc.execute(f"SELECT COUNT(*) n FROM {t}").fetchone()["n"]
                    for t in ("signals", "orders", "fills", "positions", "audit")},

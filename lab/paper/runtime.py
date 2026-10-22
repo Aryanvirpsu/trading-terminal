@@ -362,7 +362,8 @@ def backup_now(reason: str = "manual") -> Dict[str, Any]:
     try:
         boundary = shadow_log.evidence_summary("v1.1")
         ledger_summary = {t: db.query_one(f"SELECT COUNT(*) n FROM {t}")["n"]
-                          for t in ("signals", "orders", "fills", "positions")}
+                          for t in ("signals", "orders", "fills", "positions")}       # raw row counts, phantoms included
+        ledger_summary["phantom_fills_included_in_fills"] = len(db.phantom_fill_ids())
     except Exception:
         pass
     manifest = {"created": stamp, "created_iso": dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds"),
@@ -778,11 +779,15 @@ def health(now: Optional[dt.datetime] = None, state: Optional[Dict[str, Any]] = 
             # The amounts, not just the verdict: a failure must explain itself in the very first status read.
             reconcile_detail = {"reconciled": rec["reconciled"], "delta": rec["delta"],
                                 "cash_from_fills": rec["cash_from_fills"], "cash_from_state": rec["cash_from_state"],
-                                "excluded_phantom_fills": len(rec.get("excluded_phantom_fills") or [])}
+                                "excluded_phantom_fills": len(rec.get("excluded_phantom_fills") or []),
+                                "excluded_phantom_notional": rec.get("excluded_phantom_notional", 0.0),
+                                "history_resolved": rec.get("history_resolved", True)}
             if not rec["reconciled"]:
                 bad.append("ledger_inconsistent")
             if rec.get("excluded_phantom_fills"):
-                degraded.append("phantom_fills_excluded")      # historical, audited; visible until someone reviews it
+                # Historical, audited, EXCLUDED rather than corrected.  Deliberately never clears by itself: only a
+                # human-approved correction of the ledger history can resolve it.
+                degraded.append("historical_phantom_fills_unresolved")
         except Exception:
             bad.append("db_inaccessible")
     dsk = disk_status()
