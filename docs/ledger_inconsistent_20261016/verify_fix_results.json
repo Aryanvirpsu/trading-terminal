@@ -1,0 +1,77 @@
+{
+ "deployed_after_replay": {
+  "delta": 1600.56,
+  "eog_sell_orders": 13,
+  "exit_without_position_audits": 12,
+  "reconciled": false
+ },
+ "deployed_src": "C:/Users/ARYANV~1/AppData/Local/Temp/claude/C--Users-aryan-vir-Aryan-vir-projectsnstuff-trading-terminal/3059552e-cbae-48c1-9c1c-6af21cb8dd08/scratchpad/deployed",
+ "fixed_on_damaged_ledger": {
+  "after_more_cycles_reconciled": true,
+  "delta": 0.0,
+  "excluded_notional": 1600.57,
+  "excluded_phantom_fills": 12,
+  "no_existing_row_changed": true,
+  "reconciled": true,
+  "rows_after": {
+   "audit": [
+    2782,
+    "68c47c3c9a5a41d8"
+   ],
+   "equity": [
+    26,
+    "b744209e3d721100"
+   ],
+   "fills": [
+    24,
+    "7db021444162c1d4"
+   ],
+   "orders": [
+    24,
+    "2118c44b344c968b"
+   ],
+   "positions": [
+    7,
+    "e1acb4b9528d4cce"
+   ],
+   "signals": [
+    362,
+    "24870b1de8876ef7"
+   ]
+  },
+  "rows_before": {
+   "audit": [
+    2782,
+    "68c47c3c9a5a41d8"
+   ],
+   "equity": [
+    26,
+    "b744209e3d721100"
+   ],
+   "fills": [
+    24,
+    "7db021444162c1d4"
+   ],
+   "orders": [
+    24,
+    "2118c44b344c968b"
+   ],
+   "positions": [
+    7,
+    "e1acb4b9528d4cce"
+   ],
+   "signals": [
+    362,
+    "24870b1de8876ef7"
+   ]
+  }
+ },
+ "fixed_replay_from_scratch": {
+  "delta": 0.0,
+  "eog_sell_fills": 1,
+  "eog_sell_orders": 1,
+  "excluded_phantom_fills": 0,
+  "reconciled": true
+ },
+ "fixed_src": "C:/Users/ARYANV~1/AppData/Local/Temp/claude/C--Users-aryan-vir-Aryan-vir-projectsnstuff-trading-terminal/3059552e-cbae-48c1-9c1c-6af21cb8dd08/scratchpad/fixwt"
+}

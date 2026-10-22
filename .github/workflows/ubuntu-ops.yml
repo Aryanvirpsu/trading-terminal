@@ -35,12 +35,19 @@ jobs:
         run: $SSH status | tee status.json
       - name: Health (fails the job when the runtime is unhealthy)
         run: $SSH health
+      - name: Health history (only after a failed health step; read-only)
+        if: failure()
+        continue-on-error: true
+        run: $SSH health-log
       - name: Evidence boundary and v1.1 P&L (read-only)
         run: $SSH evidence
 
   backup:
     needs: probe
-    if: vars.AVDI_OPS_ENABLED == 'true'
+    # Take the off-host copy even when the health probe FAILED: a red status is exactly when the evidence matters most
+    # (2026-10-16: a ledger_inconsistent failure skipped every backup and left the cause unreadable off-host).  The run
+    # still ends red because the probe job failed.  Skipped only when the probe itself was skipped or cancelled.
+    if: ${{ always() && vars.AVDI_OPS_ENABLED == 'true' && (needs.probe.result == 'success' || needs.probe.result == 'failure') }}
     runs-on: ubuntu-latest
     steps:
       - name: Configure restricted SSH (ops role)

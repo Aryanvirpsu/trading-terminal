@@ -93,7 +93,11 @@ def _partial(quantity: float, q: Quote) -> tuple:
         return quantity, False
     max_qty = q.volume * e.partial_fill_threshold
     if quantity > max_qty:
-        return round(max(1.0, max_qty * e.partial_fill_ratio + 0.0), 6), True
+        fillable = round(max(1.0, max_qty * e.partial_fill_ratio + 0.0), 6)
+        # The one-share floor models whole-share fills; it must never turn a fractional order (< 1 share) into a larger
+        # fill than was ordered.  An order no bigger than that floor simply fills in full.
+        if fillable < quantity:
+            return fillable, True
     return quantity, False
 
 

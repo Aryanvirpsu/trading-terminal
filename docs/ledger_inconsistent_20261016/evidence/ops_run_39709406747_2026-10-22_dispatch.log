@@ -1,0 +1,362 @@
+probe	Set up job	﻿2026-10-22T02:05:16.2072849Z Current runner version: '2.338.0'
+probe	Set up job	2026-10-22T02:05:16.2102588Z ##[group]Runner Image Provisioner
+probe	Set up job	2026-10-22T02:05:16.2104229Z Hosted Compute Agent
+probe	Set up job	2026-10-22T02:05:16.2105152Z Version: 20261015.610
+probe	Set up job	2026-10-22T02:05:16.2106094Z Commit: 267fdb4e8bbec4ab5ea31367f3a00d5c480c7656
+probe	Set up job	2026-10-22T02:05:16.2107058Z Build Date: 2026-10-14T17:06:54Z
+probe	Set up job	2026-10-22T02:05:16.2108027Z Worker ID: {b8db462a-f467-4622-950b-825672c3801a}
+probe	Set up job	2026-10-22T02:05:16.2109370Z Region: westus2
+probe	Set up job	2026-10-22T02:05:16.2110102Z Cloud: Azure
+probe	Set up job	2026-10-22T02:05:16.2110901Z ##[endgroup]
+probe	Set up job	2026-10-22T02:05:16.2112736Z ##[group]Operating System
+probe	Set up job	2026-10-22T02:05:16.2113890Z Ubuntu
+probe	Set up job	2026-10-22T02:05:16.2114566Z 24.04.5
+probe	Set up job	2026-10-22T02:05:16.2115305Z LTS
+probe	Set up job	2026-10-22T02:05:16.2116035Z ##[endgroup]
+probe	Set up job	2026-10-22T02:05:16.2116819Z ##[group]Runner Image
+probe	Set up job	2026-10-22T02:05:16.2117742Z Image: ***-24.04
+probe	Set up job	2026-10-22T02:05:16.2118697Z Version: 20261018.339.1
+probe	Set up job	2026-10-22T02:05:16.2120018Z Included Software: https://github.com/actions/runner-images/blob/***24/20261018.339/images/***/Ubuntu2404-Readme.md
+probe	Set up job	2026-10-22T02:05:16.2122073Z Image Release: https://github.com/actions/runner-images/releases/tag/***24%2F20261018.339
+probe	Set up job	2026-10-22T02:05:16.2123728Z ##[endgroup]
+probe	Set up job	2026-10-22T02:05:16.2125208Z ##[group]GITHUB_TOKEN Permissions
+probe	Set up job	2026-10-22T02:05:16.2127626Z Contents: read
+probe	Set up job	2026-10-22T02:05:16.2128550Z Metadata: read
+probe	Set up job	2026-10-22T02:05:16.2129268Z ##[endgroup]
+probe	Set up job	2026-10-22T02:05:16.2131698Z Secret source: Actions
+probe	Set up job	2026-10-22T02:05:16.2133165Z Cache mode: write
+probe	Set up job	2026-10-22T02:05:16.2134114Z Prepare workflow directory
+probe	Set up job	2026-10-22T02:05:16.2497542Z Prepare all required actions
+probe	Set up job	2026-10-22T02:05:16.2613927Z Complete job name: probe
+probe	Configure restricted SSH (ops role)	﻿2026-10-22T02:05:16.3951942Z ##[group]Run install -m 700 -d ~/.ssh
+probe	Configure restricted SSH (ops role)	2026-10-22T02:05:16.3952817Z ^[[36;1minstall -m 700 -d ~/.ssh^[[0m
+probe	Configure restricted SSH (ops role)	2026-10-22T02:05:16.3953979Z ^[[36;1mprintf '%s\n' "***^[[0m
+probe	Configure restricted SSH (ops role)	2026-10-22T02:05:16.3955057Z ^[[36;1m***^[[0m
+probe	Configure restricted SSH (ops role)	2026-10-22T02:05:16.3955913Z ^[[36;1m***^[[0m
+probe	Configure restricted SSH (ops role)	2026-10-22T02:05:16.3956772Z ^[[36;1m***^[[0m
+probe	Configure restricted SSH (ops role)	2026-10-22T02:05:16.3957598Z ^[[36;1m***^[[0m
+probe	Configure restricted SSH (ops role)	2026-10-22T02:05:16.3958269Z ^[[36;1m***^[[0m
+probe	Configure restricted SSH (ops role)	2026-10-22T02:05:16.3959006Z ^[[36;1m***" > ~/.ssh/k && chmod 600 ~/.ssh/k^[[0m
+probe	Configure restricted SSH (ops role)	2026-10-22T02:05:16.3959952Z ^[[36;1mprintf '%s\n' "***^[[0m
+probe	Configure restricted SSH (ops role)	2026-10-22T02:05:16.3961099Z ^[[36;1m***" > ~/.ssh/known_hosts^[[0m
+probe	Configure restricted SSH (ops role)	2026-10-22T02:05:16.3962141Z ^[[36;1mecho "SSH=ssh -i $HOME/.ssh/k -o IdentitiesOnly=yes -o BatchMode=yes ***@***" >> "$GITHUB_ENV"^[[0m
+probe	Configure restricted SSH (ops role)	2026-10-22T02:05:16.4476171Z shell: /usr/bin/bash -e {0}
+probe	Configure restricted SSH (ops role)	2026-10-22T02:05:16.4477773Z ##[endgroup]
+probe	Status (read-only)	﻿2026-10-22T02:05:16.4847908Z ##[group]Run $SSH status | tee status.json
+probe	Status (read-only)	2026-10-22T02:05:16.4848747Z ^[[36;1m$SSH status | tee status.json^[[0m
+probe	Status (read-only)	2026-10-22T02:05:16.4900255Z shell: /usr/bin/bash -e {0}
+probe	Status (read-only)	2026-10-22T02:05:16.4900878Z env:
+probe	Status (read-only)	2026-10-22T02:05:16.4901796Z   SSH: ssh -i /home/runner/.ssh/k -o IdentitiesOnly=yes -o BatchMode=yes ***@***
+probe	Status (read-only)	2026-10-22T02:05:16.4902657Z ##[endgroup]
+probe	Status (read-only)	2026-10-22T02:05:19.5069430Z {
+probe	Status (read-only)	2026-10-22T02:05:19.5070009Z   "healthy": false,
+probe	Status (read-only)	2026-10-22T02:05:19.5070403Z   "unhealthy": [
+probe	Status (read-only)	2026-10-22T02:05:19.5070773Z     "ledger_inconsistent"
+probe	Status (read-only)	2026-10-22T02:05:19.5071238Z   ],
+probe	Status (read-only)	2026-10-22T02:05:19.5071562Z   "degraded": [
+probe	Status (read-only)	2026-10-22T02:05:19.5071944Z     "offhost_backup_stale"
+probe	Status (read-only)	2026-10-22T02:05:19.5072316Z   ],
+probe	Status (read-only)	2026-10-22T02:05:19.5072672Z   "in_session": false,
+probe	Status (read-only)	2026-10-22T02:05:19.5073426Z   "session_date": "2026-10-21",
+probe	Status (read-only)	2026-10-22T02:05:19.5073884Z   "et_now": "2026-10-21T22:05:18-04:00",
+probe	Status (read-only)	2026-10-22T02:05:19.5074333Z   "heartbeat_age_s": 2.867664,
+probe	Status (read-only)	2026-10-22T02:05:19.5074746Z   "last_discovery": {
+probe	Status (read-only)	2026-10-22T02:05:19.5075206Z     "at": "2026-10-21T19:50:22+00:00",
+probe	Status (read-only)	2026-10-22T02:05:19.5075665Z     "slot": "2026-10-21:discovery@1550",
+probe	Status (read-only)	2026-10-22T02:05:19.5076132Z     "cycle_id": "2026-10-21T1550",
+probe	Status (read-only)	2026-10-22T02:05:19.5076556Z     "state": "ok",
+probe	Status (read-only)	2026-10-22T02:05:19.5076930Z     "session_type": "post_cutoff",
+probe	Status (read-only)	2026-10-22T02:05:19.5077341Z     "entries_allowed": false,
+probe	Status (read-only)	2026-10-22T02:05:19.5077728Z     "finalists": 5,
+probe	Status (read-only)	2026-10-22T02:05:19.5078075Z     "tradeable": 1,
+probe	Status (read-only)	2026-10-22T02:05:19.5078421Z     "entries": 0,
+probe	Status (read-only)	2026-10-22T02:05:19.5079077Z     "account": {
+probe	Status (read-only)	2026-10-22T02:05:19.5079729Z       "cash": 386.21,
+probe	Status (read-only)	2026-10-22T02:05:19.5080110Z       "available_cash": 386.21,
+probe	Status (read-only)	2026-10-22T02:05:19.5080508Z       "buying_power": 286.21,
+probe	Status (read-only)	2026-10-22T02:05:19.5080884Z       "open_positions": 1,
+probe	Status (read-only)	2026-10-22T02:05:19.5081233Z       "entries_today": 0,
+probe	Status (read-only)	2026-10-22T02:05:19.5081582Z       "sector_positions": {
+probe	Status (read-only)	2026-10-22T02:05:19.5081946Z         "health_care": 1
+probe	Status (read-only)	2026-10-22T02:05:19.5082376Z       },
+probe	Status (read-only)	2026-10-22T02:05:19.5082676Z       "equity": 500.31
+probe	Status (read-only)	2026-10-22T02:05:19.5083170Z     }
+probe	Status (read-only)	2026-10-22T02:05:19.5083460Z   },
+probe	Status (read-only)	2026-10-22T02:05:19.5083760Z   "last_tracker": {
+probe	Status (read-only)	2026-10-22T02:05:19.5084087Z     "at": "2026-10-21T20:04:39+00:00",
+probe	Status (read-only)	2026-10-22T02:05:19.5084467Z     "scope": "positions",
+probe	Status (read-only)	2026-10-22T02:05:19.5084809Z     "symbols": 1,
+probe	Status (read-only)	2026-10-22T02:05:19.5085121Z     "exits": 0,
+probe	Status (read-only)	2026-10-22T02:05:19.5085438Z     "quote_age_s_max": 5.8,
+probe	Status (read-only)	2026-10-22T02:05:19.5085795Z     "quotes_missing": []
+probe	Status (read-only)	2026-10-22T02:05:19.5086118Z   },
+probe	Status (read-only)	2026-10-22T02:05:19.5086409Z   "last_backup": {
+probe	Status (read-only)	2026-10-22T02:05:19.5086744Z     "at": "2026-10-21T20:10:05+00:00",
+probe	Status (read-only)	2026-10-22T02:05:19.5087105Z     "ok": true,
+probe	Status (read-only)	2026-10-22T02:05:19.5087583Z     "path": "/data/case1/paper/backups/20261021T201005Z"
+probe	Status (read-only)	2026-10-22T02:05:19.5088011Z   },
+probe	Status (read-only)	2026-10-22T02:05:19.5088306Z   "last_exception": null,
+probe	Status (read-only)	2026-10-22T02:05:19.5088637Z   "counters": {
+probe	Status (read-only)	2026-10-22T02:05:19.5088944Z     "discovery_runs": 513,
+probe	Status (read-only)	2026-10-22T02:05:19.5089283Z     "tracker_fast": 5942,
+probe	Status (read-only)	2026-10-22T02:05:19.5089610Z     "tracker_full": 1501,
+probe	Status (read-only)	2026-10-22T02:05:19.5089959Z     "discovery_failures": 0,
+probe	Status (read-only)	2026-10-22T02:05:19.5090307Z     "provider_failures": 0
+probe	Status (read-only)	2026-10-22T02:05:19.5090633Z   },
+probe	Status (read-only)	2026-10-22T02:05:19.5090907Z   "disk": {
+probe	Status (read-only)	2026-10-22T02:05:19.5091204Z     "free_pct": 87.4,
+probe	Status (read-only)	2026-10-22T02:05:19.5091524Z     "free_gb": 44.5,
+probe	Status (read-only)	2026-10-22T02:05:19.5091837Z     "low": false
+probe	Status (read-only)	2026-10-22T02:05:19.5092130Z   },
+probe	Status (read-only)	2026-10-22T02:05:19.5092408Z   "shadow": {
+probe	Status (read-only)	2026-10-22T02:05:19.5092708Z     "ok": true,
+probe	Status (read-only)	2026-10-22T02:05:19.5093143Z     "last_cycle": {
+probe	Status (read-only)	2026-10-22T02:05:19.5093505Z       "cycle_id": "2026-10-21T1550",
+probe	Status (read-only)	2026-10-22T02:05:19.5093874Z       "session_date": "2026-10-21",
+probe	Status (read-only)	2026-10-22T02:05:19.5094294Z       "scan_ts": "2026-10-21T19:50:01+00:00",
+probe	Status (read-only)	2026-10-22T02:05:19.5094685Z       "finalists": 5,
+probe	Status (read-only)	2026-10-22T02:05:19.5095006Z       "eligible": 1
+probe	Status (read-only)	2026-10-22T02:05:19.5095309Z     },
+probe	Status (read-only)	2026-10-22T02:05:19.5095595Z     "counts": {
+probe	Status (read-only)	2026-10-22T02:05:19.5095905Z       "shadow_cycles": 513,
+probe	Status (read-only)	2026-10-22T02:05:19.5096255Z       "shadow_candidates": 2561,
+probe	Status (read-only)	2026-10-22T02:05:19.5096854Z       "shadow_events": 66,
+probe	Status (read-only)	2026-10-22T02:05:19.5097198Z       "shadow_bars_5m": 52026,
+probe	Status (read-only)	2026-10-22T02:05:19.5097548Z       "shadow_ch001_results": 4
+probe	Status (read-only)	2026-10-22T02:05:19.5097880Z     },
+probe	Status (read-only)	2026-10-22T02:05:19.5098232Z     "path": "/data/case1/paper/shadow/shadow_candidates.db"
+probe	Status (read-only)	2026-10-22T02:05:19.5098655Z   },
+probe	Status (read-only)	2026-10-22T02:05:19.5098937Z   "restore_ok": true,
+probe	Status (read-only)	2026-10-22T02:05:19.5099288Z   "started_at": "2026-10-08T05:42:48+00:00",
+probe	Status (read-only)	2026-10-22T02:05:19.5099744Z   "code_version": "b236d54a469475b7c6ac7c1980b1e4b30e10de0d",
+probe	Status (read-only)	2026-10-22T02:05:19.5100181Z   "offhost": {
+probe	Status (read-only)	2026-10-22T02:05:19.5100494Z     "backup": "20261015T202501Z",
+probe	Status (read-only)	2026-10-22T02:05:19.5100847Z     "at": "2026-10-15T23:49:34+00:00",
+probe	Status (read-only)	2026-10-22T02:05:19.5101206Z     "age_hours": 146.3
+probe	Status (read-only)	2026-10-22T02:05:19.5101512Z   },
+probe	Status (read-only)	2026-10-22T02:05:19.5101807Z   "latest_backup": "20261021T202501Z"
+probe	Status (read-only)	2026-10-22T02:05:19.5102161Z }
+probe	Health (fails the job when the runtime is unhealthy)	﻿2026-10-22T02:05:19.6282393Z ##[group]Run $SSH health
+probe	Health (fails the job when the runtime is unhealthy)	2026-10-22T02:05:19.6282860Z ^[[36;1m$SSH health^[[0m
+probe	Health (fails the job when the runtime is unhealthy)	2026-10-22T02:05:19.6336192Z shell: /usr/bin/bash -e {0}
+probe	Health (fails the job when the runtime is unhealthy)	2026-10-22T02:05:19.6336576Z env:
+probe	Health (fails the job when the runtime is unhealthy)	2026-10-22T02:05:19.6337337Z   SSH: ssh -i /home/runner/.ssh/k -o IdentitiesOnly=yes -o BatchMode=yes ***@***
+probe	Health (fails the job when the runtime is unhealthy)	2026-10-22T02:05:19.6337877Z ##[endgroup]
+probe	Health (fails the job when the runtime is unhealthy)	2026-10-22T02:05:21.6297825Z UNHEALTHY: ledger_inconsistent
+probe	Health (fails the job when the runtime is unhealthy)	2026-10-22T02:05:21.7541282Z ##[error]Process completed with exit code 1.
+probe	Health history (only after a failed health step; read-only)	﻿2026-10-22T02:05:21.7607134Z ##[group]Run $SSH health-log
+probe	Health history (only after a failed health step; read-only)	2026-10-22T02:05:21.7607595Z ^[[36;1m$SSH health-log^[[0m
+probe	Health history (only after a failed health step; read-only)	2026-10-22T02:05:21.7662480Z shell: /usr/bin/bash -e {0}
+probe	Health history (only after a failed health step; read-only)	2026-10-22T02:05:21.7663507Z env:
+probe	Health history (only after a failed health step; read-only)	2026-10-22T02:05:21.7664313Z   SSH: ssh -i /home/runner/.ssh/k -o IdentitiesOnly=yes -o BatchMode=yes ***@***
+probe	Health history (only after a failed health step; read-only)	2026-10-22T02:05:21.7664837Z ##[endgroup]
+probe	Health history (only after a failed health step; read-only)	2026-10-22T02:05:22.7044996Z 2026-10-21T11:15:05Z healthy=False unhealthy=ledger_inconsistent degraded=offhost_backup_stale in_session=False last_discovery=2026-10-20T19:50:24+00:00 last_tracker=2026-10-20T20:04:40+00:00 code=b236d54a4694
+probe	Health history (only after a failed health step; read-only)	2026-10-22T02:05:22.7049380Z 2026-10-21T11:30:02Z healthy=False unhealthy=ledger_inconsistent degraded=offhost_backup_stale in_session=False last_discovery=2026-10-20T19:50:24+00:00 last_tracker=2026-10-20T20:04:40+00:00 code=b236d54a4694
+probe	Health history (only after a failed health step; read-only)	2026-10-22T02:05:22.7052074Z 2026-10-21T11:45:01Z healthy=False unhealthy=ledger_inconsistent degraded=offhost_backup_stale in_session=False last_discovery=2026-10-20T19:50:24+00:00 last_tracker=2026-10-20T20:04:40+00:00 code=b236d54a4694
+probe	Health history (only after a failed health step; read-only)	2026-10-22T02:05:22.7054658Z 2026-10-21T12:00:05Z healthy=False unhealthy=ledger_inconsistent degraded=offhost_backup_stale in_session=False last_discovery=2026-10-20T19:50:24+00:00 last_tracker=2026-10-20T20:04:40+00:00 code=b236d54a4694
+probe	Health history (only after a failed health step; read-only)	2026-10-22T02:05:22.7057502Z 2026-10-21T12:15:05Z healthy=False unhealthy=ledger_inconsistent degraded=offhost_backup_stale in_session=False last_discovery=2026-10-20T19:50:24+00:00 last_tracker=2026-10-20T20:04:40+00:00 code=b236d54a4694
+probe	Health history (only after a failed health step; read-only)	2026-10-22T02:05:22.7059445Z 2026-10-21T12:30:05Z healthy=False unhealthy=ledger_inconsistent degraded=offhost_backup_stale in_session=False last_discovery=2026-10-20T19:50:24+00:00 last_tracker=2026-10-20T20:04:40+00:00 code=b236d54a4694
+probe	Health history (only after a failed health step; read-only)	2026-10-22T02:05:22.7061077Z 2026-10-21T12:45:05Z healthy=False unhealthy=ledger_inconsistent degraded=offhost_backup_stale in_session=False last_discovery=2026-10-20T19:50:24+00:00 last_tracker=2026-10-20T20:04:40+00:00 code=b236d54a4694
+probe	Health history (only after a failed health step; read-only)	2026-10-22T02:05:22.7062508Z 2026-10-21T13:00:05Z healthy=False unhealthy=ledger_inconsistent degraded=offhost_backup_stale in_session=False last_discovery=2026-10-20T19:50:24+00:00 last_tracker=2026-10-20T20:04:40+00:00 code=b236d54a4694
+probe	Health history (only after a failed health step; read-only)	2026-10-22T02:05:22.7064191Z 2026-10-21T13:15:02Z healthy=False unhealthy=ledger_inconsistent degraded=offhost_backup_stale in_session=False last_discovery=2026-10-20T19:50:24+00:00 last_tracker=2026-10-20T20:04:40+00:00 code=b236d54a4694
+probe	Health history (only after a failed health step; read-only)	2026-10-22T02:05:22.7065582Z 2026-10-21T13:30:02Z healthy=False unhealthy=ledger_inconsistent degraded=offhost_backup_stale in_session=False last_discovery=2026-10-21T13:15:24+00:00 last_tracker=2026-10-20T20:04:40+00:00 code=b236d54a4694
+probe	Health history (only after a failed health step; read-only)	2026-10-22T02:05:22.7067003Z 2026-10-21T13:45:05Z healthy=False unhealthy=ledger_inconsistent degraded=offhost_backup_stale in_session=False last_discovery=2026-10-21T13:35:35+00:00 last_tracker=2026-10-21T13:44:16+00:00 code=b236d54a4694
+probe	Health history (only after a failed health step; read-only)	2026-10-22T02:05:22.7068401Z 2026-10-21T14:00:05Z healthy=False unhealthy=ledger_inconsistent degraded=offhost_backup_stale in_session=True last_discovery=2026-10-21T13:50:24+00:00 last_tracker=2026-10-21T13:59:45+00:00 code=b236d54a4694
+probe	Health history (only after a failed health step; read-only)	2026-10-22T02:05:22.7069815Z 2026-10-21T14:15:05Z healthy=False unhealthy=ledger_inconsistent degraded=offhost_backup_stale in_session=True last_discovery=2026-10-21T14:05:28+00:00 last_tracker=2026-10-21T14:14:48+00:00 code=b236d54a4694
+probe	Health history (only after a failed health step; read-only)	2026-10-22T02:05:22.7071219Z 2026-10-21T14:30:02Z healthy=False unhealthy=ledger_inconsistent degraded=offhost_backup_stale in_session=True last_discovery=2026-10-21T14:20:30+00:00 last_tracker=2026-10-21T14:29:54+00:00 code=b236d54a4694
+probe	Health history (only after a failed health step; read-only)	2026-10-22T02:05:22.7072631Z 2026-10-21T14:45:05Z healthy=False unhealthy=ledger_inconsistent degraded=offhost_backup_stale in_session=True last_discovery=2026-10-21T14:35:26+00:00 last_tracker=2026-10-21T14:45:01+00:00 code=b236d54a4694
+probe	Health history (only after a failed health step; read-only)	2026-10-22T02:05:22.7074370Z 2026-10-21T15:00:05Z healthy=False unhealthy=ledger_inconsistent degraded=offhost_backup_stale in_session=True last_discovery=2026-10-21T14:50:36+00:00 last_tracker=2026-10-21T14:59:12+00:00 code=b236d54a4694
+probe	Health history (only after a failed health step; read-only)	2026-10-22T02:05:22.7076198Z 2026-10-21T15:15:05Z healthy=False unhealthy=ledger_inconsistent degraded=offhost_backup_stale in_session=True last_discovery=2026-10-21T15:05:24+00:00 last_tracker=2026-10-21T15:14:06+00:00 code=b236d54a4694
+probe	Health history (only after a failed health step; read-only)	2026-10-22T02:05:22.7077737Z 2026-10-21T15:30:05Z healthy=False unhealthy=ledger_inconsistent degraded=offhost_backup_stale in_session=True last_discovery=2026-10-21T15:20:22+00:00 last_tracker=2026-10-21T15:29:22+00:00 code=b236d54a4694
+probe	Health history (only after a failed health step; read-only)	2026-10-22T02:05:22.7079120Z 2026-10-21T15:45:05Z healthy=False unhealthy=ledger_inconsistent degraded=offhost_backup_stale in_session=True last_discovery=2026-10-21T15:35:34+00:00 last_tracker=2026-10-21T15:44:25+00:00 code=b236d54a4694
+probe	Health history (only after a failed health step; read-only)	2026-10-22T02:05:22.7080579Z 2026-10-21T16:00:05Z healthy=False unhealthy=ledger_inconsistent degraded=offhost_backup_stale in_session=True last_discovery=2026-10-21T15:50:28+00:00 last_tracker=2026-10-21T15:59:36+00:00 code=b236d54a4694
+probe	Health history (only after a failed health step; read-only)	2026-10-22T02:05:22.7082050Z 2026-10-21T16:15:05Z healthy=False unhealthy=ledger_inconsistent degraded=offhost_backup_stale in_session=True last_discovery=2026-10-21T16:05:26+00:00 last_tracker=2026-10-21T16:14:40+00:00 code=b236d54a4694
+probe	Health history (only after a failed health step; read-only)	2026-10-22T02:05:22.7083771Z 2026-10-21T16:30:02Z healthy=False unhealthy=ledger_inconsistent degraded=offhost_backup_stale in_session=True last_discovery=2026-10-21T16:20:25+00:00 last_tracker=2026-10-21T16:29:58+00:00 code=b236d54a4694
+probe	Health history (only after a failed health step; read-only)	2026-10-22T02:05:22.7085263Z 2026-10-21T16:45:05Z healthy=False unhealthy=ledger_inconsistent degraded=offhost_backup_stale in_session=True last_discovery=2026-10-21T16:35:21+00:00 last_tracker=2026-10-21T16:44:59+00:00 code=b236d54a4694
+probe	Health history (only after a failed health step; read-only)	2026-10-22T02:05:22.7086702Z 2026-10-21T17:00:02Z healthy=False unhealthy=ledger_inconsistent degraded=offhost_backup_stale in_session=True last_discovery=2026-10-21T16:50:28+00:00 last_tracker=2026-10-21T16:59:07+00:00 code=b236d54a4694
+probe	Health history (only after a failed health step; read-only)	2026-10-22T02:05:22.7088141Z 2026-10-21T17:15:05Z healthy=False unhealthy=ledger_inconsistent degraded=offhost_backup_stale in_session=True last_discovery=2026-10-21T17:05:28+00:00 last_tracker=2026-10-21T17:14:17+00:00 code=b236d54a4694
+probe	Health history (only after a failed health step; read-only)	2026-10-22T02:05:22.7089608Z 2026-10-21T17:30:02Z healthy=False unhealthy=ledger_inconsistent degraded=offhost_backup_stale in_session=True last_discovery=2026-10-21T17:20:22+00:00 last_tracker=2026-10-21T17:29:24+00:00 code=b236d54a4694
+probe	Health history (only after a failed health step; read-only)	2026-10-22T02:05:22.7091059Z 2026-10-21T17:45:05Z healthy=False unhealthy=ledger_inconsistent degraded=offhost_backup_stale in_session=True last_discovery=2026-10-21T17:35:21+00:00 last_tracker=2026-10-21T17:44:28+00:00 code=b236d54a4694
+probe	Health history (only after a failed health step; read-only)	2026-10-22T02:05:22.7092494Z 2026-10-21T18:00:05Z healthy=False unhealthy=ledger_inconsistent degraded=offhost_backup_stale in_session=True last_discovery=2026-10-21T17:50:24+00:00 last_tracker=2026-10-21T17:59:37+00:00 code=b236d54a4694
+probe	Health history (only after a failed health step; read-only)	2026-10-22T02:05:22.7094182Z 2026-10-21T18:15:05Z healthy=False unhealthy=ledger_inconsistent degraded=offhost_backup_stale in_session=True last_discovery=2026-10-21T18:05:26+00:00 last_tracker=2026-10-21T18:14:44+00:00 code=b236d54a4694
+probe	Health history (only after a failed health step; read-only)	2026-10-22T02:05:22.7095630Z 2026-10-21T18:30:03Z healthy=False unhealthy=ledger_inconsistent degraded=offhost_backup_stale in_session=True last_discovery=2026-10-21T18:20:24+00:00 last_tracker=2026-10-21T18:29:47+00:00 code=b236d54a4694
+probe	Health history (only after a failed health step; read-only)	2026-10-22T02:05:22.7097084Z 2026-10-21T18:45:05Z healthy=False unhealthy=ledger_inconsistent degraded=offhost_backup_stale in_session=True last_discovery=2026-10-21T18:35:21+00:00 last_tracker=2026-10-21T18:44:48+00:00 code=b236d54a4694
+probe	Health history (only after a failed health step; read-only)	2026-10-22T02:05:22.7098519Z 2026-10-21T19:00:05Z healthy=False unhealthy=ledger_inconsistent degraded=offhost_backup_stale in_session=True last_discovery=2026-10-21T18:50:34+00:00 last_tracker=2026-10-21T19:00:05+00:00 code=b236d54a4694
+probe	Health history (only after a failed health step; read-only)	2026-10-22T02:05:22.7099970Z 2026-10-21T19:15:05Z healthy=False unhealthy=ledger_inconsistent degraded=offhost_backup_stale in_session=True last_discovery=2026-10-21T19:05:23+00:00 last_tracker=2026-10-21T19:14:10+00:00 code=b236d54a4694
+probe	Health history (only after a failed health step; read-only)	2026-10-22T02:05:22.7101636Z 2026-10-21T19:30:05Z healthy=False unhealthy=ledger_inconsistent degraded=offhost_backup_stale in_session=True last_discovery=2026-10-21T19:20:27+00:00 last_tracker=2026-10-21T19:29:23+00:00 code=b236d54a4694
+probe	Health history (only after a failed health step; read-only)	2026-10-22T02:05:22.7103481Z 2026-10-21T19:45:05Z healthy=False unhealthy=ledger_inconsistent degraded=offhost_backup_stale in_session=True last_discovery=2026-10-21T19:35:25+00:00 last_tracker=2026-10-21T19:44:30+00:00 code=b236d54a4694
+probe	Health history (only after a failed health step; read-only)	2026-10-22T02:05:22.7104955Z 2026-10-21T20:00:05Z healthy=False unhealthy=ledger_inconsistent degraded=offhost_backup_stale in_session=False last_discovery=2026-10-21T19:50:22+00:00 last_tracker=2026-10-21T19:59:38+00:00 code=b236d54a4694
+probe	Health history (only after a failed health step; read-only)	2026-10-22T02:05:22.7106416Z 2026-10-21T20:15:05Z healthy=False unhealthy=ledger_inconsistent degraded=offhost_backup_stale in_session=False last_discovery=2026-10-21T19:50:22+00:00 last_tracker=2026-10-21T20:04:39+00:00 code=b236d54a4694
+probe	Health history (only after a failed health step; read-only)	2026-10-22T02:05:22.7107867Z 2026-10-21T20:30:02Z healthy=False unhealthy=ledger_inconsistent degraded=offhost_backup_stale in_session=False last_discovery=2026-10-21T19:50:22+00:00 last_tracker=2026-10-21T20:04:39+00:00 code=b236d54a4694
+probe	Health history (only after a failed health step; read-only)	2026-10-22T02:05:22.7109333Z 2026-10-21T20:45:05Z healthy=False unhealthy=ledger_inconsistent degraded=offhost_backup_stale in_session=False last_discovery=2026-10-21T19:50:22+00:00 last_tracker=2026-10-21T20:04:39+00:00 code=b236d54a4694
+probe	Health history (only after a failed health step; read-only)	2026-10-22T02:05:22.7110787Z 2026-10-21T21:00:05Z healthy=False unhealthy=ledger_inconsistent degraded=offhost_backup_stale in_session=False last_discovery=2026-10-21T19:50:22+00:00 last_tracker=2026-10-21T20:04:39+00:00 code=b236d54a4694
+probe	Health history (only after a failed health step; read-only)	2026-10-22T02:05:22.7112222Z 2026-10-21T21:15:02Z healthy=False unhealthy=ledger_inconsistent degraded=offhost_backup_stale in_session=False last_discovery=2026-10-21T19:50:22+00:00 last_tracker=2026-10-21T20:04:39+00:00 code=b236d54a4694
+probe	Health history (only after a failed health step; read-only)	2026-10-22T02:05:22.7113915Z 2026-10-21T21:30:05Z healthy=False unhealthy=ledger_inconsistent degraded=offhost_backup_stale in_session=False last_discovery=2026-10-21T19:50:22+00:00 last_tracker=2026-10-21T20:04:39+00:00 code=b236d54a4694
+probe	Health history (only after a failed health step; read-only)	2026-10-22T02:05:22.7115348Z 2026-10-21T21:45:05Z healthy=False unhealthy=ledger_inconsistent degraded=offhost_backup_stale in_session=False last_discovery=2026-10-21T19:50:22+00:00 last_tracker=2026-10-21T20:04:39+00:00 code=b236d54a4694
+probe	Health history (only after a failed health step; read-only)	2026-10-22T02:05:22.7116789Z 2026-10-21T22:00:05Z healthy=False unhealthy=ledger_inconsistent degraded=offhost_backup_stale in_session=False last_discovery=2026-10-21T19:50:22+00:00 last_tracker=2026-10-21T20:04:39+00:00 code=b236d54a4694
+probe	Health history (only after a failed health step; read-only)	2026-10-22T02:05:22.7118232Z 2026-10-21T22:15:04Z healthy=False unhealthy=ledger_inconsistent degraded=offhost_backup_stale in_session=False last_discovery=2026-10-21T19:50:22+00:00 last_tracker=2026-10-21T20:04:39+00:00 code=b236d54a4694
+probe	Health history (only after a failed health step; read-only)	2026-10-22T02:05:22.7119669Z 2026-10-21T22:30:05Z healthy=False unhealthy=ledger_inconsistent degraded=offhost_backup_stale in_session=False last_discovery=2026-10-21T19:50:22+00:00 last_tracker=2026-10-21T20:04:39+00:00 code=b236d54a4694
+probe	Health history (only after a failed health step; read-only)	2026-10-22T02:05:22.7121112Z 2026-10-21T22:45:05Z healthy=False unhealthy=ledger_inconsistent degraded=offhost_backup_stale in_session=False last_discovery=2026-10-21T19:50:22+00:00 last_tracker=2026-10-21T20:04:39+00:00 code=b236d54a4694
+probe	Health history (only after a failed health step; read-only)	2026-10-22T02:05:22.7122540Z 2026-10-21T23:00:05Z healthy=False unhealthy=ledger_inconsistent degraded=offhost_backup_stale in_session=False last_discovery=2026-10-21T19:50:22+00:00 last_tracker=2026-10-21T20:04:39+00:00 code=b236d54a4694
+probe	Health history (only after a failed health step; read-only)	2026-10-22T02:05:22.7124151Z 2026-10-21T23:15:02Z healthy=False unhealthy=ledger_inconsistent degraded=offhost_backup_stale in_session=False last_discovery=2026-10-21T19:50:22+00:00 last_tracker=2026-10-21T20:04:39+00:00 code=b236d54a4694
+probe	Health history (only after a failed health step; read-only)	2026-10-22T02:05:22.7125584Z 2026-10-21T23:30:05Z healthy=False unhealthy=ledger_inconsistent degraded=offhost_backup_stale in_session=False last_discovery=2026-10-21T19:50:22+00:00 last_tracker=2026-10-21T20:04:39+00:00 code=b236d54a4694
+probe	Health history (only after a failed health step; read-only)	2026-10-22T02:05:22.7127020Z 2026-10-21T23:45:05Z healthy=False unhealthy=ledger_inconsistent degraded=offhost_backup_stale in_session=False last_discovery=2026-10-21T19:50:22+00:00 last_tracker=2026-10-21T20:04:39+00:00 code=b236d54a4694
+probe	Health history (only after a failed health step; read-only)	2026-10-22T02:05:22.7128694Z 2026-10-22T00:00:05Z healthy=False unhealthy=ledger_inconsistent degraded=offhost_backup_stale in_session=False last_discovery=2026-10-21T19:50:22+00:00 last_tracker=2026-10-21T20:04:39+00:00 code=b236d54a4694
+probe	Health history (only after a failed health step; read-only)	2026-10-22T02:05:22.7130117Z 2026-10-22T00:15:02Z healthy=False unhealthy=ledger_inconsistent degraded=offhost_backup_stale in_session=False last_discovery=2026-10-21T19:50:22+00:00 last_tracker=2026-10-21T20:04:39+00:00 code=b236d54a4694
+probe	Health history (only after a failed health step; read-only)	2026-10-22T02:05:22.7131539Z 2026-10-22T00:30:00Z healthy=False unhealthy=ledger_inconsistent degraded=offhost_backup_stale in_session=False last_discovery=2026-10-21T19:50:22+00:00 last_tracker=2026-10-21T20:04:39+00:00 code=b236d54a4694
+probe	Health history (only after a failed health step; read-only)	2026-10-22T02:05:22.7133085Z 2026-10-22T00:45:05Z healthy=False unhealthy=ledger_inconsistent degraded=offhost_backup_stale in_session=False last_discovery=2026-10-21T19:50:22+00:00 last_tracker=2026-10-21T20:04:39+00:00 code=b236d54a4694
+probe	Health history (only after a failed health step; read-only)	2026-10-22T02:05:22.7134526Z 2026-10-22T01:00:05Z healthy=False unhealthy=ledger_inconsistent degraded=offhost_backup_stale in_session=False last_discovery=2026-10-21T19:50:22+00:00 last_tracker=2026-10-21T20:04:39+00:00 code=b236d54a4694
+probe	Health history (only after a failed health step; read-only)	2026-10-22T02:05:22.7135945Z 2026-10-22T01:15:02Z healthy=False unhealthy=ledger_inconsistent degraded=offhost_backup_stale in_session=False last_discovery=2026-10-21T19:50:22+00:00 last_tracker=2026-10-21T20:04:39+00:00 code=b236d54a4694
+probe	Health history (only after a failed health step; read-only)	2026-10-22T02:05:22.7137373Z 2026-10-22T01:30:05Z healthy=False unhealthy=ledger_inconsistent degraded=offhost_backup_stale in_session=False last_discovery=2026-10-21T19:50:22+00:00 last_tracker=2026-10-21T20:04:39+00:00 code=b236d54a4694
+probe	Health history (only after a failed health step; read-only)	2026-10-22T02:05:22.7138793Z 2026-10-22T01:45:05Z healthy=False unhealthy=ledger_inconsistent degraded=offhost_backup_stale in_session=False last_discovery=2026-10-21T19:50:22+00:00 last_tracker=2026-10-21T20:04:39+00:00 code=b236d54a4694
+probe	Health history (only after a failed health step; read-only)	2026-10-22T02:05:22.7140241Z 2026-10-22T02:00:05Z healthy=False unhealthy=ledger_inconsistent degraded=offhost_backup_stale in_session=False last_discovery=2026-10-21T19:50:22+00:00 last_tracker=2026-10-21T20:04:39+00:00 code=b236d54a4694
+probe	Complete job	﻿2026-10-22T02:05:22.7760383Z Cleaning up orphan processes
+backup	Set up job	﻿2026-10-22T02:05:27.2222204Z Current runner version: '2.338.0'
+backup	Set up job	2026-10-22T02:05:27.2240747Z ##[group]Runner Image Provisioner
+backup	Set up job	2026-10-22T02:05:27.2241529Z Hosted Compute Agent
+backup	Set up job	2026-10-22T02:05:27.2242052Z Version: 20261015.610
+backup	Set up job	2026-10-22T02:05:27.2242595Z Commit: 267fdb4e8bbec4ab5ea31367f3a00d5c480c7656
+backup	Set up job	2026-10-22T02:05:27.2243280Z Build Date: 2026-10-14T17:06:54Z
+backup	Set up job	2026-10-22T02:05:27.2243851Z Worker ID: {50a4b8a3-573a-4cba-8513-9d1cb9fabee4}
+backup	Set up job	2026-10-22T02:05:27.2244741Z Region: centralus
+backup	Set up job	2026-10-22T02:05:27.2245241Z Cloud: Azure
+backup	Set up job	2026-10-22T02:05:27.2245724Z ##[endgroup]
+backup	Set up job	2026-10-22T02:05:27.2247099Z ##[group]Operating System
+backup	Set up job	2026-10-22T02:05:27.2247647Z Ubuntu
+backup	Set up job	2026-10-22T02:05:27.2248112Z 24.04.5
+backup	Set up job	2026-10-22T02:05:27.2248565Z LTS
+backup	Set up job	2026-10-22T02:05:27.2249053Z ##[endgroup]
+backup	Set up job	2026-10-22T02:05:27.2249545Z ##[group]Runner Image
+backup	Set up job	2026-10-22T02:05:27.2250216Z Image: ***-24.04
+backup	Set up job	2026-10-22T02:05:27.2250776Z Version: 20261018.339.1
+backup	Set up job	2026-10-22T02:05:27.2251640Z Included Software: https://github.com/actions/runner-images/blob/***24/20261018.339/images/***/Ubuntu2404-Readme.md
+backup	Set up job	2026-10-22T02:05:27.2253048Z Image Release: https://github.com/actions/runner-images/releases/tag/***24%2F20261018.339
+backup	Set up job	2026-10-22T02:05:27.2253861Z ##[endgroup]
+backup	Set up job	2026-10-22T02:05:27.2254764Z ##[group]GITHUB_TOKEN Permissions
+backup	Set up job	2026-10-22T02:05:27.2256761Z Contents: read
+backup	Set up job	2026-10-22T02:05:27.2257288Z Metadata: read
+backup	Set up job	2026-10-22T02:05:27.2257760Z ##[endgroup]
+backup	Set up job	2026-10-22T02:05:27.2259302Z Secret source: Actions
+backup	Set up job	2026-10-22T02:05:27.2260059Z Cache mode: write
+backup	Set up job	2026-10-22T02:05:27.2260611Z Prepare workflow directory
+backup	Set up job	2026-10-22T02:05:27.3431970Z Prepare all required actions
+backup	Set up job	2026-10-22T02:05:27.3483198Z Getting action download info
+backup	Set up job	2026-10-22T02:05:27.5769556Z Download action repository 'actions/upload-artifact@v4' (SHA:ea165f8d65b6e75b540449e92b4886f43607fa02)
+backup	Set up job	2026-10-22T02:05:28.0218933Z Complete job name: backup
+backup	Configure restricted SSH (ops role)	﻿2026-10-22T02:05:28.0794259Z ##[group]Run install -m 700 -d ~/.ssh
+backup	Configure restricted SSH (ops role)	2026-10-22T02:05:28.0795049Z ^[[36;1minstall -m 700 -d ~/.ssh^[[0m
+backup	Configure restricted SSH (ops role)	2026-10-22T02:05:28.0795775Z ^[[36;1mprintf '%s\n' "***^[[0m
+backup	Configure restricted SSH (ops role)	2026-10-22T02:05:28.0796848Z ^[[36;1m***^[[0m
+backup	Configure restricted SSH (ops role)	2026-10-22T02:05:28.0797582Z ^[[36;1m***^[[0m
+backup	Configure restricted SSH (ops role)	2026-10-22T02:05:28.0798231Z ^[[36;1m***^[[0m
+backup	Configure restricted SSH (ops role)	2026-10-22T02:05:28.0798893Z ^[[36;1m***^[[0m
+backup	Configure restricted SSH (ops role)	2026-10-22T02:05:28.0799405Z ^[[36;1m***^[[0m
+backup	Configure restricted SSH (ops role)	2026-10-22T02:05:28.0800005Z ^[[36;1m***" > ~/.ssh/k && chmod 600 ~/.ssh/k^[[0m
+backup	Configure restricted SSH (ops role)	2026-10-22T02:05:28.0800721Z ^[[36;1mprintf '%s\n' "***^[[0m
+backup	Configure restricted SSH (ops role)	2026-10-22T02:05:28.0801598Z ^[[36;1m***" > ~/.ssh/known_hosts^[[0m
+backup	Configure restricted SSH (ops role)	2026-10-22T02:05:28.0802373Z ^[[36;1mecho "SSH=ssh -i $HOME/.ssh/k -o IdentitiesOnly=yes -o BatchMode=yes ***@***" >> "$GITHUB_ENV"^[[0m
+backup	Configure restricted SSH (ops role)	2026-10-22T02:05:28.0913354Z shell: /usr/bin/bash -e {0}
+backup	Configure restricted SSH (ops role)	2026-10-22T02:05:28.0914088Z ##[endgroup]
+backup	Host-side verification of the latest prepared backup (sha256 + integrity + contents)	﻿2026-10-22T02:05:28.1142226Z ##[group]Run $SSH verify-backup | tee host-verify.json
+backup	Host-side verification of the latest prepared backup (sha256 + integrity + contents)	2026-10-22T02:05:28.1142935Z ^[[36;1m$SSH verify-backup | tee host-verify.json^[[0m
+backup	Host-side verification of the latest prepared backup (sha256 + integrity + contents)	2026-10-22T02:05:28.1166693Z shell: /usr/bin/bash -e {0}
+backup	Host-side verification of the latest prepared backup (sha256 + integrity + contents)	2026-10-22T02:05:28.1167269Z env:
+backup	Host-side verification of the latest prepared backup (sha256 + integrity + contents)	2026-10-22T02:05:28.1168105Z   SSH: ssh -i /home/runner/.ssh/k -o IdentitiesOnly=yes -o BatchMode=yes ***@***
+backup	Host-side verification of the latest prepared backup (sha256 + integrity + contents)	2026-10-22T02:05:28.1168895Z ##[endgroup]
+backup	Host-side verification of the latest prepared backup (sha256 + integrity + contents)	2026-10-22T02:05:29.4543330Z {
+backup	Host-side verification of the latest prepared backup (sha256 + integrity + contents)	2026-10-22T02:05:29.4544609Z   "backup": "20261021T202501Z",
+backup	Host-side verification of the latest prepared backup (sha256 + integrity + contents)	2026-10-22T02:05:29.4545302Z   "ok": true,
+backup	Host-side verification of the latest prepared backup (sha256 + integrity + contents)	2026-10-22T02:05:29.4545814Z   "problems": [],
+backup	Host-side verification of the latest prepared backup (sha256 + integrity + contents)	2026-10-22T02:05:29.4546668Z   "manifest": {
+backup	Host-side verification of the latest prepared backup (sha256 + integrity + contents)	2026-10-22T02:05:29.4547226Z     "created_iso": "2026-10-21T20:25:02+00:00",
+backup	Host-side verification of the latest prepared backup (sha256 + integrity + contents)	2026-10-22T02:05:29.4547866Z     "reason": "ops",
+backup	Host-side verification of the latest prepared backup (sha256 + integrity + contents)	2026-10-22T02:05:29.4548503Z     "runtime_version": "b236d54a469475b7c6ac7c1980b1e4b30e10de0d",
+backup	Host-side verification of the latest prepared backup (sha256 + integrity + contents)	2026-10-22T02:05:29.4549266Z     "engine_version": "decision_engine/gates-v1.1",
+backup	Host-side verification of the latest prepared backup (sha256 + integrity + contents)	2026-10-22T02:05:29.4549903Z     "ok": true
+backup	Host-side verification of the latest prepared backup (sha256 + integrity + contents)	2026-10-22T02:05:29.4550416Z   },
+backup	Host-side verification of the latest prepared backup (sha256 + integrity + contents)	2026-10-22T02:05:29.4550893Z   "files": {
+backup	Host-side verification of the latest prepared backup (sha256 + integrity + contents)	2026-10-22T02:05:29.4551563Z     "robinhood_500_baseline.db": {
+backup	Host-side verification of the latest prepared backup (sha256 + integrity + contents)	2026-10-22T02:05:29.4552198Z       "sha256_match": true,
+backup	Host-side verification of the latest prepared backup (sha256 + integrity + contents)	2026-10-22T02:05:29.4552757Z       "integrity": "ok",
+backup	Host-side verification of the latest prepared backup (sha256 + integrity + contents)	2026-10-22T02:05:29.4553460Z       "bytes": 3162112
+backup	Host-side verification of the latest prepared backup (sha256 + integrity + contents)	2026-10-22T02:05:29.4553944Z     },
+backup	Host-side verification of the latest prepared backup (sha256 + integrity + contents)	2026-10-22T02:05:29.4554471Z     "shadow__shadow_candidates.db": {
+backup	Host-side verification of the latest prepared backup (sha256 + integrity + contents)	2026-10-22T02:05:29.4555457Z       "sha256_match": true,
+backup	Host-side verification of the latest prepared backup (sha256 + integrity + contents)	2026-10-22T02:05:29.4556236Z       "integrity": "ok",
+backup	Host-side verification of the latest prepared backup (sha256 + integrity + contents)	2026-10-22T02:05:29.4556823Z       "bytes": 12419072
+backup	Host-side verification of the latest prepared backup (sha256 + integrity + contents)	2026-10-22T02:05:29.4557340Z     }
+backup	Host-side verification of the latest prepared backup (sha256 + integrity + contents)	2026-10-22T02:05:29.4557801Z   }
+backup	Host-side verification of the latest prepared backup (sha256 + integrity + contents)	2026-10-22T02:05:29.4558264Z }
+backup	Pull the latest backup	﻿2026-10-22T02:05:29.5593774Z ##[group]Run $SSH backup-pull > backup.tgz && ls -l backup.tgz
+backup	Pull the latest backup	2026-10-22T02:05:29.5594783Z ^[[36;1m$SSH backup-pull > backup.tgz && ls -l backup.tgz^[[0m
+backup	Pull the latest backup	2026-10-22T02:05:29.5624669Z shell: /usr/bin/bash -e {0}
+backup	Pull the latest backup	2026-10-22T02:05:29.5625344Z env:
+backup	Pull the latest backup	2026-10-22T02:05:29.5626380Z   SSH: ssh -i /home/runner/.ssh/k -o IdentitiesOnly=yes -o BatchMode=yes ***@***
+backup	Pull the latest backup	2026-10-22T02:05:29.5627252Z ##[endgroup]
+backup	Pull the latest backup	2026-10-22T02:05:31.9698736Z -rw-r--r-- 1 runner runner 2973419 Oct 22 02:05 backup.tgz
+backup	Verify integrity and contents off-host	﻿2026-10-22T02:05:31.9739293Z ##[group]Run mkdir verify && tar -xzf backup.tgz -C verify
+backup	Verify integrity and contents off-host	2026-10-22T02:05:31.9739855Z ^[[36;1mmkdir verify && tar -xzf backup.tgz -C verify^[[0m
+backup	Verify integrity and contents off-host	2026-10-22T02:05:31.9740249Z ^[[36;1md=$(ls verify | head -1)^[[0m
+backup	Verify integrity and contents off-host	2026-10-22T02:05:31.9740653Z ^[[36;1mpython3 - "verify/$d" <<'PY'^[[0m
+backup	Verify integrity and contents off-host	2026-10-22T02:05:31.9741035Z ^[[36;1mimport hashlib, json, os, sqlite3, sys^[[0m
+backup	Verify integrity and contents off-host	2026-10-22T02:05:31.9741417Z ^[[36;1md = sys.argv[1]^[[0m
+backup	Verify integrity and contents off-host	2026-10-22T02:05:31.9741795Z ^[[36;1mm = json.load(open(os.path.join(d, "MANIFEST.json")))^[[0m
+backup	Verify integrity and contents off-host	2026-10-22T02:05:31.9742284Z ^[[36;1massert m["ok"], "host-side manifest not ok"^[[0m
+backup	Verify integrity and contents off-host	2026-10-22T02:05:31.9742713Z ^[[36;1mnames = sorted(m["files"])^[[0m
+backup	Verify integrity and contents off-host	2026-10-22T02:05:31.9743177Z ^[[36;1massert any(n.startswith("shadow__") for n in names), "shadow DB missing from backup"^[[0m
+backup	Verify integrity and contents off-host	2026-10-22T02:05:31.9743749Z ^[[36;1massert any(not n.startswith("shadow__") for n in names), "ledger missing from backup"^[[0m
+backup	Verify integrity and contents off-host	2026-10-22T02:05:31.9744226Z ^[[36;1mfor n, meta in m["files"].items():^[[0m
+backup	Verify integrity and contents off-host	2026-10-22T02:05:31.9744593Z ^[[36;1m    p = os.path.join(d, n)^[[0m
+backup	Verify integrity and contents off-host	2026-10-22T02:05:31.9745178Z ^[[36;1m    assert hashlib.sha256(open(p, "rb").read()).hexdigest() == meta["sha256"], f"sha mismatch {n}"^[[0m
+backup	Verify integrity and contents off-host	2026-10-22T02:05:31.9746020Z ^[[36;1m    assert sqlite3.connect(p).execute("PRAGMA integrity_check").fetchone()[0] == "ok", f"integrity {n}"^[[0m
+backup	Verify integrity and contents off-host	2026-10-22T02:05:31.9746655Z ^[[36;1m    print("verified", n, os.path.getsize(p), "bytes")^[[0m
+backup	Verify integrity and contents off-host	2026-10-22T02:05:31.9747152Z ^[[36;1mprint("backup", os.path.basename(d), "verified off-host")^[[0m
+backup	Verify integrity and contents off-host	2026-10-22T02:05:31.9747567Z ^[[36;1mPY^[[0m
+backup	Verify integrity and contents off-host	2026-10-22T02:05:31.9747907Z ^[[36;1mecho "BACKUP_NAME=$d" >> "$GITHUB_ENV"^[[0m
+backup	Verify integrity and contents off-host	2026-10-22T02:05:31.9780822Z shell: /usr/bin/bash -e {0}
+backup	Verify integrity and contents off-host	2026-10-22T02:05:31.9781233Z env:
+backup	Verify integrity and contents off-host	2026-10-22T02:05:31.9782104Z   SSH: ssh -i /home/runner/.ssh/k -o IdentitiesOnly=yes -o BatchMode=yes ***@***
+backup	Verify integrity and contents off-host	2026-10-22T02:05:31.9782560Z ##[endgroup]
+backup	Verify integrity and contents off-host	2026-10-22T02:05:32.1197326Z verified robinhood_500_baseline.db 3162112 bytes
+backup	Verify integrity and contents off-host	2026-10-22T02:05:32.1198067Z verified shadow__shadow_candidates.db 12419072 bytes
+backup	Verify integrity and contents off-host	2026-10-22T02:05:32.1198898Z backup 20261021T202501Z verified off-host
+backup	Run actions/upload-artifact@v4	﻿2026-10-22T02:05:32.1313769Z ##[group]Run actions/upload-artifact@v4
+backup	Run actions/upload-artifact@v4	2026-10-22T02:05:32.1314206Z with:
+backup	Run actions/upload-artifact@v4	2026-10-22T02:05:32.1314731Z   name: avdi-***-backup-25
+backup	Run actions/upload-artifact@v4	2026-10-22T02:05:32.1315187Z   path: backup.tgz
+backup	Run actions/upload-artifact@v4	2026-10-22T02:05:32.1315539Z   retention-days: 90
+backup	Run actions/upload-artifact@v4	2026-10-22T02:05:32.1316157Z   if-no-files-found: error
+backup	Run actions/upload-artifact@v4	2026-10-22T02:05:32.1316683Z   compression-level: 6
+backup	Run actions/upload-artifact@v4	2026-10-22T02:05:32.1317071Z   overwrite: false
+backup	Run actions/upload-artifact@v4	2026-10-22T02:05:32.1317485Z   include-hidden-files: false
+backup	Run actions/upload-artifact@v4	2026-10-22T02:05:32.1317809Z env:
+backup	Run actions/upload-artifact@v4	2026-10-22T02:05:32.1318346Z   SSH: ssh -i /home/runner/.ssh/k -o IdentitiesOnly=yes -o BatchMode=yes ***@***
+backup	Run actions/upload-artifact@v4	2026-10-22T02:05:32.1318806Z   BACKUP_NAME: 20261021T202501Z
+backup	Run actions/upload-artifact@v4	2026-10-22T02:05:32.1319168Z ##[endgroup]
+backup	Run actions/upload-artifact@v4	2026-10-22T02:05:32.2512089Z (node:1994) [DEP0040] DeprecationWarning: The `punycode` module is deprecated. Please use a userland alternative instead.
+backup	Run actions/upload-artifact@v4	2026-10-22T02:05:32.2512850Z (Use `node --trace-deprecation ...` to show where the warning was created)
+backup	Run actions/upload-artifact@v4	2026-10-22T02:05:32.2547657Z With the provided path, there will be 1 file uploaded
+backup	Run actions/upload-artifact@v4	2026-10-22T02:05:32.2554712Z Artifact name is valid!
+backup	Run actions/upload-artifact@v4	2026-10-22T02:05:32.2556422Z Root directory input is valid!
+backup	Run actions/upload-artifact@v4	2026-10-22T02:05:32.5609450Z Beginning upload of artifact content to blob storage
+backup	Run actions/upload-artifact@v4	2026-10-22T02:05:32.6509754Z (node:1994) [DEP0169] DeprecationWarning: `url.parse()` behavior is not standardized and prone to errors that have security implications. Use the WHATWG URL API instead. CVEs are not issued for `url.parse()` vulnerabilities.
+backup	Run actions/upload-artifact@v4	2026-10-22T02:05:32.9747175Z Uploaded bytes 2948754
+backup	Run actions/upload-artifact@v4	2026-10-22T02:05:33.0125671Z Finished uploading artifact content to blob storage!
+backup	Run actions/upload-artifact@v4	2026-10-22T02:05:33.0126803Z SHA256 digest of uploaded artifact zip is 40cd8650e11b6e70556d4f73640b0d6808190f590cd5c341ccb8a0a1e76f12a8
+backup	Run actions/upload-artifact@v4	2026-10-22T02:05:33.0128377Z Finalizing artifact upload
+backup	Run actions/upload-artifact@v4	2026-10-22T02:05:33.5325772Z Artifact avdi-***-backup-25.zip successfully finalized. Artifact ID 12396358054
+backup	Run actions/upload-artifact@v4	2026-10-22T02:05:33.5326854Z Artifact avdi-***-backup-25 has been successfully uploaded! Final size is 2948754 bytes. Artifact ID is 12396358054
+backup	Run actions/upload-artifact@v4	2026-10-22T02:05:33.5327717Z Artifact download URL: https://github.com/Aryanvirpsu/trading-terminal/actions/runs/39709406747/artifacts/12396358054
+backup	Acknowledge the verified off-host copy to the host (health reports it)	﻿2026-10-22T02:05:33.5470413Z ##[group]Run $SSH "offhost-ack $BACKUP_NAME"
+backup	Acknowledge the verified off-host copy to the host (health reports it)	2026-10-22T02:05:33.5470849Z ^[[36;1m$SSH "offhost-ack $BACKUP_NAME"^[[0m
+backup	Acknowledge the verified off-host copy to the host (health reports it)	2026-10-22T02:05:33.5499349Z shell: /usr/bin/bash -e {0}
+backup	Acknowledge the verified off-host copy to the host (health reports it)	2026-10-22T02:05:33.5499673Z env:
+backup	Acknowledge the verified off-host copy to the host (health reports it)	2026-10-22T02:05:33.5500216Z   SSH: ssh -i /home/runner/.ssh/k -o IdentitiesOnly=yes -o BatchMode=yes ***@***
+backup	Acknowledge the verified off-host copy to the host (health reports it)	2026-10-22T02:05:33.5500655Z   BACKUP_NAME: 20261021T202501Z
+backup	Acknowledge the verified off-host copy to the host (health reports it)	2026-10-22T02:05:33.5500980Z ##[endgroup]
+backup	Acknowledge the verified off-host copy to the host (health reports it)	2026-10-22T02:05:34.5522310Z {
+backup	Acknowledge the verified off-host copy to the host (health reports it)	2026-10-22T02:05:34.5522724Z   "backup": "20261021T202501Z",
+backup	Acknowledge the verified off-host copy to the host (health reports it)	2026-10-22T02:05:34.5523086Z   "at": "2026-10-22T02:05:34+00:00"
+backup	Acknowledge the verified off-host copy to the host (health reports it)	2026-10-22T02:05:34.5535624Z }
+backup	Complete job	﻿2026-10-22T02:05:34.5991426Z Cleaning up orphan processes
+backup	Complete job	2026-10-22T02:05:34.6262431Z ##[warning]Node.js 20 is deprecated. The following actions target Node.js 20 but are being forced to run on Node.js 24: actions/upload-artifact@v4. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/

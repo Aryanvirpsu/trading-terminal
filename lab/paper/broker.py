@@ -179,6 +179,17 @@ def process_order(order_id: str, quote: Quote) -> Dict[str, Any]:
     if remaining <= 0:
         return {"order_id": order_id, "status": "filled"}
 
+    # An exit order can only ever sell what is still held.  Several exit orders for one position can be pending at the
+    # same time; once the first closes the position the others must NOT record a fill.  A fill row with no position
+    # behind it credits cash the positions table never received, and `reconcile()` then fails ("ledger_inconsistent")
+    # permanently (2026-10-16 incident, docs/LEDGER_INCONSISTENT_DIAGNOSTIC_20261018.md).
+    if o["intent"] != "entry" and not db.query_one(
+            "SELECT 1 AS x FROM positions WHERE symbol=? AND status='open'", (o["symbol"],)):
+        db.execute("UPDATE orders SET status='cancelled', reject_reason=?, updated_at=? WHERE order_id=?",
+                   ("no open position: an earlier exit order closed it (no fill recorded)", db.utcnow(), order_id))
+        db.audit("order", order_id, "exit_without_position", {"symbol": o["symbol"], "fill_recorded": False})
+        return {"order_id": order_id, "status": "cancelled", "reason": "no open position"}
+
     res = fills.simulate(o["order_type"], o["side"], remaining, quote,
                          o.get("limit_price"), o.get("stop_price"))
 
@@ -253,13 +264,16 @@ def _apply_fill_to_position(order: Dict[str, Any], res: fills.FillResult,
         fees_total = (pos["fees"] or 0) + res.fees
         remaining = round(pos["quantity"] - closing, 6)
         if remaining <= 1e-9:
+            # Include what earlier partial exits of this position already realized (stored gross on the open row);
+            # dropping it would lose that P&L from the closed position and from the account's cash.
+            final_pnl = round((pos.get("realized_pnl") or 0) + gross - fees_total, 4)
             db.execute("""UPDATE positions SET status='closed', closed_at=?, avg_exit=?,
                             realized_pnl=?, fees=?, exit_reason=?, quantity=?
                           WHERE position_id=?""",
-                       (now, res.price, round(gross - fees_total, 4), round(fees_total, 4),
+                       (now, res.price, final_pnl, round(fees_total, 4),
                         order.get("intent"), pos["quantity"], pos["position_id"]))
             db.audit("position", pos["position_id"], "closed",
-                     {"exit": res.price, "pnl": round(gross - fees_total, 4),
+                     {"exit": res.price, "pnl": final_pnl,
                       "reason": order.get("intent")})
         else:
             realized = (pos.get("realized_pnl") or 0) + gross
@@ -442,6 +456,13 @@ def manage_open_positions(quotes: Dict[str, Quote],
             exit_intent, ref = "exit_target", target
         if not exit_intent:
             continue
+        # One working exit order per position and intent.  The tracker's `high`/`low` are the running DAILY range, so a
+        # target that was touched but not traded through (a limit needs strict trade-through) stays "triggered" on every
+        # cycle; without this guard each cycle queued another full-size order, and they all filled in the same pass.
+        # Pending orders are processed first on every cycle, so skipping here delays nothing.
+        if db.query_one("SELECT 1 AS x FROM orders WHERE symbol=? AND intent=? AND status IN ('pending','partial')",
+                        (pos["symbol"], exit_intent)):
+            continue
 
         side = "SELL" if is_long else "BUY"
         otype = "STOP" if exit_intent == "exit_stop" else "LIMIT"
@@ -525,13 +546,27 @@ def snapshot_equity(session_date: Optional[str] = None) -> Dict[str, Any]:
 RECONCILE_TOLERANCE_USD = 0.05
 
 
+def phantom_fills() -> List[Dict[str, Any]]:
+    """Historical phantom exit fills (strict definition: see db.PHANTOM_FILLS_SQL).  Read-only and deterministic: the result is
+    ordered by (filled_at, fill_id).  New phantom fills cannot be created any more (process_order cancels such orders without a
+    fill), so a non-empty list is only ever historical, and it is surfaced, not hidden: reconcile() lists it, health() degrades."""
+    return [{"fill_id": r["fill_id"], "order_id": r["order_id"], "symbol": r["symbol"], "side": r["side"],
+             "quantity": r["quantity"], "price": r["price"], "fees": r["fees"] or 0.0, "filled_at": r["filled_at"],
+             "notional": round(r["quantity"] * r["price"], 4)} for r in db.phantom_fill_rows()]
+
+
 def reconcile() -> Dict[str, Any]:
     """Independent P&L check: rebuild cash from fills and compare to the ledger.
-    A mismatch beyond RECONCILE_TOLERANCE_USD is a data-integrity violation and must fail loudly."""
+    A mismatch beyond RECONCILE_TOLERANCE_USD is a data-integrity violation and must fail loudly.
+    Audited phantom fills (see phantom_fills()) are excluded from the rebuild and listed in the result."""
     cash = cfg.account().initial_cash
-    for f in db.query("""SELECT f.quantity, f.price, f.fees, o.side
+    phantom = phantom_fills()
+    phantom_ids = {p["fill_id"] for p in phantom}
+    for f in db.query("""SELECT f.fill_id, f.quantity, f.price, f.fees, o.side
                          FROM fills f JOIN orders o ON o.order_id=f.order_id
-                         ORDER BY f.filled_at"""):
+                         ORDER BY f.filled_at, f.fill_id"""):
+        if f["fill_id"] in phantom_ids:
+            continue
         notional = f["quantity"] * f["price"]
         cash += (-notional if f["side"] == "BUY" else notional) - (f["fees"] or 0)
     st = risk_mod.account_state()
@@ -541,7 +576,16 @@ def reconcile() -> Dict[str, Any]:
     cash_r = round(cash, 2)
     delta = round(cash_r - st["cash"], 4)
     ok = abs(delta) <= RECONCILE_TOLERANCE_USD
+    excluded_notional = round(sum(p["notional"] for p in phantom), 2)
+    if not ok:
+        note = "MISMATCH — investigate before trusting P&L"
+    elif phantom:
+        note = (f"ok, but {len(phantom)} historical phantom exit fill(s) (${excluded_notional}) are EXCLUDED, not corrected: "
+                "the fill history is unresolved and needs human review")
+    else:
+        note = "ok"
     return {"reconciled": ok, "cash_from_fills": cash_r,
             "cash_from_state": st["cash"], "delta": delta,
-            "equity": st["equity"],
-            "note": "ok" if ok else "MISMATCH — investigate before trusting P&L"}
+            "equity": st["equity"], "excluded_phantom_fills": phantom,
+            "excluded_phantom_notional": excluded_notional, "history_resolved": not phantom,
+            "note": note}

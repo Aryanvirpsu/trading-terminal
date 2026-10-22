@@ -1,0 +1,33 @@
+{
+ "EOG": {
+  "minute_bars": 391,
+  "day_open": 153.05999755859375,
+  "day_high": 158.37,
+  "target": 157.6,
+  "minutes_with_running_high_exactly_at_target": [
+   "2026-10-16 14:48",
+   "2026-10-16 14:49",
+   "2026-10-16 14:50",
+   "2026-10-16 14:51",
+   "2026-10-16 14:52",
+   "2026-10-16 14:53",
+   "2026-10-16 14:54",
+   "2026-10-16 14:55",
+   "2026-10-16 14:56",
+   "2026-10-16 14:57",
+   "2026-10-16 14:58",
+   "2026-10-16 14:59",
+   "2026-10-16 15:00"
+  ],
+  "first_minute_running_high_above_target": "2026-10-16 15:01",
+  "minute_before_first_over": null
+ },
+ "META": {
+  "minute_bars": 391,
+  "day_open": 736.6950073242188,
+  "day_low": 702.7101,
+  "stop": 706.2,
+  "first_minute_running_low_at_or_below_stop": "2026-10-16 14:17",
+  "open_gapped_through_stop": false
+ }
+}

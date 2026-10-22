@@ -93,9 +93,11 @@ def daily(session_date: Optional[str] = None) -> Dict[str, Any]:
             pass
 
     # slippage actually paid today
+    phantom = db.phantom_fill_ids()      # sales that never happened: their zero slippage would flatter the cost statistics
     slips = db.query(
-        """SELECT f.slippage, f.liquidity, o.intent FROM fills f
+        """SELECT f.fill_id, f.slippage, f.liquidity, o.intent FROM fills f
            JOIN orders o ON o.order_id=f.order_id WHERE o.session_date=?""", (session_date,))
+    slips = [s for s in slips if s["fill_id"] not in phantom]
     entry_slip = [s["slippage"] for s in slips if s["intent"] == "entry" and s["slippage"] is not None]
     exit_slip = [s["slippage"] for s in slips if s["intent"] != "entry" and s["slippage"] is not None]
     gaps = [s for s in slips if s["liquidity"] == "gap"]
@@ -338,14 +340,17 @@ def performance() -> Dict[str, Any]:
 
 
 def _slippage_summary() -> Dict[str, Any]:
-    rows = db.query("""SELECT f.slippage, f.liquidity, o.intent FROM fills f
+    phantom = db.phantom_fill_ids()      # excluded: a sale that never happened has no real slippage
+    rows = db.query("""SELECT f.fill_id, f.slippage, f.liquidity, o.intent FROM fills f
                        JOIN orders o ON o.order_id=f.order_id WHERE f.slippage IS NOT NULL""")
+    rows = [r for r in rows if r["fill_id"] not in phantom]
     e = [r["slippage"] for r in rows if r["intent"] == "entry"]
     x = [r["slippage"] for r in rows if r["intent"] != "entry"]
     return {"entry_avg": round(mean(e), 5) if e else None,
             "exit_avg": round(mean(x), 5) if x else None,
             "gap_fills": sum(1 for r in rows if r["liquidity"] == "gap"),
-            "partial_fills": sum(1 for r in rows if r["liquidity"] == "partial")}
+            "partial_fills": sum(1 for r in rows if r["liquidity"] == "partial"),
+            "phantom_fills_excluded": len(phantom)}
 
 
 def benchmarks() -> Dict[str, Any]:

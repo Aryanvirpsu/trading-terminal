@@ -1,0 +1,147 @@
+probe	UNKNOWN STEP	﻿2026-10-21T00:06:34.2608355Z Current runner version: '2.337.0'
+##[group]Runner Image Provisioner
+Hosted Compute Agent
+Version: 20261015.610
+Commit: 267fdb4e8bbec4ab5ea31367f3a00d5c480c7656
+Build Date: 2026-10-14T17:06:54Z
+Worker ID: {1bcead96-6bb8-4bd6-9bd0-6d8d1da1e985}
+Region: centralus
+Cloud: Azure
+##[endgroup]
+##[group]Operating System
+Ubuntu
+24.04.5
+LTS
+##[endgroup]
+##[group]Runner Image
+Image: ***-24.04
+Version: 20261018.339.1
+Included Software: https://github.com/actions/runner-images/blob/***24/20261018.339/images/***/Ubuntu2404-Readme.md
+Image Release: https://github.com/actions/runner-images/releases/tag/***24%2F20261018.339
+##[endgroup]
+##[group]GITHUB_TOKEN Permissions
+Contents: read
+Metadata: read
+##[endgroup]
+Secret source: Actions
+Cache mode: write
+Prepare workflow directory
+Prepare all required actions
+Complete job name: probe
+##[group]Run install -m 700 -d ~/.ssh
+^[[36;1minstall -m 700 -d ~/.ssh^[[0m
+^[[36;1mprintf '%s\n' "***^[[0m
+^[[36;1m***^[[0m
+^[[36;1m***^[[0m
+^[[36;1m***^[[0m
+^[[36;1m***^[[0m
+^[[36;1m***^[[0m
+^[[36;1m***" > ~/.ssh/k && chmod 600 ~/.ssh/k^[[0m
+^[[36;1mprintf '%s\n' "***^[[0m
+^[[36;1m***" > ~/.ssh/known_hosts^[[0m
+^[[36;1mecho "SSH=ssh -i $HOME/.ssh/k -o IdentitiesOnly=yes -o BatchMode=yes ***@***" >> "$GITHUB_ENV"^[[0m
+shell: /usr/bin/bash -e {0}
+##[endgroup]
+##[group]Run $SSH status | tee status.json
+^[[36;1m$SSH status | tee status.json^[[0m
+shell: /usr/bin/bash -e {0}
+env:
+  SSH: ssh -i /home/runner/.ssh/k -o IdentitiesOnly=yes -o BatchMode=yes ***@***
+##[endgroup]
+{
+  "healthy": false,
+  "unhealthy": [
+    "ledger_inconsistent"
+  ],
+  "degraded": [
+    "offhost_backup_stale"
+  ],
+  "in_session": false,
+  "session_date": "2026-10-20",
+  "et_now": "2026-10-20T20:06:37-04:00",
+  "heartbeat_age_s": 5.275587,
+  "last_discovery": {
+    "at": "2026-10-20T19:50:24+00:00",
+    "slot": "2026-10-20:discovery@1550",
+    "cycle_id": "2026-10-20T1550",
+    "state": "ok",
+    "session_type": "post_cutoff",
+    "entries_allowed": false,
+    "finalists": 5,
+    "tradeable": 1,
+    "entries": 0,
+    "account": {
+      "cash": 386.21,
+      "available_cash": 386.21,
+      "buying_power": 286.21,
+      "open_positions": 1,
+      "entries_today": 0,
+      "sector_positions": {
+        "health_care": 1
+      },
+      "equity": 501.1
+    }
+  },
+  "last_tracker": {
+    "at": "2026-10-20T20:04:40+00:00",
+    "scope": "positions",
+    "symbols": 1,
+    "exits": 0,
+    "quote_age_s_max": 0.1,
+    "quotes_missing": []
+  },
+  "last_backup": {
+    "at": "2026-10-20T20:10:06+00:00",
+    "ok": true,
+    "path": "/data/case1/paper/backups/20261020T201005Z"
+  },
+  "last_exception": null,
+  "counters": {
+    "discovery_runs": 486,
+    "tracker_fast": 5629,
+    "tracker_full": 1422,
+    "discovery_failures": 0,
+    "provider_failures": 0
+  },
+  "disk": {
+    "free_pct": 87.4,
+    "free_gb": 44.5,
+    "low": false
+  },
+  "shadow": {
+    "ok": true,
+    "last_cycle": {
+      "cycle_id": "2026-10-20T1550",
+      "session_date": "2026-10-20",
+      "scan_ts": "2026-10-20T19:50:01+00:00",
+      "finalists": 5,
+      "eligible": 1
+    },
+    "counts": {
+      "shadow_cycles": 486,
+      "shadow_candidates": 2426,
+      "shadow_events": 66,
+      "shadow_bars_5m": 49296,
+      "shadow_ch001_results": 4
+    },
+    "path": "/data/case1/paper/shadow/shadow_candidates.db"
+  },
+  "restore_ok": true,
+  "started_at": "2026-10-08T05:42:48+00:00",
+  "code_version": "b236d54a469475b7c6ac7c1980b1e4b30e10de0d",
+  "offhost": {
+    "backup": "20261015T202501Z",
+    "at": "2026-10-15T23:49:34+00:00",
+    "age_hours": 120.3
+  },
+  "latest_backup": "20261020T202501Z"
+}
+##[group]Run $SSH health
+^[[36;1m$SSH health^[[0m
+shell: /usr/bin/bash -e {0}
+env:
+  SSH: ssh -i /home/runner/.ssh/k -o IdentitiesOnly=yes -o BatchMode=yes ***@***
+##[endgroup]
+UNHEALTHY: ledger_inconsistent
+##[error]Process completed with exit code 1.
+Cleaning up orphan processes
