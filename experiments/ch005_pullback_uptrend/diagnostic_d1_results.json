@@ -1,0 +1,407 @@
+{
+ "control_15bps_no_halt": {
+  "train": {
+   "expectancy_R_mean": -0.06423163951356543,
+   "p90": -0.049828752071125935,
+   "strategy_percentile": 100.0
+  },
+  "validation": {
+   "expectancy_R_mean": -0.05106487822422211,
+   "p90": -0.03195403586201381,
+   "strategy_percentile": 11.0
+  }
+ },
+ "note": "post-hoc diagnostic D1: drawdown halt OFF, train+validation only; does not alter the verdict",
+ "runs": {
+  "train_15bps": {
+   "avg_capital_deployed": 217.85604889589908,
+   "avg_hold_sessions": 6.9109947643979055,
+   "avg_loss": -3.1443659474635766,
+   "avg_win": 2.9501474444996223,
+   "best_trade": 10.12245526755447,
+   "by_reason": {
+    "recovery": {
+     "n": 212,
+     "pnl": 579.6653501633901
+    },
+    "stop": {
+     "n": 103,
+     "pnl": -432.42160738156514
+    },
+    "time": {
+     "n": 10,
+     "pnl": -15.395826409400616
+    },
+    "trend_invalid": {
+     "n": 57,
+     "pnl": -114.09302991087146
+    }
+   },
+   "by_year": {
+    "2015": {
+     "n": 65,
+     "pnl": -53.99
+    },
+    "2016": {
+     "n": 63,
+     "pnl": 17.47
+    },
+    "2017": {
+     "n": 101,
+     "pnl": 34.26
+    },
+    "2018": {
+     "n": 77,
+     "pnl": -4.76
+    },
+    "2019": {
+     "n": 76,
+     "pnl": 24.77
+    }
+   },
+   "expectancy_R": 0.0019141520066996442,
+   "expectancy_R_bootstrap_p10": -0.0544422207898993,
+   "expectancy_usd": 0.04647876037055941,
+   "final_equity": 517.7548864615534,
+   "losses": 182,
+   "max_drawdown_pct": 14.911017892899547,
+   "max_drawdown_usd": 75.9576846836938,
+   "net_pnl": 17.754886461553696,
+   "open_at_end": 0,
+   "pnl_per_slot_day": 0.006725335780891552,
+   "profit_factor": 1.0310251169384466,
+   "return_on_capital_used_pct": 8.149824873597032,
+   "skipped": {
+    "no_bar": 0,
+    "risk_nonpositive": 0,
+    "small": 46
+   },
+   "slot_days": 2640,
+   "trades": 382,
+   "win_rate": 0.5235602094240838,
+   "wins": 200,
+   "worst_trade": -8.150320101906473
+  },
+  "train_30bps": {
+   "avg_capital_deployed": 199.04192429022075,
+   "avg_hold_sessions": 6.732804232804233,
+   "avg_loss": -3.1508799952573234,
+   "avg_win": 2.613969946487261,
+   "best_trade": 9.396467964371267,
+   "by_reason": {
+    "recovery": {
+     "n": 202,
+     "pnl": 469.1701425990801
+    },
+    "stop": {
+     "n": 113,
+     "pnl": -468.3151180292522
+    },
+    "time": {
+     "n": 8,
+     "pnl": -8.987633122507704
+    },
+    "trend_invalid": {
+     "n": 55,
+     "pnl": -116.40279043184047
+    }
+   },
+   "by_year": {
+    "2015": {
+     "n": 65,
+     "pnl": -72.71
+    },
+    "2016": {
+     "n": 62,
+     "pnl": 3.85
+    },
+    "2017": {
+     "n": 98,
+     "pnl": 8.28
+    },
+    "2018": {
+     "n": 75,
+     "pnl": -45.96
+    },
+    "2019": {
+     "n": 78,
+     "pnl": -18.06
+    }
+   },
+   "expectancy_R": -0.09311869533017485,
+   "expectancy_R_bootstrap_p10": -0.1460818576991085,
+   "expectancy_usd": -0.3294587274722757,
+   "final_equity": 375.46460101547984,
+   "losses": 193,
+   "max_drawdown_pct": 27.36941071056107,
+   "max_drawdown_usd": 139.214578384898,
+   "net_pnl": -124.53539898452023,
+   "open_at_end": 0,
+   "pnl_per_slot_day": -0.048933359129477494,
+   "profit_factor": 0.795212405548272,
+   "return_on_capital_used_pct": -62.567421124273594,
+   "skipped": {
+    "no_bar": 0,
+    "risk_nonpositive": 0,
+    "small": 136
+   },
+   "slot_days": 2545,
+   "trades": 378,
+   "win_rate": 0.4894179894179894,
+   "wins": 185,
+   "worst_trade": -8.330446181988485
+  },
+  "train_5bps": {
+   "avg_capital_deployed": 225.15108832807567,
+   "avg_hold_sessions": 7.036939313984169,
+   "avg_loss": -3.1139217140859072,
+   "avg_win": 3.136441516643721,
+   "best_trade": 10.515714061677464,
+   "by_reason": {
+    "recovery": {
+     "n": 212,
+     "pnl": 629.9018554301439
+    },
+    "stop": {
+     "n": 97,
+     "pnl": -415.0305713735838
+    },
+    "time": {
+     "n": 11,
+     "pnl": -16.899973089343934
+    },
+    "trend_invalid": {
+     "n": 59,
+     "pnl": -103.0735415369305
+    }
+   },
+   "by_year": {
+    "2015": {
+     "n": 65,
+     "pnl": -42.56
+    },
+    "2016": {
+     "n": 62,
+     "pnl": 35.31
+    },
+    "2017": {
+     "n": 101,
+     "pnl": 41.87
+    },
+    "2018": {
+     "n": 77,
+     "pnl": 8.75
+    },
+    "2019": {
+     "n": 74,
+     "pnl": 51.56
+    }
+   },
+   "expectancy_R": 0.05424139049770283,
+   "expectancy_R_bootstrap_p10": -0.0038707355535597386,
+   "expectancy_usd": 0.250389892955898,
+   "final_equity": 594.8977694302857,
+   "losses": 175,
+   "max_drawdown_pct": 12.823511884826186,
+   "max_drawdown_usd": 65.48252342497165,
+   "net_pnl": 94.89776943028534,
+   "open_at_end": 0,
+   "pnl_per_slot_day": 0.035582215759387074,
+   "profit_factor": 1.1741447017502313,
+   "return_on_capital_used_pct": 42.14848355163463,
+   "skipped": {
+    "no_bar": 0,
+    "risk_nonpositive": 0,
+    "small": 32
+   },
+   "slot_days": 2667,
+   "trades": 379,
+   "win_rate": 0.5382585751978892,
+   "wins": 204,
+   "worst_trade": -8.104453111207158
+  },
+  "validation_15bps": {
+   "avg_capital_deployed": 145.78347424042272,
+   "avg_hold_sessions": 6.730337078651686,
+   "avg_loss": -3.6684981216173913,
+   "avg_win": 2.9542244259919843,
+   "best_trade": 11.992641532396133,
+   "by_reason": {
+    "recovery": {
+     "n": 92,
+     "pnl": 267.03251913934713
+    },
+    "stop": {
+     "n": 48,
+     "pnl": -225.86280772152907
+    },
+    "time": {
+     "n": 5,
+     "pnl": -8.023239770273834
+    },
+    "trend_invalid": {
+     "n": 33,
+     "pnl": -83.47138546298685
+    }
+   },
+   "by_year": {
+    "2020": {
+     "n": 67,
+     "pnl": 23.87
+    },
+    "2021": {
+     "n": 96,
+     "pnl": -28.26
+    },
+    "2022": {
+     "n": 15,
+     "pnl": -45.98
+    }
+   },
+   "expectancy_R": -0.06986638814466256,
+   "expectancy_R_bootstrap_p10": -0.1506316211003918,
+   "expectancy_usd": -0.28272423491821635,
+   "final_equity": 449.6750861845574,
+   "losses": 87,
+   "max_drawdown_pct": 17.35472955872057,
+   "max_drawdown_usd": 94.42753914844042,
+   "net_pnl": -50.32491381544251,
+   "open_at_end": 0,
+   "pnl_per_slot_day": -0.04200744058050293,
+   "profit_factor": 0.8423204085000482,
+   "return_on_capital_used_pct": -34.5203145127738,
+   "skipped": {
+    "no_bar": 0,
+    "risk_nonpositive": 0,
+    "small": 0
+   },
+   "slot_days": 1198,
+   "trades": 178,
+   "win_rate": 0.5112359550561798,
+   "wins": 91,
+   "worst_trade": -7.339600850180977
+  },
+  "validation_30bps": {
+   "avg_capital_deployed": 139.44490092470272,
+   "avg_hold_sessions": 6.6187845303867405,
+   "avg_loss": -3.486194949773416,
+   "avg_win": 2.9050711746534543,
+   "best_trade": 11.485709274258438,
+   "by_reason": {
+    "recovery": {
+     "n": 94,
+     "pnl": 240.13108978481415
+    },
+    "stop": {
+     "n": 54,
+     "pnl": -250.76082008194695
+    },
+    "time": {
+     "n": 4,
+     "pnl": -5.285912866758186
+    },
+    "trend_invalid": {
+     "n": 29,
+     "pnl": -78.21928829324028
+    }
+   },
+   "by_year": {
+    "2020": {
+     "n": 69,
+     "pnl": -2.62
+    },
+    "2021": {
+     "n": 97,
+     "pnl": -42.78
+    },
+    "2022": {
+     "n": 15,
+     "pnl": -48.7
+    }
+   },
+   "expectancy_R": -0.11051812877351845,
+   "expectancy_R_bootstrap_p10": -0.18733316386972967,
+   "expectancy_usd": -0.5200824942382942,
+   "final_equity": 405.865068542869,
+   "losses": 97,
+   "max_drawdown_pct": 20.44058301581261,
+   "max_drawdown_usd": 104.27575944174981,
+   "net_pnl": -94.13493145713124,
+   "open_at_end": 0,
+   "pnl_per_slot_day": -0.07857673744334828,
+   "profit_factor": 0.7216268094928728,
+   "return_on_capital_used_pct": -67.50690117235774,
+   "skipped": {
+    "no_bar": 0,
+    "risk_nonpositive": 0,
+    "small": 3
+   },
+   "slot_days": 1198,
+   "trades": 181,
+   "win_rate": 0.46408839779005523,
+   "wins": 84,
+   "worst_trade": -7.1220620877715195
+  },
+  "validation_5bps": {
+   "avg_capital_deployed": 150.72866578599735,
+   "avg_hold_sessions": 6.752808988764045,
+   "avg_loss": -3.633882560750888,
+   "avg_win": 3.1539336600022314,
+   "best_trade": 12.342743692025877,
+   "by_reason": {
+    "recovery": {
+     "n": 93,
+     "pnl": 291.4514652321088
+    },
+    "stop": {
+     "n": 45,
+     "pnl": -213.45248689487676
+    },
+    "time": {
+     "n": 5,
+     "pnl": -7.184421757504808
+    },
+    "trend_invalid": {
+     "n": 35,
+     "pnl": -86.37874386334516
+    }
+   },
+   "by_year": {
+    "2020": {
+     "n": 67,
+     "pnl": 36.1
+    },
+    "2021": {
+     "n": 96,
+     "pnl": -7.94
+    },
+    "2022": {
+     "n": 15,
+     "pnl": -43.7
+    }
+   },
+   "expectancy_R": -0.024299126173130535,
+   "expectancy_R_bootstrap_p10": -0.10672779674255252,
+   "expectancy_usd": -0.0874392544023481,
+   "final_equity": 484.4358127163822,
+   "losses": 85,
+   "max_drawdown_pct": 13.874885624514791,
+   "max_drawdown_usd": 78.04333895632988,
+   "net_pnl": -15.564187283617962,
+   "open_at_end": 0,
+   "pnl_per_slot_day": -0.012948575111163029,
+   "profit_factor": 0.9496108961617663,
+   "return_on_capital_used_pct": -10.32596367947408,
+   "skipped": {
+    "no_bar": 0,
+    "risk_nonpositive": 0,
+    "small": 0
+   },
+   "slot_days": 1202,
+   "trades": 178,
+   "win_rate": 0.5224719101123596,
+   "wins": 93,
+   "worst_trade": -7.291553284772223
+  }
+ }
+}
