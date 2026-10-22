@@ -179,6 +179,17 @@ def process_order(order_id: str, quote: Quote) -> Dict[str, Any]:
     if remaining <= 0:
         return {"order_id": order_id, "status": "filled"}
 
+    # An exit order can only ever sell what is still held.  Several exit orders for one position can be pending at the
+    # same time; once the first closes the position the others must NOT record a fill.  A fill row with no position
+    # behind it credits cash the positions table never received, and `reconcile()` then fails ("ledger_inconsistent")
+    # permanently (2026-10-16 incident, docs/LEDGER_INCONSISTENT_DIAGNOSTIC_20261018.md).
+    if o["intent"] != "entry" and not db.query_one(
+            "SELECT 1 AS x FROM positions WHERE symbol=? AND status='open'", (o["symbol"],)):
+        db.execute("UPDATE orders SET status='cancelled', reject_reason=?, updated_at=? WHERE order_id=?",
+                   ("no open position: an earlier exit order closed it (no fill recorded)", db.utcnow(), order_id))
+        db.audit("order", order_id, "exit_without_position", {"symbol": o["symbol"], "fill_recorded": False})
+        return {"order_id": order_id, "status": "cancelled", "reason": "no open position"}
+
     res = fills.simulate(o["order_type"], o["side"], remaining, quote,
                          o.get("limit_price"), o.get("stop_price"))
 
@@ -441,6 +452,13 @@ def manage_open_positions(quotes: Dict[str, Quote],
         elif target is not None and ((hi >= target) if is_long else (lo <= target)):
             exit_intent, ref = "exit_target", target
         if not exit_intent:
+            continue
+        # One working exit order per position and intent.  The tracker's `high`/`low` are the running DAILY range, so a
+        # target that was touched but not traded through (a limit needs strict trade-through) stays "triggered" on every
+        # cycle; without this guard each cycle queued another full-size order, and they all filled in the same pass.
+        # Pending orders are processed first on every cycle, so skipping here delays nothing.
+        if db.query_one("SELECT 1 AS x FROM orders WHERE symbol=? AND intent=? AND status IN ('pending','partial')",
+                        (pos["symbol"], exit_intent)):
             continue
 
         side = "SELL" if is_long else "BUY"
