@@ -50,7 +50,8 @@ def account_state(session_date: Optional[str] = None) -> Dict[str, Any]:
     opens = db.query("SELECT * FROM positions WHERE status='open'")
     closed = db.query("SELECT * FROM positions WHERE status='closed'")
 
-    realized = sum((p.get("realized_pnl") or 0.0) for p in closed)
+    # A partially exited position is still open but has already realized part of its P&L (and returned that cash).
+    realized = sum((p.get("realized_pnl") or 0.0) for p in closed) + sum((p.get("realized_pnl") or 0.0) for p in opens)
     fees_paid = sum((p.get("fees") or 0.0) for p in closed) + \
                 sum((p.get("fees") or 0.0) for p in opens)
     invested = sum((p["quantity"] * p["avg_entry"]) for p in opens)

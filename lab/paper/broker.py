@@ -264,13 +264,16 @@ def _apply_fill_to_position(order: Dict[str, Any], res: fills.FillResult,
         fees_total = (pos["fees"] or 0) + res.fees
         remaining = round(pos["quantity"] - closing, 6)
         if remaining <= 1e-9:
+            # Include what earlier partial exits of this position already realized (stored gross on the open row);
+            # dropping it would lose that P&L from the closed position and from the account's cash.
+            final_pnl = round((pos.get("realized_pnl") or 0) + gross - fees_total, 4)
             db.execute("""UPDATE positions SET status='closed', closed_at=?, avg_exit=?,
                             realized_pnl=?, fees=?, exit_reason=?, quantity=?
                           WHERE position_id=?""",
-                       (now, res.price, round(gross - fees_total, 4), round(fees_total, 4),
+                       (now, res.price, final_pnl, round(fees_total, 4),
                         order.get("intent"), pos["quantity"], pos["position_id"]))
             db.audit("position", pos["position_id"], "closed",
-                     {"exit": res.price, "pnl": round(gross - fees_total, 4),
+                     {"exit": res.price, "pnl": final_pnl,
                       "reason": order.get("intent")})
         else:
             realized = (pos.get("realized_pnl") or 0) + gross
