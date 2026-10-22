@@ -1,0 +1,44 @@
+{
+ "append_only": true,
+ "new": "20261022T042050Z",
+ "old": "20261021T202501Z",
+ "tables": {
+  "audit": {
+   "allowed_state_changes": [],
+   "appended": 0,
+   "new_rows": 3210,
+   "old_rows": 3210
+  },
+  "equity": {
+   "allowed_state_changes": [],
+   "appended": 0,
+   "new_rows": 30,
+   "old_rows": 30
+  },
+  "fills": {
+   "allowed_state_changes": [],
+   "appended": 0,
+   "new_rows": 27,
+   "old_rows": 27
+  },
+  "orders": {
+   "allowed_state_changes": [],
+   "appended": 0,
+   "new_rows": 27,
+   "old_rows": 27
+  },
+  "positions": {
+   "allowed_state_changes": [],
+   "appended": 0,
+   "new_rows": 7,
+   "old_rows": 7
+  },
+  "signals": {
+   "allowed_state_changes": [],
+   "appended": 0,
+   "new_rows": 379,
+   "old_rows": 379
+  }
+ },
+ "violations": []
+}

@@ -1,0 +1,553 @@
+{
+ "attribution_by_exit_reason": {
+  "exit_stop": {
+   "net_pnl": -21.06,
+   "trades": 4,
+   "wins": 0
+  },
+  "exit_target": {
+   "net_pnl": 18.52,
+   "trades": 2,
+   "wins": 2
+  }
+ },
+ "attribution_by_sector": {
+  "communication": {
+   "net_pnl": -5.3,
+   "trades": 1,
+   "wins": 0
+  },
+  "energy": {
+   "net_pnl": 2.9,
+   "trades": 2,
+   "wins": 1
+  },
+  "health_care": {
+   "net_pnl": -5.0,
+   "trades": 1,
+   "wins": 0
+  },
+  "technology": {
+   "net_pnl": 4.86,
+   "trades": 2,
+   "wins": 1
+  }
+ },
+ "attribution_by_strategy": {
+  "liquid_momentum": {
+   "net_pnl": -10.58,
+   "trades": 2,
+   "wins": 0
+  },
+  "sector_relative_strength": {
+   "net_pnl": 8.04,
+   "trades": 4,
+   "wins": 2
+  }
+ },
+ "backup": "20261021T202501Z",
+ "backup_created_utc": "2026-10-21T20:25:02+00:00",
+ "benchmark": {
+  "caveat": "not exposure-matched; the account averaged 28% invested",
+  "excess_pct_points": -1.968,
+  "spy_return_pct": 2.014,
+  "strategy_return_pct": 0.046,
+  "window": [
+   "2026-09-10",
+   "2026-10-21"
+  ]
+ },
+ "by_engine_version": {
+  "decision_engine/gates-v1": {
+   "avg_loss": -5.48,
+   "avg_win": 10.14,
+   "best_trade": 10.14,
+   "breakeven_win_rate_at_this_payoff": 0.351,
+   "closed_trades": 2,
+   "expectancy_R_per_trade": 0.475,
+   "expectancy_usd_per_trade": 2.33,
+   "gross_loss": 5.48,
+   "gross_profit": 10.14,
+   "losses": 1,
+   "net_realized_pnl": 4.66,
+   "payoff_ratio": 1.85,
+   "profit_factor": 1.85,
+   "sample_note": "n=2: far below the 50-trade review checkpoint; ratios are descriptive, not estimates of an edge",
+   "win_rate": 0.5,
+   "wins": 1,
+   "worst_trade": -5.48
+  },
+  "decision_engine/gates-v1.1": {
+   "avg_loss": -5.19,
+   "avg_win": 8.38,
+   "best_trade": 8.38,
+   "breakeven_win_rate_at_this_payoff": 0.383,
+   "closed_trades": 4,
+   "expectancy_R_per_trade": -0.272,
+   "expectancy_usd_per_trade": -1.8,
+   "gross_loss": 15.58,
+   "gross_profit": 8.38,
+   "losses": 3,
+   "net_realized_pnl": -7.2,
+   "payoff_ratio": 1.61,
+   "profit_factor": 0.538,
+   "sample_note": "n=4: far below the 50-trade review checkpoint; ratios are descriptive, not estimates of an edge",
+   "win_rate": 0.25,
+   "wins": 1,
+   "worst_trade": -5.3
+  }
+ },
+ "closed_trades": [
+  {
+   "closed": "2026-09-17T17:41",
+   "engine": "decision_engine/gates-v1",
+   "exit_reason": "exit_stop",
+   "hold_days": 6.0,
+   "notional": 107.91,
+   "opened": "2026-09-11T17:04",
+   "pnl": -5.48,
+   "r": -1.1,
+   "sector": "energy",
+   "strategy": "sector_relative_strength",
+   "symbol": "HAL"
+  },
+  {
+   "closed": "2026-09-21T18:50",
+   "engine": "decision_engine/gates-v1",
+   "exit_reason": "exit_target",
+   "hold_days": 4.0,
+   "notional": 86.68,
+   "opened": "2026-09-17T17:41",
+   "pnl": 10.14,
+   "r": 2.05,
+   "sector": "technology",
+   "strategy": "sector_relative_strength",
+   "symbol": "AMD"
+  },
+  {
+   "closed": "2026-10-14T15:35",
+   "engine": "decision_engine/gates-v1.1",
+   "exit_reason": "exit_stop",
+   "hold_days": 19.0,
+   "notional": 61.99,
+   "opened": "2026-09-25T16:05",
+   "pnl": -5.28,
+   "r": -1.06,
+   "sector": "technology",
+   "strategy": "liquid_momentum",
+   "symbol": "DELL"
+  },
+  {
+   "closed": "2026-10-16T18:22",
+   "engine": "decision_engine/gates-v1.1",
+   "exit_reason": "exit_stop",
+   "hold_days": 21.1,
+   "notional": 89.01,
+   "opened": "2026-09-25T17:05",
+   "pnl": -5.3,
+   "r": -1.06,
+   "sector": "communication",
+   "strategy": "liquid_momentum",
+   "symbol": "META"
+  },
+  {
+   "closed": "2026-10-08T13:47",
+   "engine": "decision_engine/gates-v1.1",
+   "exit_reason": "exit_stop",
+   "hold_days": 2.0,
+   "notional": 124.86,
+   "opened": "2026-10-06T14:20",
+   "pnl": -5.0,
+   "r": -1.13,
+   "sector": "health_care",
+   "strategy": "sector_relative_strength",
+   "symbol": "TMO"
+  },
+  {
+   "closed": "2026-10-16T19:05",
+   "engine": "decision_engine/gates-v1.1",
+   "exit_reason": "exit_target",
+   "hold_days": 8.2,
+   "notional": 125.0,
+   "opened": "2026-10-08T14:05",
+   "pnl": 8.38,
+   "r": 2.16,
+   "sector": "energy",
+   "strategy": "sector_relative_strength",
+   "symbol": "EOG"
+  }
+ ],
+ "costs_modeled": {
+  "entries": {
+   "avg_slippage_bps": 5.0,
+   "fees_usd": 0,
+   "fills": 7,
+   "slippage_usd": 0.353
+  },
+  "exits": {
+   "avg_slippage_bps": 3.33,
+   "fees_usd": 0,
+   "fills": 6,
+   "slippage_usd": 0.181
+  },
+  "note": "modeled spread/slippage, not observed vendor books; Robinhood commission $0; SEC/TAF fees not modeled",
+  "phantom_fills_excluded": 14
+ },
+ "daily": [
+  {
+   "cash": 500.0,
+   "day_pnl": 0.0,
+   "equity": 500.0,
+   "exits_today": [],
+   "positions_value": 0.0,
+   "realized_cum": 0.0,
+   "session": "2026-09-10"
+  },
+  {
+   "cash": 392.09,
+   "day_pnl": -0.11,
+   "equity": 499.89,
+   "exits_today": [],
+   "positions_value": 107.8,
+   "realized_cum": 0.0,
+   "session": "2026-09-11"
+  },
+  {
+   "cash": 392.09,
+   "day_pnl": -2.15,
+   "equity": 497.74,
+   "exits_today": [],
+   "positions_value": 105.65,
+   "realized_cum": 0.0,
+   "session": "2026-09-14"
+  },
+  {
+   "cash": 392.09,
+   "day_pnl": 3.15,
+   "equity": 500.89,
+   "exits_today": [],
+   "positions_value": 108.8,
+   "realized_cum": 0.0,
+   "session": "2026-09-15"
+  },
+  {
+   "cash": 392.09,
+   "day_pnl": -2.76,
+   "equity": 498.13,
+   "exits_today": [],
+   "positions_value": 106.05,
+   "realized_cum": 0.0,
+   "session": "2026-09-16"
+  },
+  {
+   "cash": 407.84,
+   "day_pnl": -3.89,
+   "equity": 494.24,
+   "exits_today": [
+    [
+     "HAL",
+     -5.48
+    ]
+   ],
+   "positions_value": 86.4,
+   "realized_cum": -5.48,
+   "session": "2026-09-17"
+  },
+  {
+   "cash": 407.84,
+   "day_pnl": -0.17,
+   "equity": 494.07,
+   "exits_today": [],
+   "positions_value": 86.23,
+   "realized_cum": -5.48,
+   "session": "2026-09-18"
+  },
+  {
+   "cash": 504.66,
+   "day_pnl": 10.59,
+   "equity": 504.66,
+   "exits_today": [
+    [
+     "AMD",
+     10.14
+    ]
+   ],
+   "positions_value": 0.0,
+   "realized_cum": 4.66,
+   "session": "2026-09-21"
+  },
+  {
+   "cash": 504.66,
+   "day_pnl": 0.0,
+   "equity": 504.66,
+   "exits_today": [],
+   "positions_value": 0.0,
+   "realized_cum": 4.66,
+   "session": "2026-09-22"
+  },
+  {
+   "cash": 504.66,
+   "day_pnl": 0.0,
+   "equity": 504.66,
+   "exits_today": [],
+   "positions_value": 0.0,
+   "realized_cum": 4.66,
+   "session": "2026-09-23"
+  },
+  {
+   "cash": 504.66,
+   "day_pnl": 0.0,
+   "equity": 504.66,
+   "exits_today": [],
+   "positions_value": 0.0,
+   "realized_cum": 4.66,
+   "session": "2026-09-24"
+  },
+  {
+   "cash": 353.67,
+   "day_pnl": -0.17,
+   "equity": 504.49,
+   "exits_today": [],
+   "positions_value": 150.82,
+   "realized_cum": 4.66,
+   "session": "2026-09-25"
+  },
+  {
+   "cash": 353.67,
+   "day_pnl": -6.4,
+   "equity": 498.09,
+   "exits_today": [],
+   "positions_value": 144.43,
+   "realized_cum": 4.66,
+   "session": "2026-09-28"
+  },
+  {
+   "cash": 353.67,
+   "day_pnl": 2.34,
+   "equity": 500.43,
+   "exits_today": [],
+   "positions_value": 146.76,
+   "realized_cum": 4.66,
+   "session": "2026-09-29"
+  },
+  {
+   "cash": 353.67,
+   "day_pnl": -1.77,
+   "equity": 498.66,
+   "exits_today": [],
+   "positions_value": 144.99,
+   "realized_cum": 4.66,
+   "session": "2026-09-30"
+  },
+  {
+   "cash": 353.67,
+   "day_pnl": 0.46,
+   "equity": 499.12,
+   "exits_today": [],
+   "positions_value": 145.45,
+   "realized_cum": 4.66,
+   "session": "2026-10-01"
+  },
+  {
+   "cash": 353.67,
+   "day_pnl": 2.53,
+   "equity": 501.65,
+   "exits_today": [],
+   "positions_value": 147.99,
+   "realized_cum": 4.66,
+   "session": "2026-10-02"
+  },
+  {
+   "cash": 353.67,
+   "day_pnl": 0.5,
+   "equity": 502.15,
+   "exits_today": [],
+   "positions_value": 148.48,
+   "realized_cum": 4.66,
+   "session": "2026-10-05"
+  },
+  {
+   "cash": 228.8,
+   "day_pnl": 0.17,
+   "equity": 502.32,
+   "exits_today": [],
+   "positions_value": 273.52,
+   "realized_cum": 4.66,
+   "session": "2026-10-06"
+  },
+  {
+   "cash": 228.8,
+   "day_pnl": -0.59,
+   "equity": 501.73,
+   "exits_today": [],
+   "positions_value": 272.93,
+   "realized_cum": 4.66,
+   "session": "2026-10-07"
+  },
+  {
+   "cash": 223.67,
+   "day_pnl": -3.9,
+   "equity": 497.83,
+   "exits_today": [
+    [
+     "TMO",
+     -5.0
+    ]
+   ],
+   "positions_value": 274.16,
+   "realized_cum": -0.34,
+   "session": "2026-10-08"
+  },
+  {
+   "cash": 223.67,
+   "day_pnl": 0.7,
+   "equity": 498.53,
+   "exits_today": [],
+   "positions_value": 274.86,
+   "realized_cum": -0.34,
+   "session": "2026-10-09"
+  },
+  {
+   "cash": 223.67,
+   "day_pnl": 3.8,
+   "equity": 502.33,
+   "exits_today": [],
+   "positions_value": 278.67,
+   "realized_cum": -0.34,
+   "session": "2026-10-12"
+  },
+  {
+   "cash": 223.67,
+   "day_pnl": 4.09,
+   "equity": 506.42,
+   "exits_today": [],
+   "positions_value": 282.76,
+   "realized_cum": -0.34,
+   "session": "2026-10-13"
+  },
+  {
+   "cash": 280.38,
+   "day_pnl": -8.07,
+   "equity": 498.35,
+   "exits_today": [
+    [
+     "DELL",
+     -5.28
+    ]
+   ],
+   "positions_value": 217.97,
+   "realized_cum": -5.62,
+   "session": "2026-10-14"
+  },
+  {
+   "cash": 169.12,
+   "day_pnl": -1.47,
+   "equity": 496.88,
+   "exits_today": [],
+   "positions_value": 327.76,
+   "realized_cum": -5.62,
+   "session": "2026-10-15"
+  },
+  {
+   "cash": 386.21,
+   "day_pnl": -0.89,
+   "equity": 495.99,
+   "exits_today": [
+    [
+     "META",
+     -5.3
+    ],
+    [
+     "EOG",
+     8.38
+    ]
+   ],
+   "positions_value": 109.78,
+   "realized_cum": -2.53,
+   "session": "2026-10-16"
+  },
+  {
+   "cash": 386.21,
+   "day_pnl": 1.48,
+   "equity": 497.47,
+   "exits_today": [],
+   "positions_value": 111.27,
+   "realized_cum": -2.53,
+   "session": "2026-10-19"
+  },
+  {
+   "cash": 386.21,
+   "day_pnl": 3.41,
+   "equity": 500.88,
+   "exits_today": [],
+   "positions_value": 114.68,
+   "realized_cum": -2.53,
+   "session": "2026-10-20"
+  },
+  {
+   "cash": 386.21,
+   "day_pnl": -0.65,
+   "equity": 500.23,
+   "exits_today": [],
+   "positions_value": 114.03,
+   "realized_cum": -2.53,
+   "session": "2026-10-21"
+  }
+ ],
+ "evidence_through_session": "2026-10-21",
+ "generated_utc": "2026-10-22T02:26:02+00:00",
+ "ledger": "robinhood_500_baseline.db",
+ "money": {
+  "equity": 500.23,
+  "net_total_pnl": 0.23,
+  "open_positions": [
+   [
+    "UNH",
+    "decision_engine/gates-v1.1"
+   ]
+  ],
+  "realized_pnl": -2.54,
+  "return_pct": 0.046,
+  "start_equity": 500.0,
+  "unrealized_pnl_snapshot": 2.76
+ },
+ "pooled_for_reconciliation_only": {
+  "avg_loss": -5.27,
+  "avg_win": 9.26,
+  "best_trade": 10.14,
+  "breakeven_win_rate_at_this_payoff": 0.362,
+  "closed_trades": 6,
+  "expectancy_R_per_trade": -0.023,
+  "expectancy_usd_per_trade": -0.423,
+  "gross_loss": 21.06,
+  "gross_profit": 18.52,
+  "losses": 4,
+  "net_realized_pnl": -2.54,
+  "payoff_ratio": 1.76,
+  "profit_factor": 0.879,
+  "sample_note": "n=6: far below the 50-trade review checkpoint; ratios are descriptive, not estimates of an edge",
+  "win_rate": 0.333,
+  "wins": 2,
+  "worst_trade": -5.48
+ },
+ "risk_and_speed": {
+  "avg_capital_deployed_pct": 28.5,
+  "avg_capital_deployed_usd": 142.74,
+  "drawdown_note": "peak-to-trough on one snapshot per session; intraday drawdown is not recorded",
+  "entries": 7,
+  "entries_disabled_by_day": {
+   "2026-10-19": 22,
+   "2026-10-20": 22,
+   "2026-10-21": 22
+  },
+  "entries_disabled_events": 66,
+  "entries_per_session": 0.241,
+  "max_drawdown_pct": 2.06,
+  "max_drawdown_usd": 10.43,
+  "net_pnl_per_$100_deployed_session": 0.0054,
+  "risk_blocked_events": 6,
+  "sessions": 29,
+  "trough_session": "2026-10-16"
+ },
+ "runtime_version": "b236d54a469475b7c6ac7c1980b1e4b30e10de0d"
+}

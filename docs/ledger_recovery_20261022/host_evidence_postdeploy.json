@@ -1,0 +1,407 @@
+{
+ "backup": "20261022T042050Z",
+ "backup_created_utc": "2026-10-22T04:20:51+00:00",
+ "cash": {
+  "cash_from_all_fills": 2253.53,
+  "cash_from_fills_without_flagged": 386.21,
+  "cash_from_positions_state": 386.21,
+  "delta_all_fills_vs_state": 1867.32,
+  "delta_without_flagged_vs_state": 0.0,
+  "expected_delta_if_only_these_are_phantom": 1867.33,
+  "flagged_notional": 1867.327,
+  "last_equity_row_cash": 386.21,
+  "n_flagged": 14
+ },
+ "cash_all_fills_matches_equity_rows_through": "2026-10-15",
+ "cash_by_session_after_2026-10-14": [
+  {
+   "equity_row_cash": 280.38,
+   "fills_cash_all": 280.38,
+   "fills_cash_unflagged": 280.38,
+   "session": "2026-10-14"
+  },
+  {
+   "equity_row_cash": 169.12,
+   "fills_cash_all": 169.12,
+   "fills_cash_unflagged": 169.12,
+   "session": "2026-10-15"
+  },
+  {
+   "equity_row_cash": 386.21,
+   "fills_cash_all": 2253.53,
+   "fills_cash_unflagged": 386.21,
+   "session": "2026-10-16"
+  },
+  {
+   "equity_row_cash": 386.21,
+   "fills_cash_all": 2253.53,
+   "fills_cash_unflagged": 386.21,
+   "session": "2026-10-19"
+  },
+  {
+   "equity_row_cash": 386.21,
+   "fills_cash_all": 2253.53,
+   "fills_cash_unflagged": 386.21,
+   "session": "2026-10-20"
+  },
+  {
+   "equity_row_cash": 386.21,
+   "fills_cash_all": 2253.53,
+   "fills_cash_unflagged": 386.21,
+   "session": "2026-10-21"
+  }
+ ],
+ "cash_unflagged_matches_equity_rows_every_session": true,
+ "deployed_b236d54_reconcile": {
+  "identical_runs": true,
+  "reconcile_run_1": {
+   "cash_from_fills": 2253.53,
+   "cash_from_state": 386.21,
+   "delta": 1867.32,
+   "reconciled": false
+  },
+  "reconcile_run_2": {
+   "cash_from_fills": 2253.53,
+   "cash_from_state": 386.21,
+   "delta": 1867.32,
+   "reconciled": false
+  },
+  "tables": {
+   "audit": [
+    3210,
+    "7a0a87ffca2570f0"
+   ],
+   "equity": [
+    30,
+    "a77018359136a614"
+   ],
+   "fills": [
+    27,
+    "a0345bbf2a986cc8"
+   ],
+   "orders": [
+    27,
+    "dadf879e9d5f1700"
+   ],
+   "positions": [
+    7,
+    "8cee15cc316e8258"
+   ],
+   "signals": [
+    379,
+    "1c79f706332ffcfe"
+   ]
+  },
+  "tables_unchanged": true,
+  "tolerance": 0.05
+ },
+ "entries_after_2026-10-15": [],
+ "eog_sequence": {
+  "all_orders_status": [
+   "filled"
+  ],
+  "creation_gap_seconds": {
+   "max": 61.6,
+   "median": 60.9,
+   "min": 44.8
+  },
+  "exit_target_orders": 15,
+  "fill_window_ms": 8.0,
+  "first_created": "2026-10-16T18:50:37.205328+00:00",
+  "first_fill_at": "2026-10-16T19:05:35.220319+00:00",
+  "flagged_eog_fills": 14,
+  "last_created": "2026-10-16T19:04:32.551377+00:00",
+  "last_fill_at": "2026-10-16T19:05:35.228329+00:00",
+  "position_closed_at": "2026-10-16T19:05:35.220865+00:00",
+  "position_closed_by_first_fill": true,
+  "position_qty_equals_order_qty": true,
+  "same_limit": [
+   157.6
+  ],
+  "same_quantity": [
+   0.846323
+  ],
+  "sell_fills": 15,
+  "unflagged_eog_fills": [
+   "fil_8dcb21113af54598"
+  ]
+ },
+ "fixed_branch_reconcile": {
+  "identical_runs": true,
+  "reconcile_run_1": {
+   "cash_from_fills": 386.21,
+   "cash_from_state": 386.21,
+   "delta": 0.0,
+   "excluded": [
+    [
+     "fil_e5b724383793854d",
+     "ord_2cf8e79c70081926",
+     133.3805
+    ],
+    [
+     "fil_6346b3d9c07e6ae7",
+     "ord_c948317e20e198e1",
+     133.3805
+    ],
+    [
+     "fil_d9375463f613ba2f",
+     "ord_3a289418abc61c8c",
+     133.3805
+    ],
+    [
+     "fil_aa7db01ebb0ebc18",
+     "ord_dfbc60ad7d0af4b9",
+     133.3805
+    ],
+    [
+     "fil_76c99929886aafdf",
+     "ord_d2cd2050d75acbf1",
+     133.3805
+    ],
+    [
+     "fil_bddc36afcaa55476",
+     "ord_eb9f73a8065b878a",
+     133.3805
+    ],
+    [
+     "fil_fb3f5e53860f9d2d",
+     "ord_3396862bb40875ba",
+     133.3805
+    ],
+    [
+     "fil_5c57d632d2a968ca",
+     "ord_175e4b08612c69ef",
+     133.3805
+    ],
+    [
+     "fil_f76d2e9fce4ee864",
+     "ord_5d8ae2e45589f78f",
+     133.3805
+    ],
+    [
+     "fil_caa6a399cd76a17f",
+     "ord_600954a4cbf7b3a1",
+     133.3805
+    ],
+    [
+     "fil_09d17f3476e459be",
+     "ord_1d40bbc954f8fc35",
+     133.3805
+    ],
+    [
+     "fil_4df5ad0aa865e8c9",
+     "ord_edd9f5456e014ed1",
+     133.3805
+    ],
+    [
+     "fil_1591355f501eb9cd",
+     "ord_0de072918fbed3f6",
+     133.3805
+    ],
+    [
+     "fil_7e3a0306313c96cc",
+     "ord_a53efe20b84304a7",
+     133.3805
+    ]
+   ],
+   "reconciled": true
+  },
+  "reconcile_run_2": {
+   "cash_from_fills": 386.21,
+   "cash_from_state": 386.21,
+   "delta": 0.0,
+   "excluded": [
+    [
+     "fil_e5b724383793854d",
+     "ord_2cf8e79c70081926",
+     133.3805
+    ],
+    [
+     "fil_6346b3d9c07e6ae7",
+     "ord_c948317e20e198e1",
+     133.3805
+    ],
+    [
+     "fil_d9375463f613ba2f",
+     "ord_3a289418abc61c8c",
+     133.3805
+    ],
+    [
+     "fil_aa7db01ebb0ebc18",
+     "ord_dfbc60ad7d0af4b9",
+     133.3805
+    ],
+    [
+     "fil_76c99929886aafdf",
+     "ord_d2cd2050d75acbf1",
+     133.3805
+    ],
+    [
+     "fil_bddc36afcaa55476",
+     "ord_eb9f73a8065b878a",
+     133.3805
+    ],
+    [
+     "fil_fb3f5e53860f9d2d",
+     "ord_3396862bb40875ba",
+     133.3805
+    ],
+    [
+     "fil_5c57d632d2a968ca",
+     "ord_175e4b08612c69ef",
+     133.3805
+    ],
+    [
+     "fil_f76d2e9fce4ee864",
+     "ord_5d8ae2e45589f78f",
+     133.3805
+    ],
+    [
+     "fil_caa6a399cd76a17f",
+     "ord_600954a4cbf7b3a1",
+     133.3805
+    ],
+    [
+     "fil_09d17f3476e459be",
+     "ord_1d40bbc954f8fc35",
+     133.3805
+    ],
+    [
+     "fil_4df5ad0aa865e8c9",
+     "ord_edd9f5456e014ed1",
+     133.3805
+    ],
+    [
+     "fil_1591355f501eb9cd",
+     "ord_0de072918fbed3f6",
+     133.3805
+    ],
+    [
+     "fil_7e3a0306313c96cc",
+     "ord_a53efe20b84304a7",
+     133.3805
+    ]
+   ],
+   "reconciled": true
+  },
+  "tables": {
+   "audit": [
+    3210,
+    "7a0a87ffca2570f0"
+   ],
+   "equity": [
+    30,
+    "a77018359136a614"
+   ],
+   "fills": [
+    27,
+    "a0345bbf2a986cc8"
+   ],
+   "orders": [
+    27,
+    "dadf879e9d5f1700"
+   ],
+   "positions": [
+    7,
+    "8cee15cc316e8258"
+   ],
+   "signals": [
+    379,
+    "1c79f706332ffcfe"
+   ]
+  },
+  "tables_unchanged": true,
+  "tolerance": 0.05
+ },
+ "host_postmarket_reconciled_flags": [
+  [
+   "2026-10-14",
+   true
+  ],
+  [
+   "2026-10-15",
+   true
+  ],
+  [
+   "2026-10-16",
+   false
+  ],
+  [
+   "2026-10-19",
+   false
+  ],
+  [
+   "2026-10-20",
+   false
+  ],
+  [
+   "2026-10-21",
+   false
+  ]
+ ],
+ "integrity_check": "ok",
+ "journal_mode": "delete",
+ "meta_sequence": {
+  "flagged": false,
+  "orders": [
+   [
+    "STOP",
+    "exit_stop",
+    "filled"
+   ]
+  ]
+ },
+ "other_orders_after_2026-10-15": [
+  [
+   "2026-10-16T18:22:10",
+   "META",
+   "exit_stop"
+  ]
+ ],
+ "phantom_candidates": {
+  "all_have_no_open_position_at_fill_time": true,
+  "audit_written_after_its_fill": true,
+  "count": 14,
+  "intents": [
+   "exit_target"
+  ],
+  "orders_with_exactly_one_fill_and_one_audit": true,
+  "symbols": [
+   "EOG"
+  ],
+  "total_notional": 1867.327
+ },
+ "position_state": {
+  "match": true,
+  "open_positions": {
+   "UNH": 0.273468
+  },
+  "shares_held_by_unflagged_fills": {
+   "UNH": 0.273468
+  },
+  "shares_if_phantoms_were_real": {
+   "EOG": -11.848522,
+   "UNH": 0.273468
+  }
+ },
+ "realized_pnl": {
+  "equity_row_last_realized": -2.53,
+  "fills_fifo_all": -2.5331,
+  "fills_fifo_all_unmatched_sell_qty": 11.848522,
+  "fills_fifo_without_flagged": -2.5331,
+  "fills_fifo_without_flagged_unmatched_sell_qty": 0,
+  "oct16_realized_by_position": {
+   "EOG": 8.3806,
+   "META": -5.2957
+  },
+  "positions_table_closed": -2.5332,
+  "positions_vs_fifo_without_flagged": -0.0001
+ },
+ "runtime_version": "unknown",
+ "sha256_matches_manifest": true,
+ "signals_executed_by_engine_version_counts_only": {
+  "decision_engine/gates-v1": 2,
+  "decision_engine/gates-v1.1": 5
+ },
+ "unflagged_fills_without_position_effect": []
+}
