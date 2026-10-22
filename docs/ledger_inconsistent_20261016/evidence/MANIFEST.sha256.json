@@ -1,0 +1,34 @@
+{
+ "deployed_commit": "b236d54a469475b7c6ac7c1980b1e4b30e10de0d",
+ "files_sha256": {
+  "append_only_oct15_to_oct21.json": "2b3bcefbd58a6b832bf53fffc92edb7e8982af97d3b9d71f50cf029936f4b3f4",
+  "evidence/full_suite_deployed_b236d54.log": "8b2a8d08506ab3ca072588b836f75fc1bfef1567a1156b1793ca3af949306ab4",
+  "evidence/full_suite_fix_branch.log": "798a79c227079e1b0b601d1e88bc08a090de5d20795c00aeb93bd55307baa2f5",
+  "evidence/ops_run_38825835806_2026-10-15_OK.log": "947a252b9a0018b4a07ccdc3433734483113f318a91dceebbe50bdb4337f8adf",
+  "evidence/ops_run_38983580742_2026-10-16_FAILED.log": "a067b85af6ba714e446f1c0a21bd4bf12811c914980272a8d6c90f7e4c5540e7",
+  "evidence/ops_run_39348702596_2026-10-20_FAILED.log": "ea92621bcc8cfd1208f42a3437d690c694908c842c9416125e7fcf8b4c175a1c",
+  "evidence/ops_run_39519269890_2026-10-21_FAILED.log": "2bbfc69660c92c7f1f89244c4494ae8e8f514f0949c920843291ba2f217b9869",
+  "evidence/ops_run_39698049160_2026-10-22_FAILED.log": "77c7b1401adb77840e461f3a802ff973843b7731c3d71bbe37f71b05bd0f4068",
+  "evidence/ops_run_39709406747_2026-10-22_DISPATCH_from_fix_branch.log": "a9326cf15143d1bc4868b58942ee3e6645de3058f84ffbbe1b6023019d3a1477",
+  "host_evidence_analysis.py": "241c42d7e9165e76543911be205da719bb7c32a987694295831f8b475da78344",
+  "host_evidence_results.json": "f9b0aaee2aec6211dbb93ecaf531699a8eed4a1728cf08b9faa393a8472a650d",
+  "public_bars_oct16_check.json": "c82c88afa43928a88c2035d52b45305068c5c76c0bdd1cbe1003647312000f8f",
+  "reproduce.py": "f6544f24d1b70d9ad727f4a8e4e11603046c1a3eabe953c6a1ccb60e2e973271",
+  "reproduce_results.json": "8689f4490e6b49cf9384542b2f8b47af54eb6243fe10f06ea448c38ada90519f",
+  "verify_append_only.py": "99dfe6d807f0f44a6aea01835bd9c4248af5bc9b1e20747bdc712024c1a065ad",
+  "verify_fix_on_damaged_ledger.py": "7e6003ab8e67ecf93c1d42cd87a3c1e2fac54a4109e22d626e25881e0da07b91",
+  "verify_fix_results.json": "8dc945e061e566e2fb273e87b8217f967bd195a714aeeb17bdcff35514f51e82"
+ },
+ "generated_utc": "2026-10-22T02:18:48+00:00",
+ "mirror_sha256": {
+  "20261015T202501Z/MANIFEST.json": "52602d7b6266b84b013d7d48d2c99a8610bd15de9856d4c0603308b47ab2e6f1",
+  "20261015T202501Z/robinhood_500_baseline.db": "ae3bc665ba05205b64ab2631f3f3f9a6a379f40f25292ac0ddc9d706add0defe",
+  "20261015T202501Z/runtime_state.json": "117b3a31c18621ef7401b93a821a1d68ad4e969b6a95388de2600f596182ab26",
+  "20261015T202501Z/shadow__shadow_candidates.db": "bb97146c09ed86be55aadf7da31a97276b806fcc25c7137991754373c0e5f5ac",
+  "20261021T202501Z/MANIFEST.json": "d74720140c9b1450762f367101e87d2d994f2474fc4577ce0af05a907c87d477",
+  "20261021T202501Z/robinhood_500_baseline.db": "f8b6261e531be5ca16368cb029ee852ae2931476e6d6d355e17c9332095bdc78",
+  "20261021T202501Z/runtime_state.json": "76ed168a4004c87923c64e84531cc2567ac3b1d94950497f753040b6ae7f003a",
+  "20261021T202501Z/shadow__shadow_candidates.db": "4a9048907a972bc0c7bdc919b295a0d8ecefed46f2e86fa6e39c5a60415ab94e"
+ },
+ "pristine_mirrors": "~/.avdi_cloud_mirror/<name> (read-only; never modified)"
+}

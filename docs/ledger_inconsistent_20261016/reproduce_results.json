@@ -1,0 +1,296 @@
+{
+ "baseline_oct15_ledger_deployed_reconcile": {
+  "cash_from_fills": 169.12,
+  "cash_from_state": 169.12,
+  "delta": 0.0,
+  "reconciled": true
+ },
+ "deployed_source": "C:/Users/ARYANV~1/AppData/Local/Temp/claude/C--Users-aryan-vir-Aryan-vir-projectsnstuff-trading-terminal/3059552e-cbae-48c1-9c1c-6af21cb8dd08/scratchpad/deployed",
+ "ledger_used": "robinhood_500_baseline.db",
+ "scenarios": [
+  {
+   "audit_exit_without_position": 0,
+   "description": "EOG target traded through + META stop hit, one exit order each (nominal path)",
+   "exit_orders_created_this_run": [
+    {
+     "filled_qty": 3.030303,
+     "intent": "exit_stop",
+     "order_type": "STOP",
+     "quantity": 3.030303,
+     "side": "SELL",
+     "status": "filled",
+     "symbol": "HAL"
+    },
+    {
+     "filled_qty": 0.158046,
+     "intent": "exit_target",
+     "order_type": "LIMIT",
+     "quantity": 0.158046,
+     "side": "SELL",
+     "status": "filled",
+     "symbol": "AMD"
+    },
+    {
+     "filled_qty": 0.187291,
+     "intent": "exit_stop",
+     "order_type": "STOP",
+     "quantity": 0.187291,
+     "side": "SELL",
+     "status": "filled",
+     "symbol": "TMO"
+    },
+    {
+     "filled_qty": 0.109577,
+     "intent": "exit_stop",
+     "order_type": "STOP",
+     "quantity": 0.109577,
+     "side": "SELL",
+     "status": "filled",
+     "symbol": "DELL"
+    },
+    {
+     "filled_qty": 0.118596,
+     "intent": "exit_stop",
+     "order_type": "STOP",
+     "quantity": 0.118596,
+     "side": "SELL",
+     "status": "filled",
+     "symbol": "META"
+    },
+    {
+     "filled_qty": 0.846323,
+     "intent": "exit_target",
+     "order_type": "LIMIT",
+     "quantity": 0.846323,
+     "side": "SELL",
+     "status": "filled",
+     "symbol": "EOG"
+    }
+   ],
+   "fills_larger_than_their_order": [],
+   "independent_cash_from_fills": 386.21,
+   "open_positions_after": [
+    "UNH"
+   ],
+   "reconcile": {
+    "cash_from_fills": 386.21,
+    "cash_from_state": 386.21,
+    "delta": 0.0,
+    "reconciled": true
+   },
+   "reconcile_tolerance_usd": 0.05,
+   "scenario": "A_control_single_exits"
+  },
+  {
+   "audit_exit_without_position": 1,
+   "description": "EOG high == target (touch) for 2 cycles, then high > target: duplicate pending exit orders",
+   "exit_orders_created_this_run": [
+    {
+     "filled_qty": 3.030303,
+     "intent": "exit_stop",
+     "order_type": "STOP",
+     "quantity": 3.030303,
+     "side": "SELL",
+     "status": "filled",
+     "symbol": "HAL"
+    },
+    {
+     "filled_qty": 0.158046,
+     "intent": "exit_target",
+     "order_type": "LIMIT",
+     "quantity": 0.158046,
+     "side": "SELL",
+     "status": "filled",
+     "symbol": "AMD"
+    },
+    {
+     "filled_qty": 0.187291,
+     "intent": "exit_stop",
+     "order_type": "STOP",
+     "quantity": 0.187291,
+     "side": "SELL",
+     "status": "filled",
+     "symbol": "TMO"
+    },
+    {
+     "filled_qty": 0.109577,
+     "intent": "exit_stop",
+     "order_type": "STOP",
+     "quantity": 0.109577,
+     "side": "SELL",
+     "status": "filled",
+     "symbol": "DELL"
+    },
+    {
+     "filled_qty": 0.846323,
+     "intent": "exit_target",
+     "order_type": "LIMIT",
+     "quantity": 0.846323,
+     "side": "SELL",
+     "status": "filled",
+     "symbol": "EOG"
+    },
+    {
+     "filled_qty": 0.846323,
+     "intent": "exit_target",
+     "order_type": "LIMIT",
+     "quantity": 0.846323,
+     "side": "SELL",
+     "status": "filled",
+     "symbol": "EOG"
+    }
+   ],
+   "fills_larger_than_their_order": [],
+   "independent_cash_from_fills": 435.88,
+   "open_positions_after": [
+    "META",
+    "UNH"
+   ],
+   "reconcile": {
+    "cash_from_fills": 435.88,
+    "cash_from_state": 302.5,
+    "delta": 133.38,
+    "reconciled": false
+   },
+   "reconcile_tolerance_usd": 0.05,
+   "scenario": "B_target_touch_then_through"
+  },
+  {
+   "audit_exit_without_position": 0,
+   "description": "META stop hit while the quote's volume is tiny: fractional order filled as >= 1 whole share",
+   "exit_orders_created_this_run": [
+    {
+     "filled_qty": 3.030303,
+     "intent": "exit_stop",
+     "order_type": "STOP",
+     "quantity": 3.030303,
+     "side": "SELL",
+     "status": "filled",
+     "symbol": "HAL"
+    },
+    {
+     "filled_qty": 0.158046,
+     "intent": "exit_target",
+     "order_type": "LIMIT",
+     "quantity": 0.158046,
+     "side": "SELL",
+     "status": "filled",
+     "symbol": "AMD"
+    },
+    {
+     "filled_qty": 0.187291,
+     "intent": "exit_stop",
+     "order_type": "STOP",
+     "quantity": 0.187291,
+     "side": "SELL",
+     "status": "filled",
+     "symbol": "TMO"
+    },
+    {
+     "filled_qty": 0.109577,
+     "intent": "exit_stop",
+     "order_type": "STOP",
+     "quantity": 0.109577,
+     "side": "SELL",
+     "status": "filled",
+     "symbol": "DELL"
+    },
+    {
+     "filled_qty": 1.0,
+     "intent": "exit_stop",
+     "order_type": "STOP",
+     "quantity": 0.118596,
+     "side": "SELL",
+     "status": "filled",
+     "symbol": "META"
+    }
+   ],
+   "fills_larger_than_their_order": [
+    {
+     "fq": 1.0,
+     "oq": 0.118596,
+     "symbol": "META"
+    }
+   ],
+   "independent_cash_from_fills": 874.96,
+   "open_positions_after": [
+    "EOG",
+    "UNH"
+   ],
+   "reconcile": {
+    "cash_from_fills": 874.96,
+    "cash_from_state": 252.83,
+    "delta": 622.13,
+    "reconciled": false
+   },
+   "reconcile_tolerance_usd": 0.05,
+   "scenario": "C_tiny_bar_volume_overfill"
+  },
+  {
+   "audit_exit_without_position": 0,
+   "description": "a >1-share position exits partially (small volume) then closes: realized P&L of the partial is lost",
+   "exit_orders_created_this_run": [
+    {
+     "filled_qty": 3.030303,
+     "intent": "exit_stop",
+     "order_type": "STOP",
+     "quantity": 3.030303,
+     "side": "SELL",
+     "status": "filled",
+     "symbol": "HAL"
+    },
+    {
+     "filled_qty": 0.158046,
+     "intent": "exit_target",
+     "order_type": "LIMIT",
+     "quantity": 0.158046,
+     "side": "SELL",
+     "status": "filled",
+     "symbol": "AMD"
+    },
+    {
+     "filled_qty": 0.187291,
+     "intent": "exit_stop",
+     "order_type": "STOP",
+     "quantity": 0.187291,
+     "side": "SELL",
+     "status": "filled",
+     "symbol": "TMO"
+    },
+    {
+     "filled_qty": 0.109577,
+     "intent": "exit_stop",
+     "order_type": "STOP",
+     "quantity": 0.109577,
+     "side": "SELL",
+     "status": "filled",
+     "symbol": "DELL"
+    },
+    {
+     "filled_qty": 3.0,
+     "intent": "exit_stop",
+     "order_type": "STOP",
+     "quantity": 3.0,
+     "side": "SELL",
+     "status": "filled",
+     "symbol": "SYN"
+    }
+   ],
+   "fills_larger_than_their_order": [],
+   "independent_cash_from_fills": 166.03,
+   "open_positions_after": [
+    "META",
+    "EOG",
+    "UNH"
+   ],
+   "reconcile": {
+    "cash_from_fills": 166.03,
+    "cash_from_state": 167.06,
+    "delta": -1.03,
+    "reconciled": false
+   },
+   "reconcile_tolerance_usd": 0.05,
+   "scenario": "D_partial_then_close"
+  }
+ ]
+}

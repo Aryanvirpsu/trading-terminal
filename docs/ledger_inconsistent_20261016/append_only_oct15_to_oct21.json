@@ -1,0 +1,1218 @@
+{
+ "append_only": true,
+ "new": "20261021T202501Z",
+ "old": "20261015T202501Z",
+ "tables": {
+  "audit": {
+   "allowed_state_changes": [],
+   "appended": 558,
+   "new_rows": 3210,
+   "old_rows": 2652
+  },
+  "equity": {
+   "allowed_state_changes": [],
+   "appended": 4,
+   "new_rows": 30,
+   "old_rows": 26
+  },
+  "fills": {
+   "allowed_state_changes": [],
+   "appended": 16,
+   "new_rows": 27,
+   "old_rows": 11
+  },
+  "orders": {
+   "allowed_state_changes": [],
+   "appended": 16,
+   "new_rows": 27,
+   "old_rows": 11
+  },
+  "positions": {
+   "allowed_state_changes": [
+    {
+     "changed": [
+      "avg_exit",
+      "closed_at",
+      "exit_reason",
+      "mae",
+      "realized_pnl",
+      "status"
+     ],
+     "key": "pos_b71c149b62dd62c8",
+     "table": "positions"
+    },
+    {
+     "changed": [
+      "avg_exit",
+      "closed_at",
+      "exit_reason",
+      "mfe",
+      "realized_pnl",
+      "status"
+     ],
+     "key": "pos_49daaa021128407a",
+     "table": "positions"
+    },
+    {
+     "changed": [
+      "mae",
+      "mfe"
+     ],
+     "key": "pos_3495822504f161a1",
+     "table": "positions"
+    }
+   ],
+   "appended": 0,
+   "new_rows": 7,
+   "old_rows": 7
+  },
+  "signals": {
+   "allowed_state_changes": [
+    {
+     "changed": [
+      "mae",
+      "outcome",
+      "outcome_at",
+      "outcome_pnl_ps",
+      "tracked_until"
+     ],
+     "key": "sig_2f12ed90e3f06729",
+     "table": "signals"
+    },
+    {
+     "changed": [
+      "mae",
+      "outcome",
+      "outcome_at",
+      "outcome_pnl_ps",
+      "tracked_until"
+     ],
+     "key": "sig_7023ea82ca49872a",
+     "table": "signals"
+    },
+    {
+     "changed": [
+      "outcome",
+      "outcome_at",
+      "tracked_until"
+     ],
+     "key": "sig_effd2616bc9ac764",
+     "table": "signals"
+    },
+    {
+     "changed": [
+      "mae",
+      "outcome",
+      "outcome_at",
+      "outcome_pnl_ps",
+      "tracked_until"
+     ],
+     "key": "sig_7a6b8db9a6259dc0",
+     "table": "signals"
+    },
+    {
+     "changed": [
+      "mae",
+      "outcome",
+      "outcome_at",
+      "outcome_pnl_ps",
+      "tracked_until"
+     ],
+     "key": "sig_07c5bfa1f8147a45",
+     "table": "signals"
+    },
+    {
+     "changed": [
+      "mae",
+      "outcome",
+      "outcome_at",
+      "outcome_pnl_ps",
+      "tracked_until"
+     ],
+     "key": "sig_5c9061604c499712",
+     "table": "signals"
+    },
+    {
+     "changed": [
+      "mae",
+      "outcome",
+      "outcome_at",
+      "outcome_pnl_ps",
+      "tracked_until"
+     ],
+     "key": "sig_964f687728560d00",
+     "table": "signals"
+    },
+    {
+     "changed": [
+      "mae",
+      "outcome",
+      "outcome_at",
+      "outcome_pnl_ps",
+      "tracked_until"
+     ],
+     "key": "sig_53ff89da720449a9",
+     "table": "signals"
+    },
+    {
+     "changed": [
+      "mae",
+      "outcome",
+      "outcome_at",
+      "outcome_pnl_ps",
+      "tracked_until"
+     ],
+     "key": "sig_0d91076ee88ef2b9",
+     "table": "signals"
+    },
+    {
+     "changed": [
+      "mfe",
+      "outcome",
+      "outcome_at",
+      "outcome_pnl_ps",
+      "tracked_until"
+     ],
+     "key": "sig_ff725eceebe95de4",
+     "table": "signals"
+    },
+    {
+     "changed": [
+      "mfe",
+      "outcome",
+      "outcome_at",
+      "outcome_pnl_ps",
+      "tracked_until"
+     ],
+     "key": "sig_54d28b7ab63f2ddf",
+     "table": "signals"
+    },
+    {
+     "changed": [
+      "outcome",
+      "outcome_at",
+      "tracked_until"
+     ],
+     "key": "sig_06eeff93a7af2e36",
+     "table": "signals"
+    },
+    {
+     "changed": [
+      "outcome",
+      "outcome_at",
+      "tracked_until"
+     ],
+     "key": "sig_3fcd705c6bf95f9f",
+     "table": "signals"
+    },
+    {
+     "changed": [
+      "outcome",
+      "outcome_at",
+      "tracked_until"
+     ],
+     "key": "sig_03af5c92b0011755",
+     "table": "signals"
+    },
+    {
+     "changed": [
+      "outcome",
+      "outcome_at",
+      "tracked_until"
+     ],
+     "key": "sig_5f977f2823bf28a4",
+     "table": "signals"
+    },
+    {
+     "changed": [
+      "outcome",
+      "outcome_at",
+      "tracked_until"
+     ],
+     "key": "sig_f76f8f84d79a9225",
+     "table": "signals"
+    },
+    {
+     "changed": [
+      "outcome",
+      "outcome_at",
+      "tracked_until"
+     ],
+     "key": "sig_2c89031ad58f7a7b",
+     "table": "signals"
+    },
+    {
+     "changed": [
+      "mfe",
+      "outcome",
+      "outcome_at",
+      "outcome_pnl_ps",
+      "tracked_until"
+     ],
+     "key": "sig_f43a78a6dd3892a7",
+     "table": "signals"
+    },
+    {
+     "changed": [
+      "outcome",
+      "outcome_at",
+      "tracked_until"
+     ],
+     "key": "sig_e0848a0f93533080",
+     "table": "signals"
+    },
+    {
+     "changed": [
+      "outcome",
+      "outcome_at",
+      "tracked_until"
+     ],
+     "key": "sig_fc39e8d537b109c9",
+     "table": "signals"
+    },
+    {
+     "changed": [
+      "outcome",
+      "outcome_at",
+      "tracked_until"
+     ],
+     "key": "sig_e87019a7b54334d5",
+     "table": "signals"
+    },
+    {
+     "changed": [
+      "outcome",
+      "outcome_at",
+      "tracked_until"
+     ],
+     "key": "sig_37f42288a884d91e",
+     "table": "signals"
+    },
+    {
+     "changed": [
+      "tracked_until"
+     ],
+     "key": "sig_592ec66fd254cd37",
+     "table": "signals"
+    },
+    {
+     "changed": [
+      "tracked_until"
+     ],
+     "key": "sig_3b77e04a4b3172ef",
+     "table": "signals"
+    },
+    {
+     "changed": [
+      "tracked_until"
+     ],
+     "key": "sig_891853d7edadd0cf",
+     "table": "signals"
+    },
+    {
+     "changed": [
+      "mfe",
+      "tracked_until"
+     ],
+     "key": "sig_d02a75fc22688ce5",
+     "table": "signals"
+    },
+    {
+     "changed": [
+      "tracked_until"
+     ],
+     "key": "sig_228aa1c3164a8d23",
+     "table": "signals"
+    },
+    {
+     "changed": [
+      "tracked_until"
+     ],
+     "key": "sig_3fa2c6cd6e59dd4b",
+     "table": "signals"
+    },
+    {
+     "changed": [
+      "tracked_until"
+     ],
+     "key": "sig_a09b8d1964bff479",
+     "table": "signals"
+    },
+    {
+     "changed": [
+      "tracked_until"
+     ],
+     "key": "sig_435cb4684e858a1f",
+     "table": "signals"
+    },
+    {
+     "changed": [
+      "tracked_until"
+     ],
+     "key": "sig_62aab58a2c781a99",
+     "table": "signals"
+    },
+    {
+     "changed": [
+      "mae",
+      "outcome",
+      "outcome_at",
+      "outcome_pnl_ps",
+      "tracked_until"
+     ],
+     "key": "sig_d2480247a7ff7d61",
+     "table": "signals"
+    },
+    {
+     "changed": [
+      "tracked_until"
+     ],
+     "key": "sig_1b31984cc8be0b3c",
+     "table": "signals"
+    },
+    {
+     "changed": [
+      "tracked_until"
+     ],
+     "key": "sig_6b8eda4b6b14f583",
+     "table": "signals"
+    },
+    {
+     "changed": [
+      "mfe",
+      "tracked_until"
+     ],
+     "key": "sig_88c74ad08e3e620d",
+     "table": "signals"
+    },
+    {
+     "changed": [
+      "mfe",
+      "tracked_until"
+     ],
+     "key": "sig_2eeceee27329432d",
+     "table": "signals"
+    },
+    {
+     "changed": [
+      "tracked_until"
+     ],
+     "key": "sig_e9a6bd1d6094dfca",
+     "table": "signals"
+    },
+    {
+     "changed": [
+      "mfe",
+      "tracked_until"
+     ],
+     "key": "sig_8e7beb8fef23c8e7",
+     "table": "signals"
+    },
+    {
+     "changed": [
+      "tracked_until"
+     ],
+     "key": "sig_13f04da4d8ac605c",
+     "table": "signals"
+    },
+    {
+     "changed": [
+      "mfe",
+      "outcome",
+      "outcome_at",
+      "outcome_pnl_ps",
+      "tracked_until"
+     ],
+     "key": "sig_73b073135c5b9338",
+     "table": "signals"
+    },
+    {
+     "changed": [
+      "mfe",
+      "outcome",
+      "outcome_at",
+      "outcome_pnl_ps",
+      "tracked_until"
+     ],
+     "key": "sig_0aaf1a8825b35acc",
+     "table": "signals"
+    },
+    {
+     "changed": [
+      "mfe",
+      "outcome",
+      "outcome_at",
+      "outcome_pnl_ps",
+      "tracked_until"
+     ],
+     "key": "sig_8804d2609feb22ec",
+     "table": "signals"
+    },
+    {
+     "changed": [
+      "tracked_until"
+     ],
+     "key": "sig_08d5bcb19ba13dd8",
+     "table": "signals"
+    },
+    {
+     "changed": [
+      "mfe",
+      "tracked_until"
+     ],
+     "key": "sig_6a04e23b0103505f",
+     "table": "signals"
+    },
+    {
+     "changed": [
+      "mae",
+      "outcome",
+      "outcome_at",
+      "outcome_pnl_ps",
+      "tracked_until"
+     ],
+     "key": "sig_03c7c7f7680d3e10",
+     "table": "signals"
+    },
+    {
+     "changed": [
+      "mfe",
+      "outcome",
+      "outcome_at",
+      "outcome_pnl_ps",
+      "tracked_until"
+     ],
+     "key": "sig_9e467d29c2b485b9",
+     "table": "signals"
+    },
+    {
+     "changed": [
+      "tracked_until"
+     ],
+     "key": "sig_d71612e23afdd7dc",
+     "table": "signals"
+    },
+    {
+     "changed": [
+      "tracked_until"
+     ],
+     "key": "sig_f007b38ac7c3235f",
+     "table": "signals"
+    },
+    {
+     "changed": [
+      "tracked_until"
+     ],
+     "key": "sig_d9e04a601fea417a",
+     "table": "signals"
+    },
+    {
+     "changed": [
+      "mfe",
+      "outcome",
+      "outcome_at",
+      "outcome_pnl_ps",
+      "tracked_until"
+     ],
+     "key": "sig_f44bb7f7bb7bc5b3",
+     "table": "signals"
+    },
+    {
+     "changed": [
+      "tracked_until"
+     ],
+     "key": "sig_eaf7c3e6b8b5dda1",
+     "table": "signals"
+    },
+    {
+     "changed": [
+      "mae",
+      "outcome",
+      "outcome_at",
+      "outcome_pnl_ps",
+      "tracked_until"
+     ],
+     "key": "sig_71b07877946c9bcd",
+     "table": "signals"
+    },
+    {
+     "changed": [
+      "mfe",
+      "outcome",
+      "outcome_at",
+      "outcome_pnl_ps",
+      "tracked_until"
+     ],
+     "key": "sig_cbddd11fa46b55bc",
+     "table": "signals"
+    },
+    {
+     "changed": [
+      "mfe",
+      "outcome",
+      "outcome_at",
+      "outcome_pnl_ps",
+      "tracked_until"
+     ],
+     "key": "sig_62578438284784a4",
+     "table": "signals"
+    },
+    {
+     "changed": [
+      "mfe",
+      "outcome",
+      "outcome_at",
+      "outcome_pnl_ps",
+      "tracked_until"
+     ],
+     "key": "sig_4d3b5f7c6ff21cec",
+     "table": "signals"
+    },
+    {
+     "changed": [
+      "tracked_until"
+     ],
+     "key": "sig_06c768bdd7892f56",
+     "table": "signals"
+    },
+    {
+     "changed": [
+      "tracked_until"
+     ],
+     "key": "sig_7163d2486d7e9acd",
+     "table": "signals"
+    },
+    {
+     "changed": [
+      "tracked_until"
+     ],
+     "key": "sig_2e4403126a83cd69",
+     "table": "signals"
+    },
+    {
+     "changed": [
+      "mfe",
+      "outcome",
+      "outcome_at",
+      "outcome_pnl_ps",
+      "tracked_until"
+     ],
+     "key": "sig_3573a58b7a3cbac8",
+     "table": "signals"
+    },
+    {
+     "changed": [
+      "mfe",
+      "outcome",
+      "outcome_at",
+      "outcome_pnl_ps",
+      "tracked_until"
+     ],
+     "key": "sig_72440cdc0f710311",
+     "table": "signals"
+    },
+    {
+     "changed": [
+      "mae",
+      "tracked_until"
+     ],
+     "key": "sig_47d529a569fe7604",
+     "table": "signals"
+    },
+    {
+     "changed": [
+      "mfe",
+      "tracked_until"
+     ],
+     "key": "sig_19f5ecd540940bbe",
+     "table": "signals"
+    },
+    {
+     "changed": [
+      "tracked_until"
+     ],
+     "key": "sig_837b090c19dc311c",
+     "table": "signals"
+    },
+    {
+     "changed": [
+      "mae",
+      "tracked_until"
+     ],
+     "key": "sig_6cb614a1382274ab",
+     "table": "signals"
+    },
+    {
+     "changed": [
+      "mae",
+      "tracked_until"
+     ],
+     "key": "sig_dadfa241be54f005",
+     "table": "signals"
+    },
+    {
+     "changed": [
+      "mae",
+      "tracked_until"
+     ],
+     "key": "sig_2d6cf20c65287c23",
+     "table": "signals"
+    },
+    {
+     "changed": [
+      "mae",
+      "tracked_until"
+     ],
+     "key": "sig_e5e8f1658c2b31b0",
+     "table": "signals"
+    },
+    {
+     "changed": [
+      "mfe",
+      "tracked_until"
+     ],
+     "key": "sig_5e5b7bad430a4409",
+     "table": "signals"
+    },
+    {
+     "changed": [
+      "tracked_until"
+     ],
+     "key": "sig_3c7d325ea6332a6b",
+     "table": "signals"
+    },
+    {
+     "changed": [
+      "mfe",
+      "tracked_until"
+     ],
+     "key": "sig_801d0425cc549d9e",
+     "table": "signals"
+    },
+    {
+     "changed": [
+      "mae",
+      "tracked_until"
+     ],
+     "key": "sig_a1ec1f71a369c50e",
+     "table": "signals"
+    },
+    {
+     "changed": [
+      "mfe",
+      "tracked_until"
+     ],
+     "key": "sig_2fb9f66b01185719",
+     "table": "signals"
+    },
+    {
+     "changed": [
+      "mae",
+      "tracked_until"
+     ],
+     "key": "sig_7e9796efebbb0551",
+     "table": "signals"
+    },
+    {
+     "changed": [
+      "mfe",
+      "tracked_until"
+     ],
+     "key": "sig_055b3e62dedcea9f",
+     "table": "signals"
+    },
+    {
+     "changed": [
+      "tracked_until"
+     ],
+     "key": "sig_ae3f2095aa3cde02",
+     "table": "signals"
+    },
+    {
+     "changed": [
+      "mae",
+      "tracked_until"
+     ],
+     "key": "sig_3fcdcc11cac0a3cc",
+     "table": "signals"
+    },
+    {
+     "changed": [
+      "tracked_until"
+     ],
+     "key": "sig_07c8a5b4db4763b2",
+     "table": "signals"
+    },
+    {
+     "changed": [
+      "tracked_until"
+     ],
+     "key": "sig_ecc7c4d6caf30294",
+     "table": "signals"
+    },
+    {
+     "changed": [
+      "mfe",
+      "tracked_until"
+     ],
+     "key": "sig_2ad7df226c7c2121",
+     "table": "signals"
+    },
+    {
+     "changed": [
+      "tracked_until"
+     ],
+     "key": "sig_69662a647685a5a4",
+     "table": "signals"
+    },
+    {
+     "changed": [
+      "mfe",
+      "tracked_until"
+     ],
+     "key": "sig_2139a7b798613427",
+     "table": "signals"
+    },
+    {
+     "changed": [
+      "mfe",
+      "outcome",
+      "outcome_at",
+      "outcome_pnl_ps",
+      "tracked_until"
+     ],
+     "key": "sig_802873beaf16113f",
+     "table": "signals"
+    },
+    {
+     "changed": [
+      "mfe",
+      "tracked_until"
+     ],
+     "key": "sig_dfede2e08f6ec20e",
+     "table": "signals"
+    },
+    {
+     "changed": [
+      "mfe",
+      "outcome",
+      "outcome_at",
+      "outcome_pnl_ps",
+      "tracked_until"
+     ],
+     "key": "sig_99c3f36f2178df01",
+     "table": "signals"
+    },
+    {
+     "changed": [
+      "tracked_until"
+     ],
+     "key": "sig_1cc8822246b5b1e0",
+     "table": "signals"
+    },
+    {
+     "changed": [
+      "mfe",
+      "tracked_until"
+     ],
+     "key": "sig_794dffd6344f864e",
+     "table": "signals"
+    },
+    {
+     "changed": [
+      "mfe",
+      "tracked_until"
+     ],
+     "key": "sig_80a5a09ea2ed0ee4",
+     "table": "signals"
+    },
+    {
+     "changed": [
+      "tracked_until"
+     ],
+     "key": "sig_70a5fec4bcba5b56",
+     "table": "signals"
+    },
+    {
+     "changed": [
+      "mfe",
+      "tracked_until"
+     ],
+     "key": "sig_03127afa16f47723",
+     "table": "signals"
+    },
+    {
+     "changed": [
+      "mfe",
+      "tracked_until"
+     ],
+     "key": "sig_897962d91eff9223",
+     "table": "signals"
+    },
+    {
+     "changed": [
+      "mae",
+      "outcome",
+      "outcome_at",
+      "outcome_pnl_ps",
+      "tracked_until"
+     ],
+     "key": "sig_b802ce2723982cd7",
+     "table": "signals"
+    },
+    {
+     "changed": [
+      "mae",
+      "tracked_until"
+     ],
+     "key": "sig_f9906c02c6c8e767",
+     "table": "signals"
+    },
+    {
+     "changed": [
+      "mae",
+      "outcome",
+      "outcome_at",
+      "outcome_pnl_ps",
+      "tracked_until"
+     ],
+     "key": "sig_8401e65636f5c932",
+     "table": "signals"
+    },
+    {
+     "changed": [
+      "mae",
+      "outcome",
+      "outcome_at",
+      "outcome_pnl_ps",
+      "tracked_until"
+     ],
+     "key": "sig_6c99883f024375b9",
+     "table": "signals"
+    },
+    {
+     "changed": [
+      "mae",
+      "outcome",
+      "outcome_at",
+      "outcome_pnl_ps",
+      "tracked_until"
+     ],
+     "key": "sig_64e906f282d1dfbe",
+     "table": "signals"
+    },
+    {
+     "changed": [
+      "mae",
+      "outcome",
+      "outcome_at",
+      "outcome_pnl_ps",
+      "tracked_until"
+     ],
+     "key": "sig_1b5b2a587f3dd17e",
+     "table": "signals"
+    },
+    {
+     "changed": [
+      "mae",
+      "outcome",
+      "outcome_at",
+      "outcome_pnl_ps",
+      "tracked_until"
+     ],
+     "key": "sig_a55a3ef429b25e7c",
+     "table": "signals"
+    },
+    {
+     "changed": [
+      "mae",
+      "outcome",
+      "outcome_at",
+      "outcome_pnl_ps",
+      "tracked_until"
+     ],
+     "key": "sig_ecf88d31ff42991e",
+     "table": "signals"
+    },
+    {
+     "changed": [
+      "mae",
+      "outcome",
+      "outcome_at",
+      "outcome_pnl_ps",
+      "tracked_until"
+     ],
+     "key": "sig_4feee47c5ff8a248",
+     "table": "signals"
+    },
+    {
+     "changed": [
+      "mfe",
+      "tracked_until"
+     ],
+     "key": "sig_6ddecdad677554c1",
+     "table": "signals"
+    },
+    {
+     "changed": [
+      "mfe",
+      "tracked_until"
+     ],
+     "key": "sig_dcf15cbdbaa43c30",
+     "table": "signals"
+    },
+    {
+     "changed": [
+      "mfe",
+      "tracked_until"
+     ],
+     "key": "sig_249548c2791a4726",
+     "table": "signals"
+    },
+    {
+     "changed": [
+      "mae",
+      "outcome",
+      "outcome_at",
+      "outcome_pnl_ps",
+      "tracked_until"
+     ],
+     "key": "sig_0d74cf031ff766e1",
+     "table": "signals"
+    },
+    {
+     "changed": [
+      "tracked_until"
+     ],
+     "key": "sig_11c74db0412892cd",
+     "table": "signals"
+    },
+    {
+     "changed": [
+      "tracked_until"
+     ],
+     "key": "sig_e9fc7251d6024add",
+     "table": "signals"
+    },
+    {
+     "changed": [
+      "mfe",
+      "tracked_until"
+     ],
+     "key": "sig_8c492222707fe001",
+     "table": "signals"
+    },
+    {
+     "changed": [
+      "mfe",
+      "tracked_until"
+     ],
+     "key": "sig_e7a56d163c7dcdcd",
+     "table": "signals"
+    },
+    {
+     "changed": [
+      "tracked_until"
+     ],
+     "key": "sig_160f57142c1fa3fb",
+     "table": "signals"
+    },
+    {
+     "changed": [
+      "tracked_until"
+     ],
+     "key": "sig_fe7354090d47bcc1",
+     "table": "signals"
+    },
+    {
+     "changed": [
+      "tracked_until"
+     ],
+     "key": "sig_1edec0555f8b6f24",
+     "table": "signals"
+    },
+    {
+     "changed": [
+      "tracked_until"
+     ],
+     "key": "sig_305abb6c288794ec",
+     "table": "signals"
+    },
+    {
+     "changed": [
+      "mfe",
+      "tracked_until"
+     ],
+     "key": "sig_2421cf2294d96cc6",
+     "table": "signals"
+    },
+    {
+     "changed": [
+      "tracked_until"
+     ],
+     "key": "sig_aca9b55911b6ec1e",
+     "table": "signals"
+    },
+    {
+     "changed": [
+      "mfe",
+      "tracked_until"
+     ],
+     "key": "sig_8c5ae5d6e4719c3f",
+     "table": "signals"
+    },
+    {
+     "changed": [
+      "mfe",
+      "tracked_until"
+     ],
+     "key": "sig_6766c3badd0c2357",
+     "table": "signals"
+    },
+    {
+     "changed": [
+      "mfe",
+      "tracked_until"
+     ],
+     "key": "sig_7a8b37e8780e5f19",
+     "table": "signals"
+    },
+    {
+     "changed": [
+      "mfe",
+      "tracked_until"
+     ],
+     "key": "sig_63cd4873f9eecdb4",
+     "table": "signals"
+    },
+    {
+     "changed": [
+      "mae",
+      "tracked_until"
+     ],
+     "key": "sig_7129a0ab1b34d34f",
+     "table": "signals"
+    },
+    {
+     "changed": [
+      "mae",
+      "tracked_until"
+     ],
+     "key": "sig_a127e665296fb717",
+     "table": "signals"
+    },
+    {
+     "changed": [
+      "mfe",
+      "tracked_until"
+     ],
+     "key": "sig_f797597c75d5b5dc",
+     "table": "signals"
+    },
+    {
+     "changed": [
+      "mae",
+      "outcome",
+      "outcome_at",
+      "outcome_pnl_ps",
+      "tracked_until"
+     ],
+     "key": "sig_34274c70cc19bdba",
+     "table": "signals"
+    },
+    {
+     "changed": [
+      "mae",
+      "tracked_until"
+     ],
+     "key": "sig_5ab5548208de62ba",
+     "table": "signals"
+    },
+    {
+     "changed": [
+      "mfe",
+      "tracked_until"
+     ],
+     "key": "sig_3a04207663acf8ec",
+     "table": "signals"
+    },
+    {
+     "changed": [
+      "mae",
+      "mfe",
+      "tracked_until"
+     ],
+     "key": "sig_4c603ba805ec131b",
+     "table": "signals"
+    },
+    {
+     "changed": [
+      "mae",
+      "tracked_until"
+     ],
+     "key": "sig_1390b26c9cca7044",
+     "table": "signals"
+    },
+    {
+     "changed": [
+      "mfe",
+      "tracked_until"
+     ],
+     "key": "sig_526fec3820119a55",
+     "table": "signals"
+    },
+    {
+     "changed": [
+      "mae",
+      "tracked_until"
+     ],
+     "key": "sig_2dc29ea470685050",
+     "table": "signals"
+    },
+    {
+     "changed": [
+      "mae",
+      "tracked_until"
+     ],
+     "key": "sig_8595f81983acaf2e",
+     "table": "signals"
+    },
+    {
+     "changed": [
+      "mfe",
+      "tracked_until"
+     ],
+     "key": "sig_01ae7939a61e31cb",
+     "table": "signals"
+    },
+    {
+     "changed": [
+      "tracked_until"
+     ],
+     "key": "sig_87f81df40801fd5c",
+     "table": "signals"
+    },
+    {
+     "changed": [
+      "mfe",
+      "tracked_until"
+     ],
+     "key": "sig_013d6cd711e807c9",
+     "table": "signals"
+    },
+    {
+     "changed": [
+      "mae",
+      "tracked_until"
+     ],
+     "key": "sig_499e5fc93d395463",
+     "table": "signals"
+    }
+   ],
+   "appended": 17,
+   "new_rows": 379,
+   "old_rows": 362
+  }
+ },
+ "violations": []
+}
