@@ -18,10 +18,18 @@ available we synthesise a spread from config rather than pretending the spread i
 from __future__ import annotations
 
 import hashlib
+import math
+import os
+import time
 from dataclasses import dataclass
 from typing import Any, Dict, Optional
 
 from . import config as cfg
+
+# Quote-only stops (no bar range): a quote older than this cannot trigger or fill a stop. The tracker polls every
+# 60 s, so 180 s tolerates two missed polls. It applies ONLY to the quote-only path; bar-based stops are unchanged.
+STOP_QUOTE_MAX_AGE_S = float(os.environ.get("PAPER_STOP_QUOTE_MAX_AGE_S", "180"))
+STOP_BLOCKED = "stop crossed but not executable: "     # prefix of every pending reason that leaves a position unmanaged
 
 
 @dataclass(frozen=True)
@@ -169,12 +177,73 @@ def simulate_limit(side: str, quantity: float, limit_price: float, q: Quote) -> 
                       note="limit filled on trade-through")
 
 
-def simulate_stop(side: str, quantity: float, stop_price: float, q: Quote) -> FillResult:
+def _quote_only_stop(side: str, quantity: float, stop_price: float, qr: Quote, raw: Quote, *, triggered: bool,
+                     now: Optional[float]) -> FillResult:
+    """Stop evaluation when the quote carries NO bar range (so only `last` can show the trigger).
+
+    The stop is a TRIGGER, not a price: once triggered the order is a market order and fills against the executable
+    book (bid minus slippage for a sell), which may be well beyond the stop (gap-like) and is never clamped to it.
+    A fill needs trustworthy evidence. Otherwise the order stays PENDING with a reason that starts with STOP_BLOCKED,
+    so the position is reported as unmanaged and a later valid quote can still resolve the same order:
+      * no usable last price, no valid source time, a future-dated or stale quote
+      * a crossed book (ask < bid)
+      * conflicting evidence: `last` says the stop was hit but the executable side is still on the safe side of it
+        (sell: bid > stop). One snapshot cannot show a rebound AFTER a trigger, so the trigger is unconfirmed.
+    `triggered=True` means a trigger was already validated earlier (the order has partial fills): the remainder is
+    then a plain market order and a genuine rebound (bid above the stop) still executes at the book.
+    """
+    sell = side.upper() == "SELL"
+    last = qr.last
+    if last is None or not math.isfinite(last) or last <= 0:
+        if not triggered:
+            return FillResult("pending", reason=f"stop {stop_price} not triggered")
+        return FillResult("pending", reason=STOP_BLOCKED + "no usable last price")
+    crossed = (last <= stop_price) if sell else (last >= stop_price)
+    if not crossed and not triggered:
+        return FillResult("pending", reason=f"stop {stop_price} not triggered")
+
+    why = f"last {last} vs stop {stop_price}"
+    ts = qr.source_ts
+    if ts is None or not math.isfinite(ts) or ts <= 0:
+        return FillResult("pending", reason=STOP_BLOCKED + f"quote has no valid source time ({why})")
+    age = (now if now is not None else time.time()) - ts
+    if age < -60:
+        return FillResult("pending", reason=STOP_BLOCKED + f"quote time is {-age:.0f}s in the future ({why})")
+    if age > STOP_QUOTE_MAX_AGE_S:
+        return FillResult("pending", reason=STOP_BLOCKED + f"quote is stale ({age:.0f}s old, limit "
+                                                          f"{STOP_QUOTE_MAX_AGE_S:.0f}s; {why})")
+    if raw.bid is not None and raw.ask is not None and raw.ask < raw.bid:     # resolved() would hide this
+        return FillResult("pending", reason=STOP_BLOCKED + f"crossed book bid {raw.bid} > ask {raw.ask} ({why})")
+    if not triggered and raw.bid is not None and raw.ask is not None:
+        safe_side = (raw.bid > stop_price) if sell else (raw.ask < stop_price)
+        if safe_side:
+            side_px = f"bid {raw.bid}" if sell else f"ask {raw.ask}"
+            return FillResult("pending", reason=STOP_BLOCKED + f"conflicting quote: {why} but {side_px} "
+                                                              f"is on the safe side of the stop")
+    res = simulate_market(side, quantity, qr)
+    if res.status not in ("filled", "partial"):
+        if res.status == "pending":
+            res.reason = STOP_BLOCKED + res.reason
+        return res
+    adverse = (stop_price - res.price) if sell else (res.price - stop_price)
+    gap = adverse > stop_price * (cfg.execution().gap_slippage_bps / 10000.0)
+    res.reference = stop_price
+    res.slippage = round(abs(res.price - stop_price), 6)
+    if gap:
+        res.liquidity = "gap"                      # counted as a gap fill in the daily report (partial stays in status)
+    res.note = (f"stop triggered by quote only ({why}); market fill against the executable book"
+                f"{' (gap-like)' if gap else ''}{' (trigger validated earlier)' if triggered else ''}")
+    return res
+
+
+def simulate_stop(side: str, quantity: float, stop_price: float, q: Quote, *,
+                  triggered: bool = False, now: Optional[float] = None) -> FillResult:
     """Stop order, including GAPS.
 
     If the bar OPENS beyond the stop, the realistic fill is the OPEN (plus gap
     slippage) — materially worse than the stop. Otherwise, if the bar trades through
     the stop, it becomes a market order at the stop plus normal slippage.
+    With NO bar range at all, see `_quote_only_stop` (the bar-based paths are unchanged).
     """
     e = cfg.execution()
     if quantity <= 0:
@@ -199,9 +268,13 @@ def simulate_stop(side: str, quantity: float, stop_price: float, q: Quote) -> Fi
                               reference=stop_price, liquidity="gap",
                               note=f"STOP GAPPED: opened {o} through stop {stop_price}")
 
+    # 1b) No bar range: only the quote can show the trigger.
+    if (lo if sell else hi) is None:
+        return _quote_only_stop(side, quantity, stop_price, qr, q, triggered=triggered, now=now)
+
     # 2) Triggered intrabar — market fill at the stop plus normal slippage.
-    triggered = (lo is not None and lo <= stop_price) if sell else (hi is not None and hi >= stop_price)
-    if not triggered:
+    hit = (lo is not None and lo <= stop_price) if sell else (hi is not None and hi >= stop_price)
+    if not hit:
         return FillResult("pending", reason=f"stop {stop_price} not triggered")
     slip = _slip(stop_price, e.slippage_bps)
     price = round(max((stop_price - slip) if sell else (stop_price + slip), 0.0001), 4)
@@ -214,14 +287,14 @@ def simulate_stop(side: str, quantity: float, stop_price: float, q: Quote) -> Fi
 
 def simulate(order_type: str, side: str, quantity: float, q: Quote,
              limit_price: Optional[float] = None,
-             stop_price: Optional[float] = None) -> FillResult:
+             stop_price: Optional[float] = None, *, stop_triggered: bool = False) -> FillResult:
     t = (order_type or "MARKET").upper()
     if t == "MARKET":
         return simulate_market(side, quantity, q)
     if t == "LIMIT":
         return simulate_limit(side, quantity, limit_price, q)
     if t == "STOP":
-        return simulate_stop(side, quantity, stop_price, q)
+        return simulate_stop(side, quantity, stop_price, q, triggered=stop_triggered)
     return FillResult("rejected", reason=f"unsupported order type {order_type}")
 
 

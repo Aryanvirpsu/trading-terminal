@@ -406,13 +406,20 @@ def market_hours(session_date: Optional[str] = None, scope: str = "all") -> Dict
 
     # 1) pending orders
     filled = []
+    unmanaged = []              # open positions whose exit could not be evaluated/executed (reason is recorded in audit)
     for o in db.query("SELECT order_id, symbol FROM orders WHERE status IN ('pending','partial')"):
         q = quotes.get(o["symbol"])
         if q:
-            filled.append(broker.process_order(o["order_id"], q))
+            r = broker.process_order(o["order_id"], q)
+            filled.append(r)
+            pos = db.query_one("SELECT * FROM positions WHERE symbol=? AND status='open'", (o["symbol"],))
+            if pos and broker.blocked_exit(r):
+                unmanaged.append(broker.note_unmanaged(pos, r["reason"], o["order_id"]))
 
     # 2) stops / targets on open positions
     managed = broker.manage_open_positions(quotes, session_date)
+    seen = {(u["symbol"], u["reason"]) for u in unmanaged}
+    unmanaged += [u for u in managed.get("unmanaged", []) if (u["symbol"], u["reason"]) not in seen]
 
     # 3) shadow tracking — MFE/MAE for EVERY tracked signal, including REJECT/MONITOR
     tracked_updates = 0
@@ -442,7 +449,8 @@ def market_hours(session_date: Optional[str] = None, scope: str = "all") -> Dict
             "exit_actions": managed["actions"], "tracked_updated": tracked_updates,
             "shadow_resolved": shadow_resolved, "scope": scope,
             "quote_age_s_max": _max_quote_age(quotes),
-            "quotes_missing": sorted(symbols - set(quotes))}
+            "quotes_missing": sorted(symbols - set(quotes)),
+            "positions_unmanaged": unmanaged}
 
 
 # ── Post-market ───────────────────────────────────────────────────────────────
