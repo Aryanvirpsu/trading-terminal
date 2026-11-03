@@ -796,6 +796,8 @@ def health(now: Optional[dt.datetime] = None, state: Optional[Dict[str, Any]] = 
     sh = shadow_log.status()
     if not sh.get("ok"):
         degraded.append("shadow_logger_failure")
+    if (sh.get("quote_archive") or {}).get("consecutive_failures", 0) >= 3:
+        degraded.append("quote_archive_failing")            # evidence gap only; never affects trading or `healthy`
     ctr = state.get("counters", {})
     if ctr.get("provider_failures", 0) >= 3:
         bad.append("repeated_provider_failure")

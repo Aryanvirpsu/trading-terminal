@@ -223,6 +223,7 @@ def premarket(session_date: Optional[str] = None, dry_run: bool = False, *,
             continue
 
         q = quote_for(sym)
+        shadow_log.log_quote(sym, q, "discovery", cycle_id)           # telemetry only
 
         # ---- canonical A/B(stock)/B(option)/D/E/executable (Step 10) ------
         try:
@@ -401,6 +402,7 @@ def market_hours(session_date: Optional[str] = None, scope: str = "all") -> Dict
     quotes: Dict[str, Quote] = {}
     for sym in symbols:
         q = quote_for(sym)
+        shadow_log.log_quote(sym, q, "tracker_full" if full else "tracker_fast")   # telemetry only
         if q:
             quotes[sym] = q
 

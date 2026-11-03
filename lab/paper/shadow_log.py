@@ -32,6 +32,8 @@ import datetime as dt
 import json
 import os
 import sqlite3
+import time
+from zoneinfo import ZoneInfo
 from typing import Any, Callable, Dict, List, Optional
 
 from . import config as cfg
@@ -82,6 +84,11 @@ CREATE TABLE IF NOT EXISTS shadow_ch001_quarantine (
     source_table TEXT NOT NULL, row_json TEXT NOT NULL, reason TEXT NOT NULL, quarantined_at TEXT NOT NULL);
 CREATE TABLE IF NOT EXISTS shadow_maintenance_log (
     at TEXT NOT NULL, action TEXT NOT NULL, detail_json TEXT);
+CREATE TABLE IF NOT EXISTS shadow_quotes (
+    quote_id INTEGER PRIMARY KEY AUTOINCREMENT, received_at TEXT NOT NULL, session_date TEXT,
+    symbol TEXT NOT NULL, context TEXT, cycle_id TEXT, ok INTEGER NOT NULL,
+    source_ts REAL, provider TEXT, last REAL, bid REAL, ask REAL, bid_ask_synthetic INTEGER);
+CREATE INDEX IF NOT EXISTS idx_quotes_sym ON shadow_quotes(symbol, received_at);
 CREATE TABLE IF NOT EXISTS shadow_ch001_obs (
     position_id TEXT PRIMARY KEY, event_id TEXT, symbol TEXT, plus1r_ts TEXT, plus1r_price REAL,
     observed_at TEXT);
@@ -94,7 +101,7 @@ CREATE TABLE IF NOT EXISTS shadow_ch001_results (
 """
 _APPEND_ONLY = ("shadow_cycles", "shadow_events", "shadow_candidates", "shadow_picks", "shadow_bars_d",
                 "shadow_bars_5m", "shadow_ch001_obs", "shadow_ch001_results", "shadow_evidence_boundary",
-                "shadow_ch001_quarantine", "shadow_maintenance_log")
+                "shadow_ch001_quarantine", "shadow_maintenance_log", "shadow_quotes")
 
 
 def path() -> str:
@@ -102,9 +109,9 @@ def path() -> str:
     return os.path.join(db._DATA_DIR, "shadow", SHADOW_DB)
 
 
-def _connect() -> sqlite3.Connection:
+def _connect(timeout: float = 10) -> sqlite3.Connection:
     os.makedirs(os.path.dirname(path()), exist_ok=True)
-    conn = sqlite3.connect(path(), timeout=10)
+    conn = sqlite3.connect(path(), timeout=timeout)
     conn.row_factory = sqlite3.Row
     conn.executescript(_TABLES)
     for t in _APPEND_ONLY:
@@ -112,6 +119,63 @@ def _connect() -> sqlite3.Connection:
             conn.execute(f"CREATE TRIGGER IF NOT EXISTS {t}_no_{op.lower()} BEFORE {op} ON {t} "
                          f"BEGIN SELECT RAISE(ABORT, '{t} is append-only'); END")
     return conn
+
+
+# Quote-archive fail-safety. The archive runs inside the tracker and the discovery cycle, so it must never WAIT on the
+# shadow DB: a lock held elsewhere (update_bars, a backup, an operator's query) would otherwise stall stop management
+# for the default 10 s sqlite busy timeout on every call. Instead: a short busy timeout, a cooldown after repeated
+# failures, and counters that status()/health expose so a silent evidence gap is visible.
+_QUOTE_BUSY_S = 0.25
+_QUOTE_COOLDOWN_S = 30.0
+_QUOTE_COOLDOWN_AFTER = 2
+_QUOTE_STATE: Dict[str, Any] = {"ready_path": None, "skip_until": 0.0, "consecutive": 0, "total": 0, "skipped": 0,
+                                "last_error": None}
+
+
+def quote_archive_status() -> Dict[str, Any]:
+    s = _QUOTE_STATE
+    return {"consecutive_failures": s["consecutive"], "total_failures": s["total"], "skipped": s["skipped"],
+            "cooling_down": time.monotonic() < s["skip_until"], "last_error": s["last_error"]}
+
+
+def log_quote(symbol: str, quote: Any, context: str, cycle_id: Optional[str] = None) -> bool:
+    """Append one row per quote_for() call: WHEN we received it, what the provider stamped, and whether bid/ask
+    were provider-supplied or synthesised from `last`. Missing quotes are rows too (ok=0). Telemetry only: reads
+    nothing back, never alters the quote, never raises, and never waits more than _QUOTE_BUSY_S on a locked DB
+    (a logging failure must not touch trading)."""
+    st = _QUOTE_STATE
+    if time.monotonic() < st["skip_until"]:
+        st["skipped"] += 1
+        return False
+    try:
+        now = dt.datetime.now(dt.timezone.utc)
+        bid = ask = last = ts = provider = synth = None
+        if quote is not None:
+            qr = quote.resolved()
+            bid, ask, last = _f(qr.bid), _f(qr.ask), _f(qr.last)
+            ts, provider = _f(quote.source_ts), quote.provider
+            synth = int(not (quote.bid is not None and quote.ask is not None and quote.ask >= quote.bid))
+        day = now.astimezone(ZoneInfo("America/New_York")).date().isoformat()
+        p = path()
+        # the schema script runs once per process and DB path; later calls only append
+        conn = sqlite3.connect(p, timeout=_QUOTE_BUSY_S) if st["ready_path"] == p else _connect(_QUOTE_BUSY_S)
+        try:
+            conn.execute("INSERT INTO shadow_quotes (received_at,session_date,symbol,context,cycle_id,ok,source_ts,"
+                         "provider,last,bid,ask,bid_ask_synthetic) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)",
+                         (now.isoformat(), day, symbol, context, cycle_id, int(quote is not None), ts, provider,
+                          last, bid, ask, synth))
+            conn.commit()
+        finally:
+            conn.close()
+        st["ready_path"], st["consecutive"] = p, 0
+        return True
+    except Exception as e:
+        st["consecutive"] += 1
+        st["total"] += 1
+        st["last_error"] = f"{type(e).__name__}: {e}"[:160]
+        if st["consecutive"] >= _QUOTE_COOLDOWN_AFTER:
+            st["skip_until"] = time.monotonic() + _QUOTE_COOLDOWN_S
+        return False
 
 
 def _f(x: Any) -> Optional[float]:
@@ -606,7 +670,8 @@ def status() -> Dict[str, Any]:
         n = {t: conn.execute(f"SELECT COUNT(*) n FROM {t}").fetchone()["n"]
              for t in ("shadow_cycles", "shadow_candidates", "shadow_events", "shadow_bars_5m", "shadow_ch001_results")}
         conn.close()
-        return {"ok": True, "last_cycle": dict(last) if last else None, "counts": n, "path": path()}
+        return {"ok": True, "last_cycle": dict(last) if last else None, "counts": n, "path": path(),
+                "quote_archive": quote_archive_status()}
     except Exception as e:
         return {"ok": False, "error": str(e)[:160]}
 
