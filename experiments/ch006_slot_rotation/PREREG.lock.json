@@ -1,0 +1,12 @@
+{
+  "file": "PREREG.md",
+  "sha256": "4c1cedb33ceddef345a3ab744b9335d8c5e1c09c9d38225fa225d74d6ba407c0",
+  "locked_at": "2026-11-03T06:34:55+00:00",
+  "locked_by": "Claude (Sonnet 5.5), at the user's direction",
+  "repo_head_at_lock": "54adbea27af62e6835656807684d19033a95abf7",
+  "results_computed_before_lock": false,
+  "outcome_columns_opened_before_lock": false,
+  "data_seen_before_lock": "ops status, ledger positions/equity/audit reasons and canonical_evaluated binding constraints through 2026-11-02; signal outcome columns and post-decision prices were NOT opened (see PREREG.md disclosure)",
+  "lock_time_data_snapshot": {"backup": "20261102T212501Z", "artifact_zip_sha256": "617f6bf75346210810fa1db39557947f70ed33c03ed9571fae34f8121875f940"},
+  "note": "Scripts must verify this hash before running; an edited pre-registration invalidates the experiment. Commit PREREG.md and this file BEFORE any OPPORTUNITY_AUDIT.md, CODE.lock.json or RESULTS.md exists."
+}
