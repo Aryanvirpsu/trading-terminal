@@ -1,0 +1,2 @@
+# keep the locked bytes identical on every checkout (sha256 in PREREG.lock.json)
+* -text
