@@ -32,6 +32,7 @@ import datetime as dt
 import json
 import os
 import sqlite3
+from zoneinfo import ZoneInfo
 from typing import Any, Callable, Dict, List, Optional
 
 from . import config as cfg
@@ -82,6 +83,11 @@ CREATE TABLE IF NOT EXISTS shadow_ch001_quarantine (
     source_table TEXT NOT NULL, row_json TEXT NOT NULL, reason TEXT NOT NULL, quarantined_at TEXT NOT NULL);
 CREATE TABLE IF NOT EXISTS shadow_maintenance_log (
     at TEXT NOT NULL, action TEXT NOT NULL, detail_json TEXT);
+CREATE TABLE IF NOT EXISTS shadow_quotes (
+    quote_id INTEGER PRIMARY KEY AUTOINCREMENT, received_at TEXT NOT NULL, session_date TEXT,
+    symbol TEXT NOT NULL, context TEXT, cycle_id TEXT, ok INTEGER NOT NULL,
+    source_ts REAL, provider TEXT, last REAL, bid REAL, ask REAL, bid_ask_synthetic INTEGER);
+CREATE INDEX IF NOT EXISTS idx_quotes_sym ON shadow_quotes(symbol, received_at);
 CREATE TABLE IF NOT EXISTS shadow_ch001_obs (
     position_id TEXT PRIMARY KEY, event_id TEXT, symbol TEXT, plus1r_ts TEXT, plus1r_price REAL,
     observed_at TEXT);
@@ -94,7 +100,7 @@ CREATE TABLE IF NOT EXISTS shadow_ch001_results (
 """
 _APPEND_ONLY = ("shadow_cycles", "shadow_events", "shadow_candidates", "shadow_picks", "shadow_bars_d",
                 "shadow_bars_5m", "shadow_ch001_obs", "shadow_ch001_results", "shadow_evidence_boundary",
-                "shadow_ch001_quarantine", "shadow_maintenance_log")
+                "shadow_ch001_quarantine", "shadow_maintenance_log", "shadow_quotes")
 
 
 def path() -> str:
@@ -112,6 +118,33 @@ def _connect() -> sqlite3.Connection:
             conn.execute(f"CREATE TRIGGER IF NOT EXISTS {t}_no_{op.lower()} BEFORE {op} ON {t} "
                          f"BEGIN SELECT RAISE(ABORT, '{t} is append-only'); END")
     return conn
+
+
+def log_quote(symbol: str, quote: Any, context: str, cycle_id: Optional[str] = None) -> bool:
+    """Append one row per quote_for() call: WHEN we received it, what the provider stamped, and whether bid/ask
+    were provider-supplied or synthesised from `last`. Missing quotes are rows too (ok=0). Telemetry only: reads
+    nothing back, never alters the quote, and never raises (a logging failure must not touch trading)."""
+    try:
+        now = dt.datetime.now(dt.timezone.utc)
+        bid = ask = last = ts = provider = synth = None
+        if quote is not None:
+            qr = quote.resolved()
+            bid, ask, last = _f(qr.bid), _f(qr.ask), _f(qr.last)
+            ts, provider = _f(quote.source_ts), quote.provider
+            synth = int(not (quote.bid is not None and quote.ask is not None and quote.ask >= quote.bid))
+        day = now.astimezone(ZoneInfo("America/New_York")).date().isoformat()
+        conn = _connect()
+        try:
+            conn.execute("INSERT INTO shadow_quotes (received_at,session_date,symbol,context,cycle_id,ok,source_ts,"
+                         "provider,last,bid,ask,bid_ask_synthetic) VALUES (?,?,?,?,?,?,?,?,?,?,?,?)",
+                         (now.isoformat(), day, symbol, context, cycle_id, int(quote is not None), ts, provider,
+                          last, bid, ask, synth))
+            conn.commit()
+        finally:
+            conn.close()
+        return True
+    except Exception:
+        return False
 
 
 def _f(x: Any) -> Optional[float]:
