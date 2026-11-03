@@ -1,0 +1,173 @@
+{
+ "manifest_version": "dryrun-1",
+ "outcome_blind": true,
+ "generated": "2026-11-03T06:46:20+00:00",
+ "protocol": {
+  "file": "SR001_PROTOCOL.md",
+  "sha256": "48caabf069c88a3e3e39bfe85588e31d6ea8d84542ae951a2094ea188c190838",
+  "recorded_sha256_matches": true
+ },
+ "champion": {
+  "code_version": "54adbea27af62e6835656807684d19033a95abf7",
+  "image": "avdi-paper:54adbea27af62e6835656807684d19033a95abf7",
+  "image_id": "sha256:e4c13ec8e6d40f63953f5d29bd24c8621bda3724e769d0a258870be4d17fa24a",
+  "engine_version": "decision_engine/gates-v1.1",
+  "config_version": "cfg-a0eede144e",
+  "runtime_env_overrides": "none (no PAPER_* variables set; only AVDI_* timing vars and PAPER_DATA_DIR)",
+  "avdi_env": {
+   "AVDI_DISCOVERY_INTERVAL_MIN": 15,
+   "AVDI_ENTRY_CUTOFF_MIN_BEFORE_CLOSE": 60,
+   "AVDI_TRACKER_FAST_S": 60,
+   "AVDI_TRACKER_FULL_S": 300
+  },
+  "files_container_vs_git": {
+   "lab/decision_engine.py": {
+    "git_54adbea": "cb050cddfe6480ddaa562114959c7922fb4ca7c91b126d825f89df5a535237fa",
+    "host_container": "cb050cddfe6480ddaa562114959c7922fb4ca7c91b126d825f89df5a535237fa",
+    "match": true
+   },
+   "lab/paper/config.py": {
+    "git_54adbea": "bdd17a8d55ea070b6ff85315e46ee0955c1db108b7101bea300c8223cee87343",
+    "host_container": "bdd17a8d55ea070b6ff85315e46ee0955c1db108b7101bea300c8223cee87343",
+    "match": true
+   },
+   "lab/paper/risk.py": {
+    "git_54adbea": "d512531acfc1bde08355a22263b4fe9af1d91da1c485d3b825990ab7510dbe2f",
+    "host_container": "d512531acfc1bde08355a22263b4fe9af1d91da1c485d3b825990ab7510dbe2f",
+    "match": true
+   },
+   "lab/paper/fills.py": {
+    "git_54adbea": "83b7eabaa8a1df96b175975764d5a17e8dc549e1b8c2bd0793133a6090e21638",
+    "host_container": "83b7eabaa8a1df96b175975764d5a17e8dc549e1b8c2bd0793133a6090e21638",
+    "match": true
+   },
+   "lab/paper/workflow.py": {
+    "git_54adbea": "9a2348f09c92fb1a56b1edc53d3be4ecde1c0bde9b06a1853957c970e5863c8b",
+    "host_container": "9a2348f09c92fb1a56b1edc53d3be4ecde1c0bde9b06a1853957c970e5863c8b",
+    "match": true
+   },
+   "lab/paper/canonical_bridge.py": {
+    "git_54adbea": "0a11dbc50505f50128bf3bf5fdacff181b527bd5050bd6e7854e3a53f18f2d4f",
+    "host_container": "0a11dbc50505f50128bf3bf5fdacff181b527bd5050bd6e7854e3a53f18f2d4f",
+    "match": true
+   },
+   "lab/paper/strategies.py": {
+    "git_54adbea": "82dd3556fe20f4a16605ced653a21dbcf6fb4905d4fd5d06469f15367ed008f4",
+    "host_container": "82dd3556fe20f4a16605ced653a21dbcf6fb4905d4fd5d06469f15367ed008f4",
+    "match": true
+   },
+   "lab/paper/shadow_log.py": {
+    "git_54adbea": "76b33eed365216660f86edaa5ff74f6d5b4858a917fd1000826238a50aa23449",
+    "host_container": "76b33eed365216660f86edaa5ff74f6d5b4858a917fd1000826238a50aa23449",
+    "match": true
+   },
+   "lab/paper/market_calendar.py": {
+    "git_54adbea": "022618928f3fccb19f538c44c4e141381b5574cccaec37e719fdfc913dbee6d7",
+    "host_container": "022618928f3fccb19f538c44c4e141381b5574cccaec37e719fdfc913dbee6d7",
+    "match": true
+   },
+   "lab/paper/broker.py": {
+    "git_54adbea": "efae4960ab3445fe56b43075d82fc991d5b8185624c760112556887d5bf6f644",
+    "host_container": "efae4960ab3445fe56b43075d82fc991d5b8185624c760112556887d5bf6f644",
+    "match": true
+   },
+   "lab/paper/db.py": {
+    "git_54adbea": "1316251906e08144331b2f3800ad868dfff4dc6b9b33ee9fcbf97cf985b8363b",
+    "host_container": "1316251906e08144331b2f3800ad868dfff4dc6b9b33ee9fcbf97cf985b8363b",
+    "match": true
+   }
+  },
+  "config_snapshot": {
+   "account": {
+    "initial_cash": 500.0,
+    "initial_equity": 500.0,
+    "buying_power": 500.0,
+    "margin_enabled": false,
+    "allow_shorting": false,
+    "allow_naked_options": false,
+    "fractional_shares": true,
+    "fractional_min_notional": 1.0,
+    "ledger": "robinhood_500_baseline"
+   },
+   "risk": {
+    "max_loss_per_trade": 5.0,
+    "max_position_notional": 125.0,
+    "min_cash_reserve": 100.0,
+    "max_daily_loss": 10.0,
+    "max_drawdown": 50.0,
+    "max_entries_per_day": 2,
+    "max_open_positions": 3,
+    "max_positions_per_sector": 1,
+    "max_correlated_positions": 2,
+    "risk_per_trade_pct": 0.01,
+    "max_sector_exposure_pct": 0.3,
+    "cooldown_losses": 3,
+    "cooldown_days": 1,
+    "starting_equity": 500.0
+   },
+   "options": {
+    "max_premium_per_trade": 75.0,
+    "long_only": true,
+    "allow_spreads": false,
+    "allow_multi_leg": false,
+    "min_open_interest": 250.0,
+    "min_volume": 25.0,
+    "max_spread_pct": 10.0,
+    "shadow_only": true
+   },
+   "execution": {
+    "slippage_bps": 5.0,
+    "gap_slippage_bps": 25.0,
+    "fee_per_share": 0.0,
+    "fee_min": 0.0,
+    "fee_pct": 0.0,
+    "spread_bps_default": 10.0,
+    "partial_fill_threshold": 0.02,
+    "partial_fill_ratio": 0.5,
+    "allow_partial_fills": true,
+    "limit_needs_trade_through": true,
+    "max_order_age_days": 1
+   },
+   "strategies": [
+    "liquid_momentum",
+    "sector_relative_strength",
+    "mean_reversion"
+   ],
+   "max_finalists": 5
+  }
+ },
+ "candidate_ordering": "scanner_rank = position after sorting candidates by score descending, one finalist per symbol, max_finalists=5 (lab/paper/strategies.py); sort is stable so exact score ties keep scan order; SR-001 tie-break is ticker ascending",
+ "calendar": {
+  "module": "lab/paper/market_calendar.py",
+  "sha256": "442df01714115ee9abf436bdd4e568505ee34ece46810fc6e40b2eb2b5587fde",
+  "entry_cutoff": "close - 60 min (15:00 ET; 12:00 ET on early-close days)",
+  "clock_first_session": "2026-11-04",
+  "clock_60th_session": "2027-02-01",
+  "closed_weekdays_inside_window": [
+   "2026-11-26",
+   "2026-12-25",
+   "2027-01-01",
+   "2027-01-18"
+  ],
+  "early_close_sessions": [
+   "2026-11-27",
+   "2026-12-24"
+  ],
+  "limit": "ad-hoc closures are not predictable; AVDI_EXTRA_CLOSED_DATES env var; clock end moves one session per unplanned closure"
+ },
+ "fills_and_settlement": {
+  "champion_paper_fills": "ask*(1+5bps) buy / bid*(1-5bps) sell, gap 25 bps, no fees (lab/paper/config.py execution)",
+  "sr001_costs": "15 bps per side, 30 bps stress (research assumption in SR-001, differs from the Champion's 5 bps)",
+  "champion_settlement": "NOT MODELED: the paper broker frees sale proceeds immediately (available_cash == cash)",
+  "sr001_settlement": "T+1 modeled only in experiments/sr001_slot_rotation/sim.py (interpretation I3: settled at next regular session open)"
+ },
+ "research_code": {
+  "sim.py": "926159195bece465e874cdd5f13b8b76b5c8482bbf515119d02334e43c0266fe",
+  "test_sr001_mechanics.py": "d1fadac493e8ce41b5ebf54f96a4de61883660005d397ec5db769a096fe0eefe"
+ },
+ "reference_snapshot": {
+  "backup": "20261102T212501Z",
+  "artifact_zip_sha256": "617f6bf75346210810fa1db39557947f70ed33c03ed9571fae34f8121875f940"
+ },
+ "status": "DRY RUN - sim.py is a prototype and is NOT frozen; the 60-session clock has NOT started"
+}

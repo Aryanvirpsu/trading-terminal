@@ -1,0 +1,3 @@
+# keep locked bytes identical on every checkout
+SR001_PROTOCOL.md -text
+SR001_PROTOCOL.md.sha256 -text
