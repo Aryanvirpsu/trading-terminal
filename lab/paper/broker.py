@@ -18,6 +18,7 @@ refusal is itself evidence.
 from __future__ import annotations
 
 import datetime as dt
+import json
 from typing import Any, Dict, List, Optional
 
 from . import config as cfg
@@ -190,8 +191,11 @@ def process_order(order_id: str, quote: Quote) -> Dict[str, Any]:
         db.audit("order", order_id, "exit_without_position", {"symbol": o["symbol"], "fill_recorded": False})
         return {"order_id": order_id, "status": "cancelled", "reason": "no open position"}
 
+    # A stop order with fills already recorded was validly triggered earlier: its remainder is a plain market order
+    # and must not wait for the price to cross the stop a second time (quote-only path; see fills._quote_only_stop).
     res = fills.simulate(o["order_type"], o["side"], remaining, quote,
-                         o.get("limit_price"), o.get("stop_price"))
+                         o.get("limit_price"), o.get("stop_price"),
+                         stop_triggered=bool(o.get("filled_qty")))
 
     if res.status == "rejected":
         return reject_order(order_id, res.reason)
@@ -432,13 +436,16 @@ def manage_open_positions(quotes: Dict[str, Quote],
     BEFORE targets: if a bar hits both, we assume the stop filled first."""
     session_date = session_date or dt.date.today().isoformat()
     actions: List[Dict[str, Any]] = []
+    unmanaged: List[Dict[str, Any]] = []     # open positions whose stop/target cannot be evaluated or executed now
     for pos in db.query("SELECT * FROM positions WHERE status='open'"):
         q = quotes.get(pos["symbol"])
         if not q:
+            unmanaged.append(note_unmanaged(pos, "no quote for an open position"))
             continue
         hi = q.high if q.high is not None else q.last
         lo = q.low if q.low is not None else q.last
         if hi is None or lo is None:
+            unmanaged.append(note_unmanaged(pos, "quote has no price"))
             continue
         is_long = pos["quantity"] > 0
         mfe = max(pos.get("mfe") or 0.0, round((hi - pos["avg_entry"]) if is_long
@@ -474,7 +481,24 @@ def manage_open_positions(quotes: Dict[str, Quote],
         r = process_order(o["order_id"], q)
         actions.append({"symbol": pos["symbol"], "intent": exit_intent,
                         "order_id": o["order_id"], "result": r})
-    return {"session_date": session_date, "actions": actions, "count": len(actions)}
+        if blocked_exit(r):
+            unmanaged.append(note_unmanaged(pos, r["reason"], o["order_id"]))
+    return {"session_date": session_date, "actions": actions, "count": len(actions), "unmanaged": unmanaged}
+
+
+def blocked_exit(result: Dict[str, Any]) -> bool:
+    """True when a pending exit result means 'the stop was crossed but could not be executed on this quote'."""
+    return result.get("status") == "pending" and str(result.get("reason", "")).startswith(fills.STOP_BLOCKED)
+
+
+def note_unmanaged(pos: Dict[str, Any], reason: str, order_id: Optional[str] = None) -> Dict[str, Any]:
+    """Record WHY a position is not being managed, once per change of reason (the tracker runs every minute)."""
+    last = db.query_one("SELECT detail_json FROM audit WHERE entity='position' AND entity_id=? "
+                        "AND event='exit_unmanaged' ORDER BY audit_id DESC LIMIT 1", (pos["position_id"],))
+    detail = {"symbol": pos["symbol"], "reason": reason, "order_id": order_id}
+    if not last or json.loads(last["detail_json"] or "{}").get("reason") != reason:
+        db.audit("position", pos["position_id"], "exit_unmanaged", detail)
+    return detail
 
 
 def expire_day_orders(session_date: Optional[str] = None) -> int:

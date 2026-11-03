@@ -628,7 +628,8 @@ class Runtime:
                                           "symbols": len(out.get("symbols_watched", [])),
                                           "exits": out.get("exits"),
                                           "quote_age_s_max": out.get("quote_age_s_max"),
-                                          "quotes_missing": out.get("quotes_missing")}
+                                          "quotes_missing": out.get("quotes_missing"),
+                                          "positions_unmanaged": out.get("positions_unmanaged") or []}
             events.append(f"tracker:{scope}")
         except Exception as e:
             self._err(f"tracker:{scope}", e)
@@ -814,6 +815,8 @@ def health(now: Optional[dt.datetime] = None, state: Optional[Dict[str, Any]] = 
             qa = (state.get("last_tracker") or {}).get("quote_age_s_max")
             if qa is not None and qa > 900:
                 degraded.append("stale_market_data")
+            if (state.get("last_tracker") or {}).get("positions_unmanaged"):
+                degraded.append("position_exit_unmanaged")      # an open position's stop cannot be evaluated/executed
     oh = offhost_status(now)
     if cal.is_trading_day(d) and (oh["age_hours"] is None or oh["age_hours"] > 30):
         degraded.append("offhost_backup_stale")
