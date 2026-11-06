@@ -89,6 +89,9 @@ def get_price(symbol: str) -> dict:
             "52w_high":      meta.get("fiftyTwoWeekHigh"),
             "52w_low":       meta.get("fiftyTwoWeekLow"),
             "source":        "Yahoo Finance",
+            # Observation time belongs to the price; `timestamp` below records
+            # the fetch and must not certify the quote's freshness.
+            "source_timestamp": meta.get("regularMarketTime"),
             "timestamp":     datetime.now(timezone.utc).isoformat(),
         }
     except Exception as e:

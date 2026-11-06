@@ -103,6 +103,55 @@ def test_tv_failure_does_not_lower_quality_when_others_valid(monkeypatch):
     assert r["confidence"] >= 0.9          # a failed TV confirm must NOT tank confidence
 
 
+def test_yahoo_service_preserves_market_observation_time(monkeypatch):
+    from tradingview_mcp.core.services import yahoo_finance_service as yahoo
+    observed = time.time() - 3600
+    monkeypatch.setattr(yahoo, "_fetch_quote", lambda symbol: {
+        "meta": {"regularMarketPrice": 40, "regularMarketTime": observed}})
+    assert yahoo.get_price("BAC")["source_timestamp"] == observed
+    monkeypatch.setattr(yahoo, "_fetch_quote", lambda symbol: {
+        "meta": {"regularMarketPrice": 40}})
+    assert yahoo.get_price("BAC")["source_timestamp"] is None
+
+
+@pytest.mark.parametrize("provider", ["yahoo", "finnhub", "tradingview"])
+@pytest.mark.parametrize("observed", [None, 0, float("nan"), float("inf"), "invalid"])
+def test_price_adapters_never_replace_unknown_source_time_with_fetch_time(
+        monkeypatch, provider, observed):
+    from tradingview_mcp.core.services import yahoo_finance_service as yahoo
+    from tradingview_mcp.core.services import strategy_service as strategy
+    import finnhub_data
+
+    monkeypatch.setattr(yahoo, "get_price", lambda symbol: {
+        "price": 40, "source_timestamp": observed, "timestamp": time.time()})
+    monkeypatch.setattr(finnhub_data, "quote", lambda symbol: {"c": 40, "t": observed})
+    monkeypatch.setattr(strategy, "_analyze_cached", lambda *args: {
+        "timestamp": "real-time", "price_data": {"current_price": 40,
+                                                  "source_timestamp": observed}})
+    name = "tv" if provider == "tradingview" else provider
+    reading = getattr(P, "_" + name + "_price")("BAC")
+    assert reading.ok and reading.value == 40
+    assert reading.source_ts is None
+
+
+def test_fetching_old_yahoo_and_cached_tv_does_not_displace_a_newer_quote(monkeypatch):
+    from tradingview_mcp.core.services import yahoo_finance_service as yahoo
+    from tradingview_mcp.core.services import strategy_service as strategy
+    import finnhub_data
+
+    now = time.time()
+    monkeypatch.setenv("TRADINGVIEW_ENABLED", "true")
+    monkeypatch.setattr(finnhub_data, "quote", lambda symbol: {"c": 40, "t": now - 10})
+    monkeypatch.setattr(yahoo, "get_price", lambda symbol: {
+        "price": 35, "source_timestamp": now - 3600, "timestamp": now})
+    monkeypatch.setattr(strategy, "_analyze_cached", lambda *args: {
+        "timestamp": "real-time", "price_data": {"current_price": 35}})
+    result = P.price_consensus("BAC")
+    assert result["provider"] == "finnhub"
+    assert result["value"] == 40
+    assert result["source_timestamp"] == now - 10
+
+
 # ── 3. Coverage-based data quality (strategy-aware) ──────────────────────────
 
 def _full_momentum_cov(with_options=True):

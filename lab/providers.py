@@ -27,6 +27,7 @@ Nothing here places an order or mutates account state.
 from __future__ import annotations
 
 import os
+import math
 import sys
 import time
 from dataclasses import dataclass, field
@@ -213,14 +214,22 @@ def consensus(readings: List[Reading], *, category: str = "price",
 
 # ── Price consensus (the flagship: Finnhub + Yahoo [+ TradingView confirm]) ───
 
+def _quote_source_ts(value: Any) -> Optional[float]:
+    """Provider observation time only. A missing time cannot become fetch time."""
+    try:
+        ts = float(value)
+        return ts if math.isfinite(ts) and ts > 0 else None
+    except (TypeError, ValueError):
+        return None
+
+
 def _finnhub_price(symbol: str) -> Reading:
     try:
         import finnhub_data
         q = finnhub_data.quote(symbol)
         if isinstance(q, dict) and q.get("c"):
-            ts = q.get("t")
             return Reading("finnhub", round(float(q["c"]), 4),
-                           source_ts=(float(ts) if ts else time.time()))
+                           source_ts=_quote_source_ts(q.get("t")))
         return Reading("finnhub", None, ok=False, error=(q or {}).get("error", "no quote"))
     except Exception as e:
         return Reading("finnhub", None, ok=False, error=str(e))
@@ -231,9 +240,8 @@ def _yahoo_price(yahoo_symbol: str) -> Reading:
         from tradingview_mcp.core.services.yahoo_finance_service import get_price
         p = get_price(yahoo_symbol)
         if isinstance(p, dict) and p.get("price") and "error" not in p:
-            # Yahoo's regularMarketPrice is ~real-time; stamp as now (its own ts is
-            # the fetch time). market_state lets callers know if the tape is live.
-            return Reading("yahoo", round(float(p["price"]), 4), source_ts=time.time())
+            return Reading("yahoo", round(float(p["price"]), 4),
+                           source_ts=_quote_source_ts(p.get("source_timestamp")))
         return Reading("yahoo", None, ok=False, error=(p or {}).get("error", "no price"))
     except Exception as e:
         return Reading("yahoo", None, ok=False, error=str(e))
@@ -247,8 +255,10 @@ def _tv_price(symbol: str, exchange: str = "NASDAQ") -> Reading:
         a = ss._analyze_cached(symbol, exchange, "1D")
         pd = (a or {}).get("price_data") or {}
         if pd.get("current_price"):
+            # The scanner's "real-time" label and cache insertion time are not
+            # quote observation timestamps. Preserve unknown provenance.
             return Reading("tradingview", round(float(pd["current_price"]), 4),
-                           source_ts=time.time())
+                           source_ts=_quote_source_ts(pd.get("source_timestamp")))
         return Reading("tradingview", None, ok=False, error="no tv price")
     except Exception as e:
         return Reading("tradingview", None, ok=False, error=str(e))
